@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #09090b;
+  --color-ink-2: #0f0f12;
+  --color-panel: #141417;
+  --color-panel-2: #1b1b20;
+  --color-line: #26262c;
+  --color-line-2: #34343c;
+  --color-acid: #c6f135;
+  --color-acid-2: #a9d41f;
+  --color-cream: #f4f1ea;
+  --color-muted: #8b8b95;
+  --color-danger: #ff5c5c;
+  --color-ok: #4ade80;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --animate-eq: eq 0.9s ease-in-out infinite;
+  --animate-marquee: marquee 28s linear infinite;
+}
+
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-cream);
+}
+
+::selection {
+  background: var(--color-acid);
+  color: var(--color-ink);
+}
+
+.display {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.eyebrow {
+  @apply text-[11px] font-bold uppercase tracking-[0.22em] text-acid;
+}
+
+.card {
+  @apply rounded-2xl border border-line bg-panel;
+}
+
+.btn-primary,
+.btn-ghost,
+.btn-danger {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.btn-primary {
+  @apply bg-acid text-ink hover:bg-acid-2;
+}
+
+.btn-ghost {
+  @apply border border-line-2 bg-transparent text-cream hover:border-cream/40 hover:bg-white/5;
+}
+
+.btn-danger {
+  @apply border border-danger/40 bg-danger/10 text-danger hover:bg-danger/20;
+}
+
+.label {
+  @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted;
+}
+
+.field {
+  @apply w-full rounded-xl border border-line bg-ink-2 px-3.5 py-2.5 text-sm text-cream outline-none transition placeholder:text-muted/60 focus:border-acid/60 focus:ring-2 focus:ring-acid/20 disabled:opacity-50;
+}
+
+select.field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238b8b95' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  padding-right: 2.5rem;
+}
+
+input[type="date"].field::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
+
+.badge,
+.badge-acid {
+  @apply inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold;
+}
+
+.badge {
+  @apply border-line-2 bg-white/5 text-cream/80;
+}
+
+.badge-acid {
+  @apply border-acid/40 bg-acid/10 text-acid;
+}
+
+.table-base {
+  @apply w-full text-left text-sm;
+}
+
+.table-base th {
+  @apply border-b border-line px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted;
+}
+
+.table-base td {
+  @apply border-b border-line/70 px-3 py-3 align-top text-cream/90;
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+.range-acid {
+  accent-color: var(--color-acid);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #111;
+  }
+}
