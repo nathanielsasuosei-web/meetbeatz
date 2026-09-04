@@ -5,6 +5,7 @@ import { listBeats, listGenres } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Beat Store" };
+export const dynamic = "force-dynamic";
 
 export default async function BeatsPage({ searchParams }: { searchParams: Promise<{ q?: string; genre?: string }> }) {
   const params = await searchParams;

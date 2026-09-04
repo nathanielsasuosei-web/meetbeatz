@@ -8,6 +8,7 @@ import { DAY_NAMES, formatTime12, money, num } from "@/lib/format";
 import { getPaymentMode, getSettings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Studio bookings" };
+export const dynamic = "force-dynamic";
 
 export default async function StudioPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
   const { service: serviceSlug } = await searchParams;

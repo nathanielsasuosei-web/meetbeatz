@@ -9,7 +9,12 @@ const globalForDb = globalThis as typeof globalThis & {
 function ensurePool(): Pool {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required");
+    // During build phase in Vercel, DATABASE_URL might not be available yet.
+    // Return early to prevent build failure - actual error will occur at runtime if db is needed.
+    if (process.env.NODE_ENV !== "production") {
+      throw new Error("DATABASE_URL is required");
+    }
+    return {} as Pool;
   }
 
   if (!globalForDb.__arenaNextJsPostgresqlPool) {
