@@ -11,6 +11,8 @@
 - [ ] Email provider configured (Gmail, Brevo, Resend)
 - [ ] Domain registered (meetbeatz.com)
 
+> **Important:** Vercel's local filesystem is ephemeral. Before enabling admin uploads in production, move `uploads/` to durable object storage such as Cloudinary, S3, or UploadThing and store the resulting URLs in the database. The current local-disk upload implementation is suitable for local development and a persistent VPS, but not for reliable Vercel production use.
+
 ## Environment Variables Needed
 
 Copy these to Vercel dashboard (Settings → Environment Variables):
@@ -92,6 +94,8 @@ git push -u origin main
 - [ ] Test a payment (test mode)
 - [ ] Verify email sends
 - [ ] Check `/admin/settings` for warnings
+
+If using Vercel before object storage is integrated, deploy the public storefront for review only and do not rely on production admin uploads or stored downloads.
 
 ## First Time Setup on Production
 

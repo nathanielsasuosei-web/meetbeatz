@@ -12,9 +12,10 @@ const SESSION_DAYS = 7;
 export type AdminSession = { id: number; email: string; name: string };
 
 function secretKey(): Uint8Array {
-  const raw =
-    process.env.SESSION_SECRET?.trim() ||
-    `meetbeatz-session-${process.env.DATABASE_URL ?? "local"}-fallback-secret`;
+  const raw = process.env.SESSION_SECRET?.trim();
+  if (!raw && process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET is required in production");
+  }
   return new TextEncoder().encode(raw);
 }
 

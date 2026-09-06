@@ -148,8 +148,13 @@ export function ensureSeeded(): Promise<void> {
 async function runSeed() {
   const [existingAdmin] = await db.select({ id: admins.id }).from(admins).limit(1);
   if (!existingAdmin) {
-    const email = (process.env.ADMIN_EMAIL?.trim() || DEFAULT_ADMIN_EMAIL).toLowerCase();
-    const password = process.env.ADMIN_PASSWORD?.trim() || DEFAULT_ADMIN_PASSWORD;
+    const configuredEmail = process.env.ADMIN_EMAIL?.trim();
+    const configuredPassword = process.env.ADMIN_PASSWORD?.trim();
+    if (process.env.NODE_ENV === "production" && (!configuredEmail || !configuredPassword)) {
+      throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required before first production start");
+    }
+    const email = (configuredEmail || DEFAULT_ADMIN_EMAIL).toLowerCase();
+    const password = configuredPassword || DEFAULT_ADMIN_PASSWORD;
     await db.insert(admins).values({ email, name: "Meetbeatz", passwordHash: hashPassword(password) });
   }
 
