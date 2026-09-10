@@ -11,5 +11,7 @@ public/meetbeatz-source.zip
 .DS_Store
 npm-debug.log*
 .vercel
+.pgdata/
+.pgpwd
 .postgres-data/
 seed-settings.js
