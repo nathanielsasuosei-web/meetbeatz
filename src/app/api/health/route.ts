@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { db, resolveDatabaseUrl } from "@/db";
 import { sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -33,8 +33,8 @@ function fullErrorMessage(err: unknown): string {
 }
 
 /** Non-sensitive connection info: host/port/user/db + URL format red flags. */
-function connectionInfo(): Checks {
-  const raw = process.env.DATABASE_URL?.trim() ?? "";
+function connectionInfo(effectiveUrl: string | undefined): Checks {
+  const raw = effectiveUrl ?? "";
   const info: Checks = {
     // Catches a pasted-but-unedited placeholder like [YOUR-PASSWORD].
     hasPlaceholderBrackets: raw.includes("[") || raw.includes("]"),
@@ -53,12 +53,16 @@ function connectionInfo(): Checks {
 }
 
 export async function GET() {
+  const resolved = resolveDatabaseUrl();
   const checks: Checks = {
-    databaseUrlSet: !!process.env.DATABASE_URL?.trim(),
+    databaseUrlSet: !!resolved.url,
+    databaseUrlSource: resolved.url
+      ? resolved.source
+      : `none (${resolved.reason})`,
     adminEmailSet: !!process.env.ADMIN_EMAIL?.trim(),
     adminPasswordSet: !!process.env.ADMIN_PASSWORD?.trim(),
     sessionSecretSet: !!process.env.SESSION_SECRET?.trim(),
-    ...connectionInfo(),
+    ...connectionInfo(resolved.url),
   };
 
   try {
