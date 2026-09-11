@@ -54,7 +54,7 @@ function sslConfig(databaseUrl: string): { rejectUnauthorized: boolean } | undef
 
 function ensurePool(): Pool {
   const resolved = resolveDatabaseUrl();
-  if (!resolved.url) {
+  if (resolved.url === undefined) {
     throw new Error(
       resolved.reason === "invalid"
         ? "DATABASE_URL is set but is not a valid connection URI (it must start with postgresql:// and contain no quotes, spaces, or [placeholders]). Fix it in Vercel → Settings → Environment Variables and redeploy."

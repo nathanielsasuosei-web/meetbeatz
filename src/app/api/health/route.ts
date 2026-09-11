@@ -55,10 +55,9 @@ function connectionInfo(effectiveUrl: string | undefined): Checks {
 export async function GET() {
   const resolved = resolveDatabaseUrl();
   const checks: Checks = {
-    databaseUrlSet: !!resolved.url,
-    databaseUrlSource: resolved.url
-      ? resolved.source
-      : `none (${resolved.reason})`,
+    databaseUrlSet: resolved.url !== undefined,
+    databaseUrlSource:
+      resolved.url === undefined ? `none (${resolved.reason})` : resolved.source,
     adminEmailSet: !!process.env.ADMIN_EMAIL?.trim(),
     adminPasswordSet: !!process.env.ADMIN_PASSWORD?.trim(),
     sessionSecretSet: !!process.env.SESSION_SECRET?.trim(),
