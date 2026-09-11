@@ -42,14 +42,39 @@ export function resolveDatabaseUrl(
   return { url: undefined, source: undefined, reason: sawValue ? "invalid" : "missing" };
 }
 
-function sslConfig(databaseUrl: string): { rejectUnauthorized: boolean } | undefined {
-  // An explicit ?sslmode=... in the URL always wins — node-postgres honors it.
-  if (/[?&]sslmode=/.test(databaseUrl)) return undefined;
-  // Hosted Postgres (Supabase pooler, Railway, Neon, ...) expects TLS.
+/**
+ * Removes any ?sslmode=... from the URL and returns it separately.
+ * Reason: pg lets the URL's sslmode override the `ssl` option, and currently
+ * aliases require/prefer to verify-full — which rejects Supabase's pooler
+ * certificate chain. We strip it and drive TLS purely via `sslConfig()`.
+ */
+function splitSslMode(databaseUrl: string): { url: string; sslMode: string | undefined } {
+  if (!/[?&]sslmode=/i.test(databaseUrl)) return { url: databaseUrl, sslMode: undefined };
+  try {
+    const u = new URL(databaseUrl);
+    const sslMode = u.searchParams.get("sslmode")?.toLowerCase();
+    u.searchParams.delete("sslmode");
+    return { url: u.toString(), sslMode: sslMode ?? undefined };
+  } catch {
+    return { url: databaseUrl, sslMode: undefined };
+  }
+}
+
+function sslConfig(
+  databaseUrl: string,
+  sslMode: string | undefined,
+): boolean | { rejectUnauthorized: boolean } | undefined {
+  // Explicit user intent always wins.
+  if (sslMode === "disable" || sslMode === "allow") return undefined;
+  if (sslMode === "verify-full" || sslMode === "verify-ca") return true;
+  // Hosted Postgres (Supabase pooler, Railway, Neon, ...) expects TLS, but
+  // their chains often fail strict verification — encrypt without it.
   // Local Postgres usually has SSL off, and node-postgres does NOT fall back
-  // to plaintext when TLS is requested — so only enable it for remote hosts.
+  // to plaintext when TLS is requested — so only enable it for remote hosts
+  // (or when sslmode=require explicitly demands TLS).
   const isLocalhost = /(^|[@:/])(localhost|127\.0\.0\.1)([:/?]|$)/.test(databaseUrl);
-  return isLocalhost ? undefined : { rejectUnauthorized: false };
+  if (isLocalhost && !sslMode) return undefined;
+  return { rejectUnauthorized: false };
 }
 
 function ensurePool(): Pool {
@@ -63,9 +88,10 @@ function ensurePool(): Pool {
   }
 
   if (!globalForDb.__arenaNextJsPostgresqlPool) {
+    const { url, sslMode } = splitSslMode(resolved.url);
     globalForDb.__arenaNextJsPostgresqlPool = new Pool({
-      connectionString: resolved.url,
-      ssl: sslConfig(resolved.url),
+      connectionString: url,
+      ssl: sslConfig(resolved.url, sslMode),
     });
   }
 
