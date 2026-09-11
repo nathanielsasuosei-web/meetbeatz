@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import { BeatGrid } from "@/components/beat-card";
 import { listBeats, listGenres } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export const metadata: Metadata = { title: "Beat Store" };
 export const dynamic = "force-dynamic";
 
 export default async function BeatsPage({ searchParams }: { searchParams: Promise<{ q?: string; genre?: string }> }) {
+  await ensureSeeded();
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const genre = (params.genre ?? "").trim();

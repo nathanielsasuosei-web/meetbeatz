@@ -5,8 +5,10 @@ import { orderItems, orders } from "@/db/schema";
 import { Flash, PageHeader, StatusBadge } from "@/components/admin/flash";
 import { formatDateTime, money, networkLabel } from "@/lib/format";
 import { resendOrderEmail } from "../actions";
+import { ensureSeeded } from "@/lib/seed";
 
 export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; status?: string }> }) {
+  await ensureSeeded();
   const { msg, err, status } = await searchParams;
   const [rows, items] = await Promise.all([
     db

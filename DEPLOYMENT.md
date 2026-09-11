@@ -99,7 +99,8 @@ If using Vercel before object storage is integrated, deploy the public storefron
 
 ## First Time Setup on Production
 
-After deployment, the database auto-seeds on first page load:
+After deployment, the database sets itself up on first page load — no manual steps needed:
+- All tables created automatically (even on a brand-new empty database)
 - Admin account created
 - 3 demo beats added
 - License types & studio services configured

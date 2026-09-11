@@ -7,8 +7,10 @@ import { Flash, PageHeader } from "@/components/admin/flash";
 import { coverUrl, money } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { deleteBeat, toggleBeatFeatured, toggleBeatPublished } from "../actions";
+import { ensureSeeded } from "@/lib/seed";
 
 export default async function AdminBeatsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
+  await ensureSeeded();
   const { msg, err } = await searchParams;
   const [settings, rows, prices] = await Promise.all([
     getSettings(),

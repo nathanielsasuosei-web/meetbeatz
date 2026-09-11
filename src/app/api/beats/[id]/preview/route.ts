@@ -2,10 +2,12 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats } from "@/db/schema";
 import { fileResponse, resolveUpload } from "@/lib/files";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  await ensureSeeded();
   const { id } = await params;
   const beatId = parseInt(id, 10);
   if (!Number.isFinite(beatId)) return new Response("Not found", { status: 404 });

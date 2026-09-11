@@ -3,6 +3,7 @@ import { listLicenseTypes } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
 import type { LicenseType } from "@/db/schema";
 import { saveLicenseType } from "../actions";
+import { ensureSeeded } from "@/lib/seed";
 
 function LicenseForm({ lt, currency }: { lt: LicenseType | null; currency: string }) {
   const has = (d: string) => (lt ? lt.deliverables.split(",").includes(d) : d === "mp3");
@@ -57,6 +58,7 @@ function LicenseForm({ lt, currency }: { lt: LicenseType | null; currency: strin
 }
 
 export default async function AdminLicensesPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
+  await ensureSeeded();
   const { msg, err } = await searchParams;
   const [settings, types] = await Promise.all([getSettings(), listLicenseTypes(false)]);
   return (

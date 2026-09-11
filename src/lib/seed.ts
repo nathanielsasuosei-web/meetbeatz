@@ -1,6 +1,8 @@
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { admins, beatLicenses, beats, licenseTypes, services, studioHours } from "@/db/schema";
 import { hashPassword } from "./auth";
+import { ensureMigrated } from "./migrate";
 import { synthBeat } from "./audio-synth";
 import { resolveUpload, writeUploadBuffer } from "./files";
 
@@ -146,6 +148,7 @@ export function ensureSeeded(): Promise<void> {
 }
 
 async function runSeed() {
+  await ensureMigrated();
   const [existingAdmin] = await db.select({ id: admins.id }).from(admins).limit(1);
   if (!existingAdmin) {
     const configuredEmail = process.env.ADMIN_EMAIL?.trim();
@@ -155,17 +158,17 @@ async function runSeed() {
     }
     const email = (configuredEmail || DEFAULT_ADMIN_EMAIL).toLowerCase();
     const password = configuredPassword || DEFAULT_ADMIN_PASSWORD;
-    await db.insert(admins).values({ email, name: "Meetbeatz", passwordHash: hashPassword(password) });
+    await db.insert(admins).values({ email, name: "Meetbeatz", passwordHash: hashPassword(password) }).onConflictDoNothing({ target: admins.email });
   }
 
   const [existingLicense] = await db.select({ id: licenseTypes.id }).from(licenseTypes).limit(1);
   if (!existingLicense) {
-    await db.insert(licenseTypes).values(LICENSE_TYPES);
+    await db.insert(licenseTypes).values(LICENSE_TYPES).onConflictDoNothing({ target: licenseTypes.slug });
   }
 
   const [existingService] = await db.select({ id: services.id }).from(services).limit(1);
   if (!existingService) {
-    await db.insert(services).values(SERVICES);
+    await db.insert(services).values(SERVICES).onConflictDoNothing({ target: services.slug });
   }
 
   const [existingHours] = await db.select({ id: studioHours.id }).from(studioHours).limit(1);
@@ -176,8 +179,8 @@ async function runSeed() {
         opensAt: dow === 6 ? "10:00" : "09:00",
         closesAt: dow === 6 ? "18:00" : "21:00",
         isOpen: dow !== 0,
-      })),
-    );
+      })))
+      .onConflictDoNothing({ target: studioHours.dayOfWeek });
   }
 
   const [existingBeat] = await db.select({ id: beats.id }).from(beats).limit(1);
@@ -210,16 +213,22 @@ async function runSeed() {
           isFeatured: demo.featured,
           isDemo: true,
         })
+        .onConflictDoNothing({ target: beats.slug })
         .returning();
+      const beatRow = beat ?? (await db.select().from(beats).where(eq(beats.slug, demo.slug)).limit(1))[0];
+      if (!beatRow) continue;
       if (types.length) {
-        await db.insert(beatLicenses).values(
-          types.map((t) => ({
-            beatId: beat.id,
-            licenseTypeId: t.id,
-            price: t.defaultPrice,
-            isEnabled: t.deliverables.includes("stems") ? false : true,
-          })),
-        );
+        await db
+          .insert(beatLicenses)
+          .values(
+            types.map((t) => ({
+              beatId: beatRow.id,
+              licenseTypeId: t.id,
+              price: t.defaultPrice,
+              isEnabled: t.deliverables.includes("stems") ? false : true,
+            })),
+          )
+          .onConflictDoNothing();
       }
     }
   }

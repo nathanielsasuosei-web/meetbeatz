@@ -7,8 +7,10 @@ import { PageHeader } from "@/components/admin/flash";
 import { listLicenseTypes } from "@/lib/catalog";
 import { coverUrl, num } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export default async function EditBeatPage({ params }: { params: Promise<{ id: string }> }) {
+  await ensureSeeded();
   const { id } = await params;
   const beatId = parseInt(id, 10);
   if (!Number.isFinite(beatId)) notFound();

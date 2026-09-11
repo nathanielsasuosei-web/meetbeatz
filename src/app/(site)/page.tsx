@@ -6,12 +6,14 @@ import { BeatGrid } from "@/components/beat-card";
 import { listActiveServices, listBeats, listLicenseTypes } from "@/lib/catalog";
 import { DELIVERABLE_LABELS, deliverableList, money, num } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
 const MARQUEE = ["MTN Mobile Money", "Telecel Cash", "AirtelTigo Money", "Visa & Mastercard", "Instant email delivery", "Licensed & legal", "Recording · Mixing · Mastering"];
 
 export default async function HomePage() {
+  await ensureSeeded();
   const [settings, featured, latest, services, licenseTypes, [beatCount], [licenseCount]] = await Promise.all([
     getSettings(),
     listBeats({ featured: true, limit: 8 }),

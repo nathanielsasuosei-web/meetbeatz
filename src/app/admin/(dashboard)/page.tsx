@@ -7,8 +7,10 @@ import { formatDate, formatDateTime, formatTime12, money, networkLabel } from "@
 import { isPaystackConfigured } from "@/lib/paystack";
 import { emailProvider, getSettings } from "@/lib/settings";
 import { todayString } from "@/lib/slots";
+import { ensureSeeded } from "@/lib/seed";
 
 export default async function AdminDashboard() {
+  await ensureSeeded();
   const settings = await getSettings();
   const [[rev], [beatCount], [licCount], [upcoming], recentOrders, upcomingBookings] = await Promise.all([
     db

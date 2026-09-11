@@ -7,10 +7,12 @@ import { getBeatBySlug, toCard } from "@/lib/catalog";
 import { DELIVERABLE_LABELS, deliverableList, money, num } from "@/lib/format";
 import { computeTotals } from "@/lib/payments";
 import { getPaymentMode, getSettings } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export const metadata: Metadata = { title: "Checkout" };
 
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ beat?: string; license?: string }> }) {
+  await ensureSeeded();
   const { beat: slug, license } = await searchParams;
   if (!slug) redirect("/beats");
   const data = await getBeatBySlug(slug);
