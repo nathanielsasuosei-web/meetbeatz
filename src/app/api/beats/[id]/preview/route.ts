@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats } from "@/db/schema";
-import { fileResponse, resolveUpload } from "@/lib/files";
+import { synthBeat, synthOptionsFor } from "@/lib/audio-synth";
+import { bufferResponse, fileResponse, resolveUpload } from "@/lib/files";
 import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const [beat] = await db.select().from(beats).where(eq(beats.id, beatId)).limit(1);
   if (!beat) return new Response("Not found", { status: 404 });
   const abs = resolveUpload(beat.previewPath ?? beat.mp3Path ?? beat.wavPath);
-  if (!abs) return new Response("Preview not available", { status: 404 });
+  if (!abs) {
+    // No preview file — expected for demo beats on read-only serverless
+    // filesystems, where seeding skips the file write. Regenerate the
+    // identical demo audio in memory so the store stays playable.
+    if (beat.isDemo) {
+      const audio = synthBeat(synthOptionsFor(beat.slug, beat.bpm));
+      return bufferResponse(audio, "audio/wav", {
+        rangeHeader: req.headers.get("range"),
+        cache: true,
+      });
+    }
+    return new Response("Preview not available", { status: 404 });
+  }
   return fileResponse(abs, { rangeHeader: req.headers.get("range"), cache: true });
 }

@@ -160,3 +160,28 @@ export function synthBeat(opts: SynthOptions): Buffer {
   }
   return buf;
 }
+
+/**
+ * Fixed synth parameters for the seeded demo beats, keyed by slug.
+ * Used twice: by the seeder to write preview files where the filesystem is
+ * writable, and by the preview API to regenerate the identical audio in
+ * memory where it isn't (serverless). Keep in sync with DEMO_BEATS in seed.ts.
+ */
+export const DEMO_SYNTH_BY_SLUG: Record<string, SynthOptions> = {
+  "midnight-in-osu": { bpm: 102, rootHz: 92.5, minor: true, seed: 11, style: "afro" },
+  "kumasi-drill": { bpm: 142, rootHz: 65.4, minor: true, seed: 23, style: "drill" },
+  "sunday-highlife": { bpm: 118, rootHz: 98, minor: false, seed: 37, style: "highlife" },
+};
+
+/** Synth parameters for a demo beat, with a sensible fallback for unknown slugs. */
+export function synthOptionsFor(slug: string, bpm: number | null): SynthOptions {
+  return (
+    DEMO_SYNTH_BY_SLUG[slug] ?? {
+      bpm: bpm ?? 120,
+      rootHz: 98,
+      minor: true,
+      seed: 7,
+      style: "afro" as const,
+    }
+  );
+}

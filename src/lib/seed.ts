@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { admins, beatLicenses, beats, licenseTypes, services, studioHours } from "@/db/schema";
 import { hashPassword } from "./auth";
 import { ensureMigrated } from "./migrate";
-import { synthBeat } from "./audio-synth";
+import { DEMO_SYNTH_BY_SLUG, synthBeat } from "./audio-synth";
 import { resolveUpload, writeUploadBuffer } from "./files";
 
 export const DEFAULT_ADMIN_EMAIL = "admin@meetbeatz.app";
@@ -103,7 +103,7 @@ const DEMO_BEATS = [
     musicalKey: "F# minor",
     tags: "afrobeats, wizkid type beat, burna boy, smooth",
     description: "Late-night Afrobeats groove with rolling log drums, warm keys and a bassline that sits deep in the pocket.",
-    synth: { bpm: 102, rootHz: 92.5, minor: true, seed: 11, style: "afro" as const },
+    synth: DEMO_SYNTH_BY_SLUG["midnight-in-osu"],
     cover: "/images/covers/demo-1.jpg",
     featured: true,
   },
@@ -116,7 +116,7 @@ const DEMO_BEATS = [
     musicalKey: "C minor",
     tags: "asakaa, drill, kumerica, dark, sliding 808",
     description: "Hard-hitting Asakaa drill with sliding 808s, eerie bells and skipping hi-hats built for the streets of Kumasi.",
-    synth: { bpm: 142, rootHz: 65.4, minor: true, seed: 23, style: "drill" as const },
+    synth: DEMO_SYNTH_BY_SLUG["kumasi-drill"],
     cover: "/images/covers/demo-2.jpg",
     featured: true,
   },
@@ -129,7 +129,7 @@ const DEMO_BEATS = [
     musicalKey: "G major",
     tags: "highlife, guitar, uplifting, kuami eugene type beat",
     description: "Feel-good highlife with palm-wine guitars, bright horns and a bounce made for weddings and Sunday afternoons.",
-    synth: { bpm: 118, rootHz: 98, minor: false, seed: 37, style: "highlife" as const },
+    synth: DEMO_SYNTH_BY_SLUG["sunday-highlife"],
     cover: "/images/covers/demo-3.jpg",
     featured: true,
   },
@@ -191,7 +191,13 @@ async function runSeed() {
       const fileName = `demo-${i + 1}.wav`;
       const rel = `previews/${fileName}`;
       if (!resolveUpload(rel)) {
-        await writeUploadBuffer("previews", fileName, synthBeat(demo.synth));
+        try {
+          await writeUploadBuffer("previews", fileName, synthBeat(demo.synth));
+        } catch (err) {
+          // Read-only filesystem (e.g. Vercel serverless): seeding must not
+          // fail — the preview API regenerates demo audio in memory instead.
+          console.warn(`[seed] could not write ${rel}, using in-memory demo audio:`, err);
+        }
       }
       const [beat] = await db
         .insert(beats)
