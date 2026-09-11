@@ -6,7 +6,7 @@ import { ensureMigrated } from "./migrate";
 import { synthBeat } from "./audio-synth";
 import { resolveUpload, writeUploadBuffer } from "./files";
 
-export const DEFAULT_ADMIN_EMAIL = "admin@meetbeatz.com";
+export const DEFAULT_ADMIN_EMAIL = "admin@meetbeatz.app";
 export const DEFAULT_ADMIN_PASSWORD = "meetbeatz123";
 
 const LICENSE_TYPES = [

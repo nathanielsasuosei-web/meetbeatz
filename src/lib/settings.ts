@@ -25,7 +25,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   feePercent: "10",
   paystackSubaccount: "",
   feeBearer: "account",
-  contactEmail: "hello@meetbeatz.com",
+  contactEmail: "hello@meetbeatz.app",
   contactPhone: "+233 20 000 0000",
   whatsapp: "",
   location: "Accra, Ghana",

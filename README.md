@@ -51,7 +51,7 @@ git push -u origin main
 ## Admin login
 
 - URL: `/admin/login`
-- Default credentials: `admin@meetbeatz.com` / `meetbeatz123` (change under Settings, or set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before first run).
+- Default credentials: `admin@meetbeatz.app` / `meetbeatz123` (change under Settings, or set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before first run).
 
 ## Environment variables
 
@@ -62,7 +62,7 @@ git push -u origin main
 | `NEXT_PUBLIC_APP_URL` | Public URL used in emails and the Paystack callback (auto-detected if unset) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | Email delivery via SMTP |
 | `RESEND_API_KEY` | Alternative email delivery via Resend |
-| `EMAIL_FROM` | Sender, e.g. `Meetbeatz <no-reply@meetbeatz.com>` |
+| `EMAIL_FROM` | Sender, e.g. `Meetbeatz <no-reply@meetbeatz.app>` |
 | `SESSION_SECRET` | Secret for admin session cookies |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial admin account (first run only) |
 
