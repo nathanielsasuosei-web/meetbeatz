@@ -8,14 +8,57 @@ type Checks = Record<string, boolean | number | string>;
 /**
  * Deployment diagnostics — intentionally does NOT seed or migrate, so it
  * reports the raw state: env vars present? reachable? tables exist? seeded?
- * Safe to expose: values are booleans/counts only, never secrets.
+ * Safe to expose: booleans/counts/hostnames only, never secrets.
  */
+
+function fullErrorMessage(err: unknown): string {
+  const parts: string[] = [];
+  const seen = new Set<unknown>();
+  let cur: unknown = err;
+  while (cur && parts.length < 5 && !seen.has(cur)) {
+    seen.add(cur);
+    if (cur instanceof Error) {
+      if (cur.message) parts.push(cur.message);
+      cur = (cur as { cause?: unknown }).cause;
+    } else {
+      parts.push(String(cur));
+      break;
+    }
+  }
+  // Scrub anything shaped like credentials, just in case.
+  return parts
+    .join(" | ")
+    .replace(/:\/\/[^/\s:@]+:[^/\s@]+@/g, "://***:***@")
+    .slice(0, 500);
+}
+
+/** Non-sensitive connection info: host/port/user/db + URL format red flags. */
+function connectionInfo(): Checks {
+  const raw = process.env.DATABASE_URL?.trim() ?? "";
+  const info: Checks = {
+    // Catches a pasted-but-unedited placeholder like [YOUR-PASSWORD].
+    hasPlaceholderBrackets: raw.includes("[") || raw.includes("]"),
+  };
+  try {
+    const u = new URL(raw);
+    info.dbHost = u.hostname || "(missing)";
+    info.dbPort = u.port || "(default 5432)";
+    info.dbUser = u.username || "(missing)";
+    info.dbName = u.pathname.replace(/^\//, "") || "(missing)";
+    info.passwordPresent = u.password ? true : false;
+  } catch {
+    info.dbUrlParses = false;
+  }
+  return info;
+}
+
 export async function GET() {
   const checks: Checks = {
     databaseUrlSet: !!process.env.DATABASE_URL?.trim(),
     adminEmailSet: !!process.env.ADMIN_EMAIL?.trim(),
     adminPasswordSet: !!process.env.ADMIN_PASSWORD?.trim(),
     sessionSecretSet: !!process.env.SESSION_SECRET?.trim(),
+    ...connectionInfo(),
   };
 
   try {
@@ -23,7 +66,7 @@ export async function GET() {
     checks.connect = true;
   } catch (err) {
     checks.connect = false;
-    checks.connectError = err instanceof Error ? err.message.slice(0, 220) : String(err).slice(0, 220);
+    checks.connectError = fullErrorMessage(err);
     return Response.json({ ok: false, checks }, { status: 500 });
   }
 
@@ -33,7 +76,7 @@ export async function GET() {
     );
     checks.publicTables = (tables.rows[0] as { n: number } | undefined)?.n ?? 0;
   } catch (err) {
-    checks.tablesError = err instanceof Error ? err.message.slice(0, 220) : String(err).slice(0, 220);
+    checks.tablesError = fullErrorMessage(err);
   }
 
   for (const table of ["admins", "beats", "license_types"] as const) {
