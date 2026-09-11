@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: app_db
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - meetbeatz_pgdata:/var/lib/postgresql/data
 
