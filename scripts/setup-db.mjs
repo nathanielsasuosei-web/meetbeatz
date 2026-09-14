@@ -70,8 +70,15 @@ export function isLocalHost(host) {
 function explain(error, target) {
   const code = error?.code ?? "";
   const remote = !isLocalHost(target.host);
+  const supabase = /supabase\.(co|com)/i.test(target.host);
   console.error(`\n${BAD} Could not connect to PostgreSQL at ${target.host}:${target.port}`);
-  if (code === "ECONNREFUSED" || code === "ETIMEDOUT" || code === "ENOTFOUND" || code === "EHOSTUNREACH") {
+  if (
+    code === "ECONNREFUSED" ||
+    code === "ETIMEDOUT" ||
+    code === "ENOTFOUND" ||
+    code === "EAI_AGAIN" ||
+    code === "EHOSTUNREACH"
+  ) {
     if (remote) {
       console.error("   A hosted database is not answering. Check, in this order:");
       console.error("     1. the host/port in DATABASE_URL (copy it again from your provider's dashboard)");
@@ -79,6 +86,19 @@ function explain(error, target) {
       console.error("     3. the database is not paused (Neon and Supabase pause inactive projects)");
       console.error("     4. your provider's IP allow-list, if it has one, permits your address");
       console.error("     5. the project still exists and the password was not rotated");
+      if (supabase) {
+        console.error("\n   Supabase: click \"Connect\" and pick a connection string.");
+        console.error("     • Direct connection (db.<ref>.supabase.co:5432) is IPv6-only on new");
+        console.error("       projects, which shows up as ENOTFOUND / EAI_AGAIN on most home and");
+        console.error("       mobile networks.");
+        console.error("     • Session pooler (aws-0-<region>.pooler.supabase.com:5432) works over");
+        console.error("       IPv4 — use this one, it also handles schema changes.");
+        console.error("     • Transaction pooler (…:6543) is for the running app only; schema");
+        console.error("       changes usually fail through it.");
+        if (!target.user.includes(".")) {
+          console.error('   Pooler strings use the user "postgres.<your-project-ref>", not "postgres".');
+        }
+      }
     } else {
       console.error("   Nothing is listening on that port — the database server is not running.");
       console.error("   Fix it with one of these:");

@@ -80,6 +80,19 @@ git push -u origin main
 
 **1. Create a hosted PostgreSQL.** Free options that need no card: [Neon](https://neon.tech) (recommended), [Supabase](https://supabase.com) or [Railway](https://railway.app). Create the project, pick a European region (Frankfurt/London/Paris — the closest to Accra, and the region pinned in `vercel.json`), then copy the connection string. It must end with `?sslmode=require`.
 
+**Already using Supabase?** Supabase offers three connection strings and only one of them is right for beginners:
+click **Connect** (top of the project) → *Connection string* → **Session pooler**:
+
+```
+postgresql://postgres.<your-project-ref>:<your-password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+- **Session pooler** (port `5432`) — use this. Works over IPv4 (most home/mobile networks have no IPv6) and supports schema changes.
+- **Direct connection** (`db.<ref>.supabase.co`) — IPv6-only on new projects, so it often fails with `ENOTFOUND` / `EAI_AGAIN`.
+- **Transaction pooler** (port `6543`) — fine for the running app, but schema changes usually fail through it.
+
+Use the user name **`postgres.<your-project-ref>`** (not plain `postgres`) on the pooler, and URL-encode `@`, `#`, `/` and `:` in your password (`@` → `%40`).
+
 > **Important:** a database on your own computer cannot be used here. `127.0.0.1` / `localhost` in `DATABASE_URL` means "this machine" — on Vercel that is *their* server, where your database does not exist. The deployed app needs the internet-reachable address your provider gives you (e.g. `ep-cool-name-123456.eu-central-1.aws.neon.tech`).
 
 **2. Run one command** from this folder, passing the hosted URL (your `.env` can keep using your local database for development):

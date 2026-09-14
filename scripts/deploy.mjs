@@ -126,6 +126,16 @@ if (!/sslmode=/i.test(databaseUrl)) {
   notes.push("DATABASE_URL has no sslmode parameter — most hosted databases need");
   notes.push("  ?sslmode=require at the end, otherwise the connection is refused.");
 }
+if (/pooler\.supabase\.com/i.test(databaseUrl) && /:6543/.test(databaseUrl)) {
+  notes.push("This looks like the Supabase TRANSACTION pooler (port 6543). It is fine for");
+  notes.push("  the running app, but schema changes can fail through it. For this command use");
+  notes.push("  the Session pooler (port 5432) or the direct connection instead.");
+}
+if (/\.supabase\.co/i.test(databaseUrl) && !/pooler/i.test(databaseUrl)) {
+  notes.push("This looks like the Supabase DIRECT connection (db.<ref>.supabase.co). New");
+  notes.push("  Supabase projects reach it over IPv6 only — if you get ENOTFOUND or EAI_AGAIN,");
+  notes.push("  switch to the Session pooler string (aws-0-<region>.pooler.supabase.com:5432).");
+}
 if ((env.SESSION_SECRET ?? "").length < 32) {
   notes.push("SESSION_SECRET is shorter than 32 characters — generate a longer one.");
 }

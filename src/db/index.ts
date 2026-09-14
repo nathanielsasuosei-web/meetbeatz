@@ -1,10 +1,35 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { Pool, type PoolConfig } from "pg";
 
 const globalForDb = globalThis as typeof globalThis & {
   __arenaNextJsPostgresqlPool?: Pool;
   __arenaNextJsDb?: ReturnType<typeof drizzle>;
 };
+
+function isLocalDatabaseUrl(url: string): boolean {
+  return /@(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|host\.docker\.internal)[:/]/i.test(url);
+}
+
+function poolOptions(databaseUrl: string): PoolConfig {
+  const config: PoolConfig = {
+    connectionString: databaseUrl,
+    // Serverless hosts run many short-lived instances; a small pool per instance
+    // keeps hosted databases (Supabase/Neon free tiers) inside their connection
+    // limits. Raise it with PG_POOL_MAX on a long-running server.
+    max: Number(process.env.PG_POOL_MAX ?? 5),
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
+  };
+
+  if (!/sslmode=/i.test(databaseUrl) && !isLocalDatabaseUrl(databaseUrl)) {
+    // Hosted PostgreSQL refuses unencrypted connections. If the URL does not say
+    // sslmode=require, turn TLS on anyway instead of failing with a confusing
+    // "no pg_hba.conf entry ... no encryption" error.
+    config.ssl = { rejectUnauthorized: false };
+  }
+
+  return config;
+}
 
 function ensurePool(): Pool {
   const databaseUrl = process.env.DATABASE_URL;
@@ -18,9 +43,7 @@ function ensurePool(): Pool {
   }
 
   if (!globalForDb.__arenaNextJsPostgresqlPool) {
-    globalForDb.__arenaNextJsPostgresqlPool = new Pool({
-      connectionString: databaseUrl,
-    });
+    globalForDb.__arenaNextJsPostgresqlPool = new Pool(poolOptions(databaseUrl));
   }
 
   return globalForDb.__arenaNextJsPostgresqlPool;
