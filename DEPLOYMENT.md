@@ -65,6 +65,11 @@ git push -u origin main
 7. Build Command: `npm run build`
 8. Click "Deploy"
 
+> `npm run build` syncs the schema to `DATABASE_URL` before compiling, so Vercel creates the
+> tables for you and there is no separate migration step. The variable must be set for every
+> environment Vercel builds with — a missing `DATABASE_URL` warns and skips the sync rather than
+> failing the build, which is how a Production-only variable leaves preview deployments tableless.
+
 ### 3. Add Environment Variables in Vercel
 
 1. After initial deploy, go to Settings → Environment Variables
@@ -106,7 +111,7 @@ it reports which of the two causes you have:
 | `reason` | Fix |
 | --- | --- |
 | `DATABASE_URL is not set` / `points at localhost` | Add a **hosted** PostgreSQL (Neon, Railway, Supabase) and set `DATABASE_URL` in Vercel → Project → Settings → Environment Variables. A `127.0.0.1`/`localhost` URL can never work there. |
-| `tables have not been created` | Push the schema to that exact URL from your machine: `DATABASE_URL="<the vercel value>" npm run db:push` |
+| `tables have not been created` | Redeploy — `npm run build` now syncs the schema first. If the build log says it skipped the sync, `DATABASE_URL` is missing for that environment (Vercel scopes variables per Production/Development/Preview, and preview URLs are separate deployments). To push without redeploying, run it yourself against the same string. |
 
 Then redeploy. `SESSION_SECRET` must also be set in Vercel, or admin login will fail.
 
