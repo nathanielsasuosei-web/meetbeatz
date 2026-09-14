@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return Response.json(result);
   } catch (err) {
     if (err instanceof CheckoutError) return Response.json({ error: err.message }, { status: err.status });
-    console.error("[checkout/beat]", err);
+    console.error("[checkout/beats]", err);
     const message = err instanceof Error ? err.message : "Could not start payment.";
     return Response.json({ error: `Could not start payment: ${message}` }, { status: 500 });
   }
