@@ -1,8 +1,12 @@
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
-import { describeDatabaseUrlShape, inspectDatabaseUrl } from "@/lib/database-url";
+import { describeDatabaseUrlShape, resolveDatabaseUrl } from "@/lib/database-url";
 
 export const dynamic = "force-dynamic";
+
+// Core tables the app cannot render without. If these are missing the database
+// is reachable but the schema was never created.
+const REQUIRED_TABLES = ["admins", "settings", "beats", "licenses", "orders"] as const;
 
 // Tools whose output people paste into the DATABASE_URL box by mistake.
 const COMMAND_PREFIXES = [
@@ -43,10 +47,6 @@ function hintForInvalidUrl(): string {
   return "DATABASE_URL is not a valid postgres URL — it must look like postgresql://user:password@host:5432/database, with no spaces, quotes or line breaks.";
 }
 
-// Core tables the app cannot render without. If these are missing the database
-// is reachable but the schema was never created.
-const REQUIRED_TABLES = ["admins", "settings", "beats", "licenses", "orders"] as const;
-
 function describeTarget(databaseUrl: string) {
   try {
     const url = new URL(databaseUrl);
@@ -58,23 +58,28 @@ function describeTarget(databaseUrl: string) {
 }
 
 export async function GET() {
-  const report = inspectDatabaseUrl(process.env.DATABASE_URL);
+  const resolved = resolveDatabaseUrl();
+  const report = resolved.report;
   // Reported whenever the raw value needed cleaning, even if the connection works.
   const issues = report.issues.length > 0 ? { issues: report.issues } : {};
+  const source = resolved.source;
 
-  if (!report.value) {
+  if (!resolved.value) {
     return Response.json(
       {
         ok: false,
         connected: false,
-        reason: "DATABASE_URL is not set",
-        hint: "Add DATABASE_URL to your environment (Vercel → Settings → Environment Variables) and redeploy.",
+        source: null,
+        reason: report.value ? "DATABASE_URL is not usable" : "DATABASE_URL is not set",
+        hint: "Add DATABASE_URL (postgresql://user:password@host:5432/database) in Vercel → Settings → Environment Variables, or connect a Postgres integration that provides POSTGRES_URL / POSTGRES_URL_NON_POOLING, then redeploy.",
+        ...issues,
+        ...(report.valid ? {} : { shape: describeDatabaseUrlShape(process.env.DATABASE_URL) }),
       },
       { status: 500 },
     );
   }
 
-  const target = describeTarget(report.value);
+  const target = describeTarget(resolved.value);
 
   try {
     await db.execute(sql`select 1`);
@@ -90,6 +95,7 @@ export async function GET() {
       {
         ok: false,
         connected: false,
+        source,
         ...target,
         ...issues,
         ...(report.valid ? {} : { shape: describeDatabaseUrlShape(process.env.DATABASE_URL) }),
@@ -120,6 +126,7 @@ export async function GET() {
         {
           ok: false,
           connected: true,
+          source,
           ...target,
           ...issues,
           reason: `Connected, but missing tables: ${missing.join(", ")}`,
@@ -129,13 +136,14 @@ export async function GET() {
       );
     }
 
-    return Response.json({ ok: true, connected: true, ...target, ...issues, tables: present.size });
+    return Response.json({ ok: true, connected: true, source, ...target, ...issues, tables: present.size });
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     return Response.json(
       {
         ok: false,
         connected: true,
+        source,
         ...target,
         ...issues,
         reason: `Connected, but the schema check failed: ${reason}`,

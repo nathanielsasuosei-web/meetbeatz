@@ -8,8 +8,9 @@ const globalForDb = globalThis as typeof globalThis & {
 };
 
 function ensurePool(): Pool {
-  // Trimmed and unquoted, so a value pasted with quotes or a trailing newline still works.
-  const databaseUrl = resolveDatabaseUrl();
+  // Trimmed, unquoted, and falling back to POSTGRES_URL when DATABASE_URL is
+  // missing or unusable (Vercel's Postgres integrations set those instead).
+  const databaseUrl = resolveDatabaseUrl().value;
   if (!databaseUrl) {
     // During build phase in Vercel, DATABASE_URL might not be available yet.
     // Return early to prevent build failure - actual error will occur at runtime if db is needed.
