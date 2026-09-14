@@ -1,10 +1,42 @@
 import fs from "fs";
 import fsp from "fs/promises";
+import os from "os";
 import path from "path";
 import { Readable } from "stream";
 import { randomFileName } from "./ids";
 
-export const UPLOAD_ROOT = path.join(process.cwd(), "uploads");
+/** Where uploaded files live. Override with UPLOAD_DIR (useful on a VPS or in tests). */
+export const UPLOAD_ROOT = process.env.UPLOAD_DIR?.trim()
+  ? path.resolve(process.env.UPLOAD_DIR.trim())
+  : path.join(process.cwd(), "uploads");
+
+export const UPLOAD_STORAGE_HELP =
+  "Read-only filesystem: uploaded files cannot be stored on this host. " +
+  "Set UPLOAD_DIR to a writable path (e.g. /tmp/uploads) or move uploads to object " +
+  "storage (Cloudinary, S3, R2). Demo beats keep working — their audio is generated on the fly.";
+
+function writable(dir: string): boolean {
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.accessSync(dir, fs.constants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+let cachedWritable: boolean | null = null;
+
+/** True when uploads can be written to disk (false on read-only serverless hosts). */
+export function uploadsWritable(): boolean {
+  if (cachedWritable === null) cachedWritable = writable(UPLOAD_ROOT);
+  return cachedWritable;
+}
+
+/** Folder used for temporary files on hosts with a read-only working directory. */
+export function tempUploadRoot(): string {
+  return path.join(os.tmpdir(), "meetbeatz-uploads");
+}
 
 export type UploadKind = "covers" | "previews" | "mp3" | "wav" | "stems";
 
@@ -39,8 +71,16 @@ export function contentTypeFor(filePath: string): string {
 }
 
 export async function ensureUploadDir(kind: UploadKind): Promise<string> {
-  const dir = path.join(UPLOAD_ROOT, kind);
-  await fsp.mkdir(dir, { recursive: true });
+  const root = uploadsWritable() ? UPLOAD_ROOT : tempUploadRoot();
+  const dir = path.join(root, kind);
+  try {
+    await fsp.mkdir(dir, { recursive: true });
+  } catch (err) {
+    throw new Error(`${UPLOAD_STORAGE_HELP} (${(err as Error).message})`);
+  }
+  if (!uploadsWritable()) {
+    throw new Error(UPLOAD_STORAGE_HELP);
+  }
   return dir;
 }
 
@@ -71,10 +111,13 @@ export async function writeUploadBuffer(kind: UploadKind, fileName: string, data
 /** Resolves a stored relative path to an absolute path, guarding against traversal. */
 export function resolveUpload(relative: string | null | undefined): string | null {
   if (!relative) return null;
-  const abs = path.resolve(UPLOAD_ROOT, relative);
-  if (!abs.startsWith(UPLOAD_ROOT + path.sep)) return null;
-  if (!fs.existsSync(abs)) return null;
-  return abs;
+  // Look in uploads first, then in the temp folder used on read-only hosts.
+  for (const root of [UPLOAD_ROOT, tempUploadRoot()]) {
+    const abs = path.resolve(root, relative);
+    if (!abs.startsWith(root + path.sep)) continue;
+    if (fs.existsSync(abs)) return abs;
+  }
+  return null;
 }
 
 export async function deleteUpload(relative: string | null | undefined) {

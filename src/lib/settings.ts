@@ -65,5 +65,7 @@ export function getPaymentMode(): PaymentMode {
 export function emailProvider(): "smtp" | "resend" | "none" {
   if (process.env.RESEND_API_KEY?.trim()) return "resend";
   if (process.env.SMTP_HOST?.trim()) return "smtp";
+  // Gmail app passwords are just SMTP with fixed host/port.
+  if (process.env.GMAIL_USER?.trim() && process.env.GMAIL_APP_PASSWORD?.trim()) return "smtp";
   return "none";
 }

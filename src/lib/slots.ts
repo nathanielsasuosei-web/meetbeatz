@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, studioHours } from "@/db/schema";
 import { minutesToTime, timeToMinutes } from "./format";
+import { ensureSeeded } from "./seed";
 
 const PENDING_HOLD_MINUTES = 30;
 const SLOT_STEP_MINUTES = 60;
@@ -53,6 +54,7 @@ export type SlotResult = {
 };
 
 export async function getAvailableSlots(date: string, hours: number): Promise<SlotResult> {
+  await ensureSeeded();
   if (!isValidDateString(date)) return { open: false, opensAt: "", closesAt: "", slots: [] };
   const dow = new Date(`${date}T00:00:00Z`).getUTCDay();
   const [day] = await db.select().from(studioHours).where(eq(studioHours.dayOfWeek, dow)).limit(1);
@@ -79,6 +81,7 @@ export async function getAvailableSlots(date: string, hours: number): Promise<Sl
 }
 
 export async function isSlotAvailable(date: string, startTime: string, hours: number): Promise<boolean> {
+  await ensureSeeded();
   const result = await getAvailableSlots(date, hours);
   return result.open && result.slots.includes(startTime);
 }

@@ -1,12 +1,20 @@
 {
-  "name": "nextjs-postgresql-template",
+  "name": "meetbeatz",
   "private": true,
+  "engines": {
+    "node": ">=20 <=22.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:setup": "node scripts/setup-db.mjs",
+    "db:push": "drizzle-kit push",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

@@ -2,15 +2,15 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Start database (Docker)",
+      "label": "Set up database (start + tables)",
       "type": "shell",
-      "command": "docker compose up -d",
+      "command": "npm run db:setup",
       "problemMatcher": []
     },
     {
       "label": "Apply database schema",
       "type": "shell",
-      "command": "npx drizzle-kit push",
+      "command": "npm run db:push",
       "problemMatcher": []
     },
     {
@@ -24,7 +24,7 @@
     {
       "label": "Setup everything (db → schema → dev)",
       "dependsOrder": "sequence",
-      "dependsOn": ["Start database (Docker)", "Apply database schema", "Run dev server"],
+      "dependsOn": ["Set up database (start + tables)", "Run dev server"],
       "problemMatcher": []
     }
   ]

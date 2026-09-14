@@ -2,6 +2,7 @@ import path from "path";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, licenses } from "@/db/schema";
+import { demoAudioTempPath } from "@/lib/demo-beats";
 import { fileResponse, resolveUpload } from "@/lib/files";
 import { deliverableList, slugify } from "@/lib/format";
 
@@ -23,7 +24,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
   if (!beat) return new Response("The beat for this license is no longer available. Contact the producer.", { status: 410 });
 
   const rel = file === "mp3" ? beat.mp3Path : file === "wav" ? beat.wavPath : beat.stemsPath;
-  const abs = resolveUpload(rel);
+  // Demo beats ship without stored files — generate their audio on demand so a
+  // purchase still delivers (stems are never included with the demo licenses).
+  const abs = resolveUpload(rel) ?? (file === "stems" ? null : demoAudioTempPath(beat.slug));
   if (!abs) return new Response("This file has not been uploaded yet. Please contact the producer.", { status: 404 });
 
   await db
