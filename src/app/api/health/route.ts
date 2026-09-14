@@ -1,8 +1,60 @@
+import { Client } from "pg";
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
-import { describeDatabaseUrlShape, resolveDatabaseUrl } from "@/lib/database-url";
+import {
+  describeDatabaseUrlShape,
+  listDatabaseUrlCandidates,
+  resolveDatabaseUrl,
+} from "@/lib/database-url";
 
 export const dynamic = "force-dynamic";
+
+/** drizzle reports "Failed query: select 1"; the real reason sits in the cause chain. */
+function underlyingError(error: unknown, depth = 0): string {
+  if (!error || depth > 4 || typeof error !== "object") return String(error ?? "unknown error");
+  const { message, cause } = error as { message?: string; cause?: unknown };
+  if (cause) {
+    const nested = underlyingError(cause, depth + 1);
+    if (nested) return nested;
+  }
+  return message ?? String(error);
+}
+
+function hostOf(value: string): string {
+  try {
+    return new URL(value).host;
+  } catch {
+    return "unparseable";
+  }
+}
+
+/** Try each remaining candidate so the response says which URLs actually work. */
+async function probeAlternatives(usedSource: string | null) {
+  const others = listDatabaseUrlCandidates().filter((candidate) => candidate.name !== usedSource);
+  const results = await Promise.all(
+    others.map(async (candidate) => {
+      const client = new Client({
+        connectionString: candidate.value,
+        connectionTimeoutMillis: 8000,
+      });
+      try {
+        await client.connect();
+        await client.query("select 1");
+        return { name: candidate.name, host: hostOf(candidate.value), ok: true as const };
+      } catch (error) {
+        return {
+          name: candidate.name,
+          host: hostOf(candidate.value),
+          ok: false as const,
+          error: underlyingError(error),
+        };
+      } finally {
+        await client.end().catch(() => {});
+      }
+    }),
+  );
+  return results;
+}
 
 // Core tables the app cannot render without. If these are missing the database
 // is reachable but the schema was never created.
@@ -84,13 +136,18 @@ export async function GET() {
   try {
     await db.execute(sql`select 1`);
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
+    const reason = underlyingError(error);
+    const alternatives = await probeAlternatives(source);
     const isLoopback = /^(127\.0\.0\.1|localhost|\[?::1\]?)(:|$)/.test(target.host ?? "");
-    const hint = !report.valid
-      ? hintForInvalidUrl()
-      : isLoopback
-        ? "DATABASE_URL points at 127.0.0.1/localhost. Serverless hosts cannot reach a database running on their own machine — use a hosted PostgreSQL URL (Neon, Supabase, Railway, …)."
-        : "Check that the database is running, reachable from this host, and that the credentials are correct. Hosted Postgres usually needs ?sslmode=require on the URL.";
+    const working = alternatives.find((candidate) => candidate.ok);
+
+    const hint = working
+      ? `${source} (${target.host}) cannot connect: ${reason}. ${working.name} (${working.host}) connects fine — set DATABASE_URL to that value and redeploy.`
+      : !report.valid && source === "DATABASE_URL"
+        ? hintForInvalidUrl()
+        : isLoopback
+          ? "DATABASE_URL points at 127.0.0.1/localhost. Serverless hosts cannot reach a database running on their own machine — use a hosted PostgreSQL URL (Neon, Supabase, Railway, …)."
+          : `Connected target ${target.host} rejected the query: ${reason}. Check the host, port, database name, password, and that the database is reachable from this host — Supabase's transaction pooler (port 6543) often needs the session-mode URL on port 5432 instead.`;
     return Response.json(
       {
         ok: false,
@@ -100,6 +157,7 @@ export async function GET() {
         ...issues,
         ...(report.valid ? {} : { shape: describeDatabaseUrlShape(process.env.DATABASE_URL) }),
         reason,
+        ...(alternatives.length > 0 ? { alternatives } : {}),
         hint,
       },
       { status: 500 },
