@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
+import { inspectDatabaseUrl } from "@/lib/database-url";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +19,11 @@ function describeTarget(databaseUrl: string) {
 }
 
 export async function GET() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const report = inspectDatabaseUrl(process.env.DATABASE_URL);
+  // Reported whenever the raw value needed cleaning, even if the connection works.
+  const issues = report.issues.length > 0 ? { issues: report.issues } : {};
 
-  if (!databaseUrl) {
+  if (!report.value) {
     return Response.json(
       {
         ok: false,
@@ -32,23 +35,20 @@ export async function GET() {
     );
   }
 
-  const target = describeTarget(databaseUrl);
+  const target = describeTarget(report.value);
 
   try {
     await db.execute(sql`select 1`);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     const isLoopback = /^(127\.0\.0\.1|localhost|\[?::1\]?)(:|$)/.test(target.host ?? "");
+    const hint = !report.valid
+      ? "DATABASE_URL is not a valid postgres URL — fix the value (no surrounding quotes, no line breaks, must start with postgresql://) and redeploy."
+      : isLoopback
+        ? "DATABASE_URL points at 127.0.0.1/localhost. Serverless hosts cannot reach a database running on their own machine — use a hosted PostgreSQL URL (Neon, Supabase, Railway, …)."
+        : "Check that the database is running, reachable from this host, and that the credentials are correct. Hosted Postgres usually needs ?sslmode=require on the URL.";
     return Response.json(
-      {
-        ok: false,
-        connected: false,
-        ...target,
-        reason,
-        hint: isLoopback
-          ? "DATABASE_URL points at 127.0.0.1/localhost. Serverless hosts cannot reach a database running on their own machine — use a hosted PostgreSQL URL (Neon, Supabase, Railway, …)."
-          : "Check that the database is running, reachable from this host, and that the credentials are correct. Hosted Postgres usually needs ?sslmode=require on the URL.",
-      },
+      { ok: false, connected: false, ...target, ...issues, reason, hint },
       { status: 500 },
     );
   }
@@ -74,6 +74,7 @@ export async function GET() {
           ok: false,
           connected: true,
           ...target,
+          ...issues,
           reason: `Connected, but missing tables: ${missing.join(", ")}`,
           hint: "The connection works, so the schema was never created. Run `npx drizzle-kit push` with this same DATABASE_URL (from your machine or CI), then reload.",
         },
@@ -81,7 +82,7 @@ export async function GET() {
       );
     }
 
-    return Response.json({ ok: true, connected: true, ...target, tables: present.size });
+    return Response.json({ ok: true, connected: true, ...target, ...issues, tables: present.size });
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     return Response.json(
@@ -89,6 +90,7 @@ export async function GET() {
         ok: false,
         connected: true,
         ...target,
+        ...issues,
         reason: `Connected, but the schema check failed: ${reason}`,
         hint: "Run `npx drizzle-kit push` with this same DATABASE_URL, then reload.",
       },

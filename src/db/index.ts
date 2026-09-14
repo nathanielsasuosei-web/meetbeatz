@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { resolveDatabaseUrl } from "@/lib/database-url";
 
 const globalForDb = globalThis as typeof globalThis & {
   __arenaNextJsPostgresqlPool?: Pool;
@@ -7,7 +8,8 @@ const globalForDb = globalThis as typeof globalThis & {
 };
 
 function ensurePool(): Pool {
-  const databaseUrl = process.env.DATABASE_URL;
+  // Trimmed and unquoted, so a value pasted with quotes or a trailing newline still works.
+  const databaseUrl = resolveDatabaseUrl();
   if (!databaseUrl) {
     // During build phase in Vercel, DATABASE_URL might not be available yet.
     // Return early to prevent build failure - actual error will occur at runtime if db is needed.
