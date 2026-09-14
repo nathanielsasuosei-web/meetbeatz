@@ -28,14 +28,41 @@ This is done with Paystack split payments: each transaction is initialised with 
 ```bash
 npm install                 # install dependencies
 cp .env.example .env        # Windows PowerShell: copy .env.example .env
-docker compose up -d        # start PostgreSQL (skip if you use your own Postgres — edit DATABASE_URL in .env)
-npx drizzle-kit push        # create the database tables
+npm run db:setup            # start PostgreSQL + create the tables (one command, safe to re-run)
 npm run dev                 # start the site
 ```
 
 Then open <http://localhost:3000>. The demo beats, license types, services and the admin account are created automatically on first load.
 
+`npm run db:setup` reads `DATABASE_URL` from `.env`, checks that PostgreSQL answers there, starts the Docker database if nothing is listening, runs `drizzle-kit push` and prints the tables it found. If the database is misconfigured it tells you exactly what is wrong (wrong password, missing database, server not running).
+
 > Tip: `Terminal → Run Task… → Setup everything` runs the database, schema and dev-server steps for you, and `F5` starts the debugger.
+
+### Database scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run db:setup` | Start the database (if needed) + create/update all tables |
+| `npm run db:push` | Only create/update tables from `src/db/schema.ts` |
+| `npm run db:up` | Start the Docker database only |
+| `npm run db:down` | Stop the Docker database (data is kept) |
+
+All database settings come from `DATABASE_URL` in `.env`: `drizzle.config.ts` and `docker-compose.yml` both follow it, so there is only one value to change when you switch databases.
+
+### Troubleshooting the database
+
+| Error | Cause & fix |
+| --- | --- |
+| `Cannot find module 'dotenv/config'` | Run `npm install` first. |
+| `DATABASE_URL is not set` | You have no `.env`. Run `cp .env.example .env` (PowerShell: `copy .env.example .env`). |
+| `connect ECONNREFUSED 127.0.0.1:5432` | No database server on that port. Run `npm run db:up`, or start your local PostgreSQL service (Windows: `Start-Service postgresql-x64-18`). |
+| `password authentication failed for user "postgres"` | The password in `DATABASE_URL` differs from the server's. Update `DATABASE_URL`, or run `ALTER USER postgres WITH PASSWORD 'natthesisa';` in pgAdmin/psql. |
+| `database "app_db" does not exist` | Create it: `createdb -U postgres app_db`. |
+| `relation "beats" does not exist` | The tables were never created. Run `npm run db:setup`. |
+| `port is already allocated` from Docker | Something (often a local PostgreSQL install) already uses port 5432. Stop that service, or run `POSTGRES_PORT=5433 npm run db:up` and set `DATABASE_URL=…@127.0.0.1:5433/app_db`. |
+| Data resets after every restart | `docker compose down -v` deletes the volume — use `npm run db:down` (without `-v`) to keep your data. |
+
+`npm run db:setup` checks all of the above for you and prints the specific fix.
 
 ### 5. Push to GitHub (optional)
 
@@ -46,7 +73,7 @@ git remote add origin https://github.com/<you>/meetbeatz.git
 git push -u origin main
 ```
 
-`.env`, `node_modules`, `.next` and `uploads/` are already ignored by `.gitignore`.
+`.env`, `node_modules`, `.next`, `uploads/` and the local database folder are already ignored by `.gitignore`. Never commit `.env` — it holds your database password, session secret and email credentials. `.env.example` (safe to commit) documents every variable.
 
 ## Admin login
 
@@ -57,10 +84,11 @@ git push -u origin main
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string (already set) |
+| `DATABASE_URL` | PostgreSQL connection string — the only place the database is configured (see `.env.example`) |
 | `PAYSTACK_SECRET_KEY` | Enables live Paystack payments. Without it the app runs in **test mode** with a simulated MoMo prompt. |
 | `NEXT_PUBLIC_APP_URL` | Public URL used in emails and the Paystack callback (auto-detected if unset) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | Email delivery via SMTP |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | Email delivery through Gmail (create an app password at <https://myaccount.google.com/apppasswords>) — this is what the app uses by default |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | Any other email provider over SMTP (Zoho, Brevo, Mailgun…) |
 | `RESEND_API_KEY` | Alternative email delivery via Resend |
 | `EMAIL_FROM` | Sender, e.g. `Meetbeatz <no-reply@meetbeatz.com>` |
 | `SESSION_SECRET` | Secret for admin session cookies |

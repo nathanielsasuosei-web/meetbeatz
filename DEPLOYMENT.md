@@ -20,15 +20,24 @@ Copy these to Vercel dashboard (Settings → Environment Variables):
 ```
 DATABASE_URL=postgresql://user:password@host:5432/app_db
 PAYSTACK_SECRET_KEY=sk_live_your_key_here
+PAYMENT_MODE=paystack
 SESSION_SECRET=generate-a-random-32-char-string
 ADMIN_EMAIL=meetbeatz@gmail.com
 ADMIN_PASSWORD=YourSecurePassword
 NEXT_PUBLIC_APP_URL=https://meetbeatz.com
 EMAIL_FROM=Meetbeatz <no-reply@meetbeatz.com>
-SMTP_HOST=smtp.gmail.com
+
+# Gmail sending (app password from myaccount.google.com/apppasswords)
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=your-16-char-app-password
+```
+
+**OR any other SMTP provider:**
+```
+SMTP_HOST=smtp.your-provider.com
 SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
+SMTP_USER=your-email@your-domain.com
+SMTP_PASS=your-password
 SMTP_SECURE=false
 ```
 
@@ -37,6 +46,13 @@ SMTP_SECURE=false
 RESEND_API_KEY=re_your_resend_api_key
 EMAIL_FROM=Meetbeatz <onboarding@resend.dev>
 ```
+
+The database tables are created with `npm run db:setup` (locally) — for a hosted database run
+`DATABASE_URL="postgresql://…" npx drizzle-kit push` once, or add the same command to your deploy step.
+
+> **Secrets:** `.env` is git-ignored. Never commit it — the repository is public. If a secret has
+> ever been committed, rotate it (new database password, new Gmail app password, new `SESSION_SECRET`)
+> instead of only deleting the file, because it stays in the git history.
 
 ## Deployment Steps
 
@@ -99,7 +115,15 @@ If using Vercel before object storage is integrated, deploy the public storefron
 
 ## First Time Setup on Production
 
-After deployment, the database auto-seeds on first page load:
+**1. Create the tables** in the hosted database (once), from your machine:
+
+```bash
+DATABASE_URL="postgresql://user:password@host:5432/app_db" npx drizzle-kit push
+```
+
+Without this step every page fails with `relation "beats" does not exist`.
+
+**2. Then deploy.** The database auto-seeds on the first page load:
 - Admin account created
 - 3 demo beats added
 - License types & studio services configured

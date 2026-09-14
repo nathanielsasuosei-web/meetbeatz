@@ -124,7 +124,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
               {[
                 ["PAYSTACK_SECRET_KEY", "sk_live_… from Paystack → Settings → API Keys"],
                 ["NEXT_PUBLIC_APP_URL", `${baseUrl} (used in emails & Paystack callback)`],
-                ["SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS", "any SMTP provider (Gmail app password, Zoho, Brevo…)"],
+                ["GMAIL_USER / GMAIL_APP_PASSWORD", "Gmail sending (app password from myaccount.google.com/apppasswords)"],
+                ["SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS", "any other SMTP provider (Zoho, Brevo, Mailgun…)"],
                 ["RESEND_API_KEY", "alternative to SMTP"],
                 ["EMAIL_FROM", `"Meetbeatz <no-reply@yourdomain.com>"`],
                 ["SESSION_SECRET", "long random string for admin sessions"],

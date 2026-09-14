@@ -6,7 +6,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:setup": "node scripts/setup-db.mjs",
+    "db:push": "drizzle-kit push",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

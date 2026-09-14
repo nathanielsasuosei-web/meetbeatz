@@ -1,19 +1,32 @@
 # Local PostgreSQL for development.
-#   docker compose up -d      → start database
-#   docker compose down       → stop (data is kept in the volume)
+#   npm run db:up     → start database  (docker compose up -d)
+#   npm run db:down   → stop database   (data is kept in the volume)
+#   npm run db:setup  → start (if needed) + create/update the tables
+#
+# The defaults below match the DATABASE_URL in .env
+# (postgresql://postgres:natthesisa@127.0.0.1:5432/app_db).
+# If you already run PostgreSQL on port 5432 (e.g. a Windows/macOS install),
+# keep using that server instead of Docker — or start Docker on another port:
+#   POSTGRES_PORT=5433 npm run db:up
+# and change the port in DATABASE_URL to 5433 as well.
 services:
   db:
     image: postgres:16-alpine
     container_name: meetbeatz-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: app_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-natthesisa}
+      POSTGRES_DB: ${POSTGRES_DB:-app_db}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - meetbeatz_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-app_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
 volumes:
   meetbeatz_pgdata:
