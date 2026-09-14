@@ -55,7 +55,20 @@ git push -u origin main
 ## Admin login
 
 - URL: `/admin/login`
-- Default credentials: `admin@meetbeatz.com` / `meetbeatz123` (change under Settings, or set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before first run).
+- Default credentials: `admin@meetbeatz.com` / `meetbeatz123` — change them as soon as you can (see below). Setting `ADMIN_EMAIL` / `ADMIN_PASSWORD` before the **first** run only decides what those initial credentials are; once an admin row exists, those variables are ignored.
+
+### Change the admin email or password
+
+**In the app** (recommended): log in → **Admin → Settings** → *Admin login email* or *Change password*. Both ask for the current password first, and the email change keeps you signed in.
+
+**From the terminal** (for a brand-new database, or if you are locked out):
+
+```bash
+npm run set-admin -- you@example.com 'new-password'   # set both
+npm run set-admin -- you@example.com                  # change the email only
+```
+
+It reads `DATABASE_URL` from your environment or `.env`, hashes the password with the same scrypt scheme the app uses, and updates (or creates) the single admin row. Run `npx drizzle-kit push` first if the tables do not exist yet. Never paste a password you care about into chat or a ticket — run the command yourself.
 
 ## Environment variables
 

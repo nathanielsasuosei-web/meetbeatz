@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "set-admin": "node scripts/set-admin.mjs"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

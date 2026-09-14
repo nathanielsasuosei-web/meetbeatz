@@ -3,11 +3,12 @@ import { SubaccountCreator } from "@/components/admin/subaccount-creator";
 import { isPaystackConfigured } from "@/lib/paystack";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
-import { changePasswordAction, saveSettingsAction, sendTestEmailAction } from "../actions";
+import { getAdminSession } from "@/lib/auth";
+import { changeAdminEmailAction, changePasswordAction, saveSettingsAction, sendTestEmailAction } from "../actions";
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   const { msg, err } = await searchParams;
-  const [settings, baseUrl] = await Promise.all([getSettings(), getBaseUrl()]);
+  const [settings, baseUrl, session] = await Promise.all([getSettings(), getBaseUrl(), getAdminSession()]);
   const paystack = isPaystackConfigured();
   const mode = getPaymentMode();
   const email = emailProvider();
@@ -149,6 +150,35 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 Send test
               </button>
             </div>
+          </form>
+
+          <form action={changeAdminEmailAction} className="card space-y-3 p-5">
+            <h2 className="font-bold">Admin login email</h2>
+            <p className="text-xs text-muted">
+              Signing in as <span className="text-cream">{session?.email ?? "unknown"}</span>
+            </p>
+            <div>
+              <label className="label">New login email</label>
+              <input
+                name="email"
+                type="email"
+                className="field"
+                required
+                autoComplete="username"
+                placeholder="you@example.com"
+              />
+            </div>
+            <div>
+              <label className="label">Current password</label>
+              <input name="currentPassword" type="password" className="field" required autoComplete="current-password" />
+            </div>
+            <p className="text-[11px] text-muted">
+              You stay signed in here. Other devices keep working until their session expires (7 days) and will
+              still show the old address.
+            </p>
+            <button type="submit" className="btn-ghost w-full">
+              Update login email
+            </button>
           </form>
 
           <form action={changePasswordAction} className="card space-y-3 p-5">

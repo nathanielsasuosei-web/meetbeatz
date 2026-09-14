@@ -5,7 +5,13 @@ import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, bookings, licenseTypes, orders, services, studioHours } from "@/db/schema";
-import { changeAdminPassword, destroyAdminSession, getAdminSession, verifyPassword } from "@/lib/auth";
+import {
+  changeAdminPassword,
+  createAdminSession,
+  destroyAdminSession,
+  getAdminSession,
+  verifyPassword,
+} from "@/lib/auth";
 import { admins } from "@/db/schema";
 import { deleteUpload } from "@/lib/files";
 import { slugify } from "@/lib/format";
@@ -201,6 +207,33 @@ export async function saveSettingsAction(formData: FormData) {
   });
   revalidatePath("/", "layout");
   done("/admin/settings", "Settings saved.");
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function changeAdminEmailAction(formData: FormData) {
+  const session = await guard();
+  const email = str(formData, "email").toLowerCase();
+  const current = str(formData, "currentPassword");
+
+  if (!EMAIL_PATTERN.test(email)) fail("/admin/settings", "Enter a valid email address.");
+
+  const [admin] = await db.select().from(admins).where(eq(admins.id, session.id)).limit(1);
+  if (!admin) fail("/admin/settings", "Admin account not found.");
+  if (!verifyPassword(current, admin!.passwordHash)) {
+    fail("/admin/settings", "Current password is incorrect.");
+  }
+
+  const clash = await db.select({ id: admins.id }).from(admins).where(eq(admins.email, email)).limit(1);
+  if (clash.length > 0 && clash[0]!.id !== admin!.id) {
+    fail("/admin/settings", "That email is already in use.");
+  }
+
+  await db.update(admins).set({ email }).where(eq(admins.id, admin!.id));
+  // Refresh this device's session cookie so the header shows the new address.
+  await createAdminSession({ id: admin!.id, email, name: admin!.name });
+  revalidatePath("/admin/settings");
+  done("/admin/settings", `Login email changed to ${email}.`);
 }
 
 export async function changePasswordAction(formData: FormData) {
