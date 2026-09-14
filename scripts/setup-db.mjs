@@ -63,25 +63,50 @@ function describeTarget(url) {
   }
 }
 
+export function isLocalHost(host) {
+  return /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[?::1\]?|host\.docker\.internal)$/i.test(host);
+}
+
 function explain(error, target) {
   const code = error?.code ?? "";
+  const remote = !isLocalHost(target.host);
   console.error(`\n${BAD} Could not connect to PostgreSQL at ${target.host}:${target.port}`);
-  if (code === "ECONNREFUSED" || code === "ETIMEDOUT" || code === "ENOTFOUND") {
-    console.error("   Nothing is listening on that port — the database server is not running.");
-    console.error("   Fix it with one of these:");
-    console.error("     npm run db:up                       # start the bundled Docker database");
-    console.error("     (Windows) Start-Service postgresql-x64-18   # start a local install");
-    console.error("     (macOS)   brew services start postgresql@16");
+  if (code === "ECONNREFUSED" || code === "ETIMEDOUT" || code === "ENOTFOUND" || code === "EHOSTUNREACH") {
+    if (remote) {
+      console.error("   A hosted database is not answering. Check, in this order:");
+      console.error("     1. the host/port in DATABASE_URL (copy it again from your provider's dashboard)");
+      console.error("     2. it ends with ?sslmode=require — hosted Postgres refuses plain connections");
+      console.error("     3. the database is not paused (Neon and Supabase pause inactive projects)");
+      console.error("     4. your provider's IP allow-list, if it has one, permits your address");
+      console.error("     5. the project still exists and the password was not rotated");
+    } else {
+      console.error("   Nothing is listening on that port — the database server is not running.");
+      console.error("   Fix it with one of these:");
+      console.error("     npm run db:up                       # start the bundled Docker database");
+      console.error("     (Windows) Start-Service postgresql-x64-18   # start a local install");
+      console.error("     (macOS)   brew services start postgresql@16");
+    }
   } else if (code === "28P01") {
     console.error(`   Password authentication failed for user "${target.user}".`);
     console.error("   The password in DATABASE_URL does not match the server.");
-    console.error("   Reset it in psql:");
-    console.error(`     ALTER USER ${target.user} WITH PASSWORD '<the password in .env>';`);
+    if (remote) {
+      console.error("   Copy the connection string again from your provider (the password may have");
+      console.error("   been rotated) and remember to URL-encode special characters: @ → %40, # → %23.");
+    } else {
+      console.error("   Reset it in psql:");
+      console.error(`     ALTER USER ${target.user} WITH PASSWORD '<the password in .env>';`);
+    }
   } else if (code === "3D000") {
     console.error(`   The database "${target.database}" does not exist. Create it with:`);
     console.error(`     createdb -h ${target.host} -p ${target.port} -U ${target.user} ${target.database}`);
   } else if (code === "28000") {
     console.error("   The server rejected your user name / authentication method.");
+  } else if (/certificate|self.signed|sslmode|SSL/i.test(String(error?.message ?? ""))) {
+    console.error("   TLS failed while connecting to a hosted database.");
+    console.error("   Most providers work with ?sslmode=require. If you see \"self-signed");
+    console.error("   certificate in certificate chain\", use libpq-compatible SSL instead:");
+    console.error("     ...?uselibpqcompat=true&sslmode=require   (or append &sslmode=verify-full)");
+    console.error("   Corporate VPNs and antivirus proxies can also intercept TLS — try another network.");
   } else {
     console.error(`   ${error?.message ?? error}`);
   }
@@ -155,7 +180,8 @@ async function main() {
     console.log(`${OK} PostgreSQL is reachable`);
   } catch (error) {
     console.log(`… PostgreSQL is not reachable (${error.code ?? "error"})`);
-    if (await dockerIsAvailable()) {
+    // Docker can only help with a database on this machine — never for a hosted one.
+    if (isLocalHost(target.host) && (await dockerIsAvailable())) {
       console.log("  Starting it with Docker…");
       run("docker", ["compose", "up", "-d"], "docker compose up");
       if (!(await waitForDatabase(url, 90))) {

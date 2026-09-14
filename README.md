@@ -60,6 +60,7 @@ All database settings come from `DATABASE_URL` in `.env`: `drizzle.config.ts` an
 | `database "app_db" does not exist` | Create it: `createdb -U postgres app_db`. |
 | `relation "beats" does not exist` | The tables were never created. Run `npm run db:setup`. |
 | `port is already allocated` from Docker | Something (often a local PostgreSQL install) already uses port 5432. Stop that service, or run `POSTGRES_PORT=5433 npm run db:up` and set `DATABASE_URL=…@127.0.0.1:5433/app_db`. |
+| `self-signed certificate in certificate chain` | Your network is intercepting TLS. Use `?uselibpqcompat=true&sslmode=require` in `DATABASE_URL`, or connect from another network. |
 | Data resets after every restart | `docker compose down -v` deletes the volume — use `npm run db:down` (without `-v`) to keep your data. |
 
 `npm run db:setup` checks all of the above for you and prints the specific fix.
@@ -77,19 +78,21 @@ git push -u origin main
 
 ## Deploy to Vercel
 
-**1. Create a hosted PostgreSQL** (Neon, Supabase, Railway or Vercel Postgres) — pick a European region (Frankfurt/London/Paris), the closest to Accra and the region pinned in `vercel.json`. Copy its connection string into `.env`:
+**1. Create a hosted PostgreSQL.** Free options that need no card: [Neon](https://neon.tech) (recommended), [Supabase](https://supabase.com) or [Railway](https://railway.app). Create the project, pick a European region (Frankfurt/London/Paris — the closest to Accra, and the region pinned in `vercel.json`), then copy the connection string. It must end with `?sslmode=require`.
+
+> **Important:** a database on your own computer cannot be used here. `127.0.0.1` / `localhost` in `DATABASE_URL` means "this machine" — on Vercel that is *their* server, where your database does not exist. The deployed app needs the internet-reachable address your provider gives you (e.g. `ep-cool-name-123456.eu-central-1.aws.neon.tech`).
+
+**2. Run one command** from this folder, passing the hosted URL (your `.env` can keep using your local database for development):
 
 ```bash
-DATABASE_URL=postgresql://user:password@host:5432/app_db?sslmode=require
+# macOS / Linux
+DATABASE_URL="postgresql://user:password@host:5432/app_db?sslmode=require" npm run deploy
+
+# Windows PowerShell
+$env:DATABASE_URL="postgresql://user:password@host:5432/app_db?sslmode=require"; npm run deploy
 ```
 
-**2. Run one command** from this folder:
-
-```bash
-npm run deploy
-```
-
-It checks your `.env` (and refuses to deploy if `DATABASE_URL` still points at your own machine), creates the tables in the hosted database, writes `.env.production`, logs you into Vercel, uploads every variable to Production + Preview and deploys. If the Vercel CLI cannot run, it prints the browser steps instead and leaves `.env.production` ready to bulk-paste into Vercel's Environment Variables page.
+It refuses to continue if `DATABASE_URL` still points at your own machine, creates the tables in the hosted database, writes `.env.production`, logs you into Vercel, uploads every variable to Production + Preview and deploys. If the Vercel CLI cannot run, it prints the browser steps instead and leaves `.env.production` ready to bulk-paste into Vercel's Environment Variables page.
 
 **3. Open the deployed site once** so the database seeds (demo beats, license types, studio services, your admin account), then log in at `/admin/login` with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 

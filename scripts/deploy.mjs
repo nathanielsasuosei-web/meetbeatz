@@ -122,6 +122,10 @@ if (missing.length) {
 
 // 3. Warn about the things that make a fresh deploy look broken.
 const notes = [];
+if (!/sslmode=/i.test(databaseUrl)) {
+  notes.push("DATABASE_URL has no sslmode parameter — most hosted databases need");
+  notes.push("  ?sslmode=require at the end, otherwise the connection is refused.");
+}
 if ((env.SESSION_SECRET ?? "").length < 32) {
   notes.push("SESSION_SECRET is shorter than 32 characters — generate a longer one.");
 }
@@ -144,7 +148,15 @@ if (notes.length) {
 console.log(`\n[1/4] Creating tables in the hosted database…`);
 console.log(`      ${databaseUrl.replace(/:[^:@/]+@/, ":****@")}`);
 if (run("npx", ["drizzle-kit", "push"]) !== 0) {
-  fail("drizzle-kit push failed — check DATABASE_URL and that the database exists.");
+  fail(
+    "Could not create the tables in the hosted database.",
+    `   Check, in this order:
+     1. DATABASE_URL is the complete string from your provider (?sslmode=require at the end)
+     2. the database is awake (Neon and Supabase pause inactive projects)
+     3. special characters in the password are URL-encoded: @ → %40, # → %23, / → %2F
+     4. your provider allows connections from this network
+   Run "npm run db:setup" for a detailed diagnosis.`,
+  );
 }
 console.log(`${OK} Schema is up to date`);
 
