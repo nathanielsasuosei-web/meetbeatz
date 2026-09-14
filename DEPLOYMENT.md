@@ -97,6 +97,22 @@ git push -u origin main
 
 If using Vercel before object storage is integrated, deploy the public storefront for review only and do not rely on production admin uploads or stored downloads.
 
+## If the deployed preview shows "Something went wrong"
+
+Every page reads PostgreSQL on first load, so a deployed app with no reachable database fails
+site-wide rather than showing one broken widget. Open **`https://<your-deployment>/api/health`** —
+it reports which of the two causes you have:
+
+| `reason` | Fix |
+| --- | --- |
+| `DATABASE_URL is not set` / `points at localhost` | Add a **hosted** PostgreSQL (Neon, Railway, Supabase) and set `DATABASE_URL` in Vercel → Project → Settings → Environment Variables. A `127.0.0.1`/`localhost` URL can never work there. |
+| `tables have not been created` | Push the schema to that exact URL from your machine: `DATABASE_URL="<the vercel value>" npm run db:push` |
+
+Then redeploy. `SESSION_SECRET` must also be set in Vercel, or admin login will fail.
+
+> A `DATABASE_URL` copied from a local `.env` is the usual cause. The local `.env` is no longer
+> tracked in git, so the deployment cannot inherit a `localhost` connection string by accident.
+
 ## First Time Setup on Production
 
 After deployment, the database auto-seeds on first page load:
