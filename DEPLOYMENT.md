@@ -11,7 +11,9 @@
 - [ ] Email provider configured (Gmail, Brevo, Resend)
 - [ ] Domain registered (meetbeatz.com)
 
-> **Important:** Vercel's local filesystem is ephemeral. Before enabling admin uploads in production, move `uploads/` to durable object storage such as Cloudinary, S3, or UploadThing and store the resulting URLs in the database. The current local-disk upload implementation is suitable for local development and a persistent VPS, but not for reliable Vercel production use.
+> **Important:** Vercel's filesystem is read-only and ephemeral, and requests are capped at 4.5 MB — so admin uploads (cover art, MP3/WAV/stems) cannot be stored on Vercel. The admin now gets a clear message explaining this instead of a failed upload, and the storefront, previews, checkout, downloads and bookings all keep working (demo-beat audio is generated on demand). For production uploads, either host on a VPS/Railway with a persistent volume (`UPLOAD_DIR=/data/uploads`) or move uploads to object storage (Cloudinary, S3, R2, UploadThing) and store the resulting URLs in the database.
+>
+> Uploads written to `/tmp` on Vercel survive only until the function instance is recycled — use it for the demo experience, not as storage.
 
 ## Environment Variables Needed
 
@@ -80,6 +82,8 @@ git push -u origin main
 6. Root Directory: (leave empty)
 7. Build Command: `npm run build`
 8. Click "Deploy"
+
+> `vercel.json` pins the functions to **Paris (`cdg1`)** — the closest region to Accra. Keep the database in the same area (EU) so every query does not cross the Atlantic. You can override the region in the Vercel dashboard if your database lives elsewhere; the important thing is that functions and database are near each other.
 
 ### 3. Add Environment Variables in Vercel
 

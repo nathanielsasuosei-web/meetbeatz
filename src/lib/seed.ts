@@ -1,8 +1,8 @@
 import { db } from "@/db";
 import { admins, beatLicenses, beats, licenseTypes, services, studioHours } from "@/db/schema";
 import { hashPassword } from "./auth";
-import { synthBeat } from "./audio-synth";
-import { resolveUpload, writeUploadBuffer } from "./files";
+import { demoAudioBuffer, demoAudioFileName, DEMO_BEATS } from "./demo-beats";
+import { resolveUpload, uploadsWritable, writeUploadBuffer } from "./files";
 
 export const DEFAULT_ADMIN_EMAIL = "admin@meetbeatz.com";
 export const DEFAULT_ADMIN_PASSWORD = "meetbeatz123";
@@ -91,48 +91,6 @@ const SERVICES = [
   },
 ];
 
-const DEMO_BEATS = [
-  {
-    title: "Midnight in Osu",
-    slug: "midnight-in-osu",
-    genre: "Afrobeats",
-    mood: "Smooth",
-    bpm: 102,
-    musicalKey: "F# minor",
-    tags: "afrobeats, wizkid type beat, burna boy, smooth",
-    description: "Late-night Afrobeats groove with rolling log drums, warm keys and a bassline that sits deep in the pocket.",
-    synth: { bpm: 102, rootHz: 92.5, minor: true, seed: 11, style: "afro" as const },
-    cover: "/images/covers/demo-1.jpg",
-    featured: true,
-  },
-  {
-    title: "Kumasi Drill",
-    slug: "kumasi-drill",
-    genre: "Asakaa / Drill",
-    mood: "Dark",
-    bpm: 142,
-    musicalKey: "C minor",
-    tags: "asakaa, drill, kumerica, dark, sliding 808",
-    description: "Hard-hitting Asakaa drill with sliding 808s, eerie bells and skipping hi-hats built for the streets of Kumasi.",
-    synth: { bpm: 142, rootHz: 65.4, minor: true, seed: 23, style: "drill" as const },
-    cover: "/images/covers/demo-2.jpg",
-    featured: true,
-  },
-  {
-    title: "Sunday Highlife",
-    slug: "sunday-highlife",
-    genre: "Highlife",
-    mood: "Uplifting",
-    bpm: 118,
-    musicalKey: "G major",
-    tags: "highlife, guitar, uplifting, kuami eugene type beat",
-    description: "Feel-good highlife with palm-wine guitars, bright horns and a bounce made for weddings and Sunday afternoons.",
-    synth: { bpm: 118, rootHz: 98, minor: false, seed: 37, style: "highlife" as const },
-    cover: "/images/covers/demo-3.jpg",
-    featured: true,
-  },
-];
-
 let seededPromise: Promise<void> | null = null;
 
 export function ensureSeeded(): Promise<void> {
@@ -183,12 +141,17 @@ async function runSeed() {
   const [existingBeat] = await db.select({ id: beats.id }).from(beats).limit(1);
   if (!existingBeat) {
     const types = await db.select().from(licenseTypes);
-    for (let i = 0; i < DEMO_BEATS.length; i++) {
-      const demo = DEMO_BEATS[i];
-      const fileName = `demo-${i + 1}.wav`;
+    for (const demo of DEMO_BEATS) {
+      const fileName = demoAudioFileName(demo.slug);
       const rel = `previews/${fileName}`;
-      if (!resolveUpload(rel)) {
-        await writeUploadBuffer("previews", fileName, synthBeat(demo.synth));
+      if (!resolveUpload(rel) && uploadsWritable()) {
+        // Demo audio is generated, not uploaded. On read-only hosts (Vercel) the
+        // file is skipped and the media routes synthesize it on demand instead.
+        try {
+          await writeUploadBuffer("previews", fileName, demoAudioBuffer(demo.slug)!);
+        } catch (err) {
+          console.warn(`[seed] could not write ${rel}:`, (err as Error).message);
+        }
       }
       const [beat] = await db
         .insert(beats)

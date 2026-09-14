@@ -1,6 +1,9 @@
 {
-  "name": "nextjs-postgresql-template",
+  "name": "meetbeatz",
   "private": true,
+  "engines": {
+    "node": ">=20 <=22.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

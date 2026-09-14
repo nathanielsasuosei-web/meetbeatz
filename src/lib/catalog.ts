@@ -2,6 +2,7 @@ import { and, asc, desc, eq, ilike, min, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { beatLicenses, beats, licenseTypes, services, type Beat } from "@/db/schema";
 import { coverUrl, num } from "./format";
+import { ensureSeeded } from "./seed";
 
 export type BeatCardData = {
   id: number;
@@ -42,6 +43,7 @@ export function toCard(beat: Beat, priceFrom: string | number | null): BeatCardD
 }
 
 export async function listBeats(opts: { q?: string; genre?: string; featured?: boolean; limit?: number } = {}) {
+  await ensureSeeded();
   const priceSub = db
     .select({
       beatId: beatLicenses.beatId,
@@ -74,6 +76,7 @@ export async function listBeats(opts: { q?: string; genre?: string; featured?: b
 }
 
 export async function listGenres(): Promise<string[]> {
+  await ensureSeeded();
   const rows = await db
     .selectDistinct({ genre: beats.genre })
     .from(beats)
@@ -96,6 +99,7 @@ export type BeatLicenseOption = {
 };
 
 export async function getBeatBySlug(slug: string): Promise<{ beat: Beat; licenses: BeatLicenseOption[] } | null> {
+  await ensureSeeded();
   const [beat] = await db.select().from(beats).where(eq(beats.slug, slug)).limit(1);
   if (!beat) return null;
   const rows = await db
@@ -122,10 +126,12 @@ export async function getBeatBySlug(slug: string): Promise<{ beat: Beat; license
 }
 
 export async function listActiveServices() {
+  await ensureSeeded();
   return db.select().from(services).where(eq(services.isActive, true)).orderBy(asc(services.sortOrder), asc(services.id));
 }
 
 export async function listLicenseTypes(activeOnly = true) {
+  await ensureSeeded();
   const query = db.select().from(licenseTypes).orderBy(asc(licenseTypes.sortOrder), asc(licenseTypes.id));
   if (activeOnly) return query.where(eq(licenseTypes.isActive, true));
   return query;

@@ -5,6 +5,7 @@ import { beats, licenses } from "@/db/schema";
 import { BeatGrid } from "@/components/beat-card";
 import { listActiveServices, listBeats, listLicenseTypes } from "@/lib/catalog";
 import { DELIVERABLE_LABELS, deliverableList, money, num } from "@/lib/format";
+import { ensureSeeded } from "@/lib/seed";
 import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,9 @@ export const dynamic = "force-dynamic";
 const MARQUEE = ["MTN Mobile Money", "Telecel Cash", "AirtelTigo Money", "Visa & Mastercard", "Instant email delivery", "Licensed & legal", "Recording · Mixing · Mastering"];
 
 export default async function HomePage() {
+  // Seeded data (demo beats, license types, services) must exist before the
+  // counts and lists below run — the layout seeds in parallel with this page.
+  await ensureSeeded();
   const [settings, featured, latest, services, licenseTypes, [beatCount], [licenseCount]] = await Promise.all([
     getSettings(),
     listBeats({ featured: true, limit: 8 }),
