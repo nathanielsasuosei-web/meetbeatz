@@ -1,8 +1,47 @@
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
-import { inspectDatabaseUrl } from "@/lib/database-url";
+import { describeDatabaseUrlShape, inspectDatabaseUrl } from "@/lib/database-url";
 
 export const dynamic = "force-dynamic";
+
+// Tools whose output people paste into the DATABASE_URL box by mistake.
+const COMMAND_PREFIXES = [
+  "psql",
+  "pg_dump",
+  "pg_restore",
+  "pgbench",
+  "heroku",
+  "pgpassword",
+  "docker",
+  "npx",
+  "npm",
+  "node",
+  "supabase",
+  "railway",
+];
+
+/**
+ * Explain an unusable DATABASE_URL without ever echoing the password: the
+ * shape tells us whether it is a shell command, a JDBC URL or a bare host.
+ */
+function hintForInvalidUrl(): string {
+  const shape = describeDatabaseUrlShape(process.env.DATABASE_URL);
+  const scheme = shape.scheme?.toLowerCase() ?? "";
+
+  if (COMMAND_PREFIXES.some((command) => scheme === command || scheme.startsWith(`${command}=`))) {
+    return `DATABASE_URL starts with "${shape.scheme}" — that is a shell command, not a URL. Copy only the postgresql://… part (it usually sits inside quotes), and paste that alone.`;
+  }
+  if (scheme === "jdbc") {
+    return "This is a JDBC URL (jdbc:postgresql://…). Postgres needs the plain form: postgresql://user:password@host:5432/database.";
+  }
+  if (!shape.hasAuthority) {
+    return "DATABASE_URL has no \"postgresql://\" prefix. It must be a full connection string: postgresql://user:password@host:5432/database.";
+  }
+  if (shape.nonAsciiCount > 0) {
+    return "DATABASE_URL contains non-ASCII characters (smart quotes or dashes from a copy-paste). Retype it, or copy it from the provider's plain-text connection string.";
+  }
+  return "DATABASE_URL is not a valid postgres URL — it must look like postgresql://user:password@host:5432/database, with no spaces, quotes or line breaks.";
+}
 
 // Core tables the app cannot render without. If these are missing the database
 // is reachable but the schema was never created.
@@ -43,12 +82,20 @@ export async function GET() {
     const reason = error instanceof Error ? error.message : String(error);
     const isLoopback = /^(127\.0\.0\.1|localhost|\[?::1\]?)(:|$)/.test(target.host ?? "");
     const hint = !report.valid
-      ? "DATABASE_URL is not a valid postgres URL — fix the value (no surrounding quotes, no line breaks, must start with postgresql://) and redeploy."
+      ? hintForInvalidUrl()
       : isLoopback
         ? "DATABASE_URL points at 127.0.0.1/localhost. Serverless hosts cannot reach a database running on their own machine — use a hosted PostgreSQL URL (Neon, Supabase, Railway, …)."
         : "Check that the database is running, reachable from this host, and that the credentials are correct. Hosted Postgres usually needs ?sslmode=require on the URL.";
     return Response.json(
-      { ok: false, connected: false, ...target, ...issues, reason, hint },
+      {
+        ok: false,
+        connected: false,
+        ...target,
+        ...issues,
+        ...(report.valid ? {} : { shape: describeDatabaseUrlShape(process.env.DATABASE_URL) }),
+        reason,
+        hint,
+      },
       { status: 500 },
     );
   }
