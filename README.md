@@ -77,15 +77,27 @@ git push -u origin main
 
 ## Deploy to Vercel
 
-**1. Create the production database** (any managed PostgreSQL — Neon, Supabase, Railway, Vercel Postgres). Pick a region in Europe (Frankfurt/London/Paris) — that is the closest to Accra and matches the region pinned in `vercel.json`.
-
-**2. Create the tables** — run this once from your computer, pointing at the hosted database:
+**1. Create a hosted PostgreSQL** (Neon, Supabase, Railway or Vercel Postgres) — pick a European region (Frankfurt/London/Paris), the closest to Accra and the region pinned in `vercel.json`. Copy its connection string into `.env`:
 
 ```bash
-DATABASE_URL="postgresql://user:password@host:5432/app_db?sslmode=require" npx drizzle-kit push
+DATABASE_URL=postgresql://user:password@host:5432/app_db?sslmode=require
 ```
 
-**3. Import the repo into Vercel** (<https://vercel.com/new>) — the framework is detected automatically. Then add these environment variables (Settings → Environment Variables, Production **and** Preview):
+**2. Run one command** from this folder:
+
+```bash
+npm run deploy
+```
+
+It checks your `.env` (and refuses to deploy if `DATABASE_URL` still points at your own machine), creates the tables in the hosted database, writes `.env.production`, logs you into Vercel, uploads every variable to Production + Preview and deploys. If the Vercel CLI cannot run, it prints the browser steps instead and leaves `.env.production` ready to bulk-paste into Vercel's Environment Variables page.
+
+**3. Open the deployed site once** so the database seeds (demo beats, license types, studio services, your admin account), then log in at `/admin/login` with `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+
+**4. Paystack**: set the webhook URL to `https://your-domain/api/paystack/webhook` (event `charge.success`), and create the payout subaccount in Admin → Settings.
+
+> Only the tables step needs a "real" deployment — run `npm run deploy -- --db-only` any time you just want to push schema changes to the hosted database.
+
+### Environment variables at a glance
 
 | Variable | Value |
 | --- | --- |
@@ -97,10 +109,6 @@ DATABASE_URL="postgresql://user:password@host:5432/app_db?sslmode=require" npx d
 | `PAYMENT_MODE` | `paystack` for live money, `simulation` for testing |
 | `GMAIL_USER` / `GMAIL_APP_PASSWORD` | email delivery (app password, spaces are fine) |
 | `EMAIL_FROM` | `Meetbeatz <no-reply@meetbeatz.com>` |
-
-**4. Deploy**, then open the site once so the database seeds (demo beats, license types, studio services, your admin account), and log in at `/admin/login`.
-
-**5. Paystack**: set the webhook URL to `https://your-domain/api/paystack/webhook` (event `charge.success`), and create the payout subaccount in Admin → Settings.
 
 ### What works on Vercel and what doesn't
 

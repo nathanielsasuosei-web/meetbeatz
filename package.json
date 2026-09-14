@@ -13,7 +13,8 @@
     "db:setup": "node scripts/setup-db.mjs",
     "db:push": "drizzle-kit push",
     "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",
