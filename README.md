@@ -33,7 +33,11 @@ npx drizzle-kit push        # create the database tables
 npm run dev                 # start the site
 ```
 
-Then open <http://localhost:3000>. The demo beats, license types, services and the admin account are created automatically on first load.
+Then open <http://localhost:3000>.
+
+> **npm 11.16+ / npm 12:** dependency install scripts no longer run unless a project allows them. This repo keeps its decision in `package.json` under `allowScripts` — `esbuild` and `unrs-resolver` are **denied** on purpose, because both ship prebuilt native binaries as optional dependencies and work fine without their postinstall (verified with `npm run build`, `npm run typecheck`, `npx drizzle-kit generate`, `npx tsx`). Review the list any time with `npm install-scripts ls`.
+
+The demo beats, license types, services and the admin account are created automatically on first load.
 
 > Tip: `Terminal → Run Task… → Setup everything` runs the database, schema and dev-server steps for you, and `F5` starts the debugger.
 
