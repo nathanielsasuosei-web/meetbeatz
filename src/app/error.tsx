@@ -14,10 +14,12 @@ export default function GlobalError({
       <p className="eyebrow">Something went wrong</p>
       <h1 className="display text-4xl sm:text-5xl">This page could not load.</h1>
       <p className="text-muted">
-        The server hit an unexpected error. On a fresh deployment the usual cause is an unreachable
-        database: make sure <code className="text-cream">DATABASE_URL</code> points at a hosted
-        PostgreSQL instance (a <code className="text-cream">localhost</code> or{" "}
-        <code className="text-cream">127.0.0.1</code> address will not work on Vercel).
+        The server hit an unexpected error. On a fresh deployment the usual causes are a database that
+        cannot be reached — <code className="text-cream">DATABASE_URL</code> must point at a hosted
+        PostgreSQL instance, since <code className="text-cream">localhost</code> or{" "}
+        <code className="text-cream">127.0.0.1</code> will not work on Vercel — or tables that were
+        never created because <code className="text-cream">npx drizzle-kit push</code> has not been
+        run yet.
       </p>
       <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
         <button type="button" onClick={reset} className="btn-primary">
