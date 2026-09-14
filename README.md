@@ -27,15 +27,29 @@ This is done with Paystack split payments: each transaction is initialised with 
 
 ```bash
 npm install                 # install dependencies
-cp .env.example .env        # Windows PowerShell: copy .env.example .env
-docker compose up -d        # start PostgreSQL (skip if you use your own Postgres — edit DATABASE_URL in .env)
-npx drizzle-kit push        # create the database tables
+cp .env.example .env        # Windows PowerShell: Copy-Item .env.example .env
+docker compose up -d        # start PostgreSQL (skip if you use your own Postgres)
+npm run db:create           # create the app_db database (already done by the container)
+npm run db:push             # create the database tables
+npm run doctor              # check that the app can reach the database
 npm run dev                 # start the site
 ```
+
+`DATABASE_URL` in `.env` must match the server you picked — the two options are spelled out
+in `.env.example` (a local install is usually `127.0.0.1:5432`, the container is published on
+`127.0.0.1:5433`). `npm run doctor` prints which one the app is actually using and what is wrong.
 
 Then open <http://localhost:3000>. The demo beats, license types, services and the admin account are created automatically on first load.
 
 > Tip: `Terminal → Run Task… → Setup everything` runs the database, schema and dev-server steps for you, and `F5` starts the debugger.
+
+### The preview is blank or shows "This page could not be found"
+
+Every page except a plain 404 reads from PostgreSQL on first load, so a database that is not
+reachable surfaces as a server error on the whole site rather than a clear message. Run
+`npm run doctor` — it reports the exact connection string, whether the port is open, whether the
+database and tables exist, and how to fix each one. The usual causes are a database that was never
+started, or a `DATABASE_URL` port that does not match the server you started.
 
 ### 5. Push to GitHub (optional)
 
@@ -51,13 +65,19 @@ git push -u origin main
 ## Admin login
 
 - URL: `/admin/login`
-- Default credentials: `admin@meetbeatz.com` / `meetbeatz123` (change under Settings, or set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before first run).
+- The credentials are whatever `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` said when the app first
+  started — those env values win, so with the `.env.example` placeholders you sign in as
+  `admin@example.com` / `replace-with-a-strong-password`. `admin@meetbeatz.com` / `meetbeatz123`
+  are only used when neither variable is set. Change the password under Settings.
+- The admin row is created once, on the first page load that reaches an empty database. To change
+  it afterwards, update the password in Settings or delete the row from the `admins` table and
+  restart with new env values.
 
 ## Environment variables
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string (already set) |
+| `DATABASE_URL` | PostgreSQL connection string (copy it from `.env.example` and pick your port) |
 | `PAYSTACK_SECRET_KEY` | Enables live Paystack payments. Without it the app runs in **test mode** with a simulated MoMo prompt. |
 | `NEXT_PUBLIC_APP_URL` | Public URL used in emails and the Paystack callback (auto-detected if unset) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | Email delivery via SMTP |

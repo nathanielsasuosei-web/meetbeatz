@@ -8,9 +8,21 @@
       "problemMatcher": []
     },
     {
+      "label": "Create database",
+      "type": "shell",
+      "command": "npm run db:create",
+      "problemMatcher": []
+    },
+    {
       "label": "Apply database schema",
       "type": "shell",
-      "command": "npx drizzle-kit push",
+      "command": "npm run db:push",
+      "problemMatcher": []
+    },
+    {
+      "label": "Check database connection",
+      "type": "shell",
+      "command": "npm run doctor",
       "problemMatcher": []
     },
     {
@@ -22,9 +34,9 @@
       "group": { "kind": "build", "isDefault": true }
     },
     {
-      "label": "Setup everything (db → schema → dev)",
+      "label": "Setup everything (db → schema → check → dev)",
       "dependsOrder": "sequence",
-      "dependsOn": ["Start database (Docker)", "Apply database schema", "Run dev server"],
+      "dependsOn": ["Start database (Docker)", "Create database", "Apply database schema", "Check database connection", "Run dev server"],
       "problemMatcher": []
     }
   ]
