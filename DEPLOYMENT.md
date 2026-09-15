@@ -90,6 +90,16 @@ git push -u origin main
 > if you would rather a failed sync stop the build. Either way the variable must exist for the
 > environment Vercel builds with — a Production-only variable leaves preview deployments without
 > a database, and `POSTGRES_URL` (what Vercel's own integrations provide) is read too.
+>
+> The same command runs two guards against the failure mode where the deployment is
+> "green" but the admin form cannot reach the server. `scripts/check-tracked-sources.mjs`
+> warns when a source file is ignored by git (such a file exists locally, in tests and in
+> the working tree, yet is absent from the deployment — this is what once hid the upload
+> API behind the `.gitignore` rule for the runtime `uploads/` folder), and
+> `scripts/check-upload-routes.mjs` runs after `next build` and **fails the build** if the
+> uploaded-beat routes (`/api/admin/uploads`, `/api/admin/uploads/[id]`, `/api/admin/beats`,
+> `/api/admin/beats/[id]`) are missing from the build output. A failed build is much easier
+> to notice than "Could not start the upload (404)" in the admin form.
 
 ### 3. Add Environment Variables in Vercel
 
