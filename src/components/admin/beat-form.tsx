@@ -211,6 +211,14 @@ export function BeatForm({ licenseTypes, beat, currency }: { licenseTypes: Licen
       const info = readJson(await start.text());
       const sessionId = Number(info.id);
       const chunkSize = Number(info.chunkSize) || partSize;
+      if (start.status === 404) {
+        // The endpoint ships with the form, so a 404 means this deployment was
+        // built from an older commit — the form is calling an API that is not
+        // there. Say so, rather than leaving "404" to be interpreted.
+        throw new Error(
+          "This deployment does not include the upload API (/api/admin/uploads). Deploy the latest version of the app and try again.",
+        );
+      }
       if (!start.ok || !sessionId) {
         throw new Error(info.error ?? `Could not start the upload (${start.status}).`);
       }

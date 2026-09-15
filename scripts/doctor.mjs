@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import { Client } from "pg";
@@ -26,6 +27,28 @@ else fail(`Node ${process.versions.node}`, "Node 18+ is required (22 recommended
 
 if (fs.existsSync("node_modules/next/package.json")) ok("next is installed");
 else fail("dependencies are not installed", "Run `npm install`.");
+
+// A deploy is built from what git tracks, so a source file that .gitignore
+// happens to match is silently missing in production — that is how `/api/admin/uploads`
+// once shipped without its own API routes, and the only symptom was a 404 in the
+// browser. Over-broad rules (`uploads/` instead of `/uploads/`) are the usual cause.
+try {
+  const ignored = execFileSync("git", ["status", "--ignored", "--porcelain"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+    .split("\n")
+    .filter((line) => line.startsWith("!!"))
+    .map((line) => line.slice(3).trim())
+    .filter((p) => p.startsWith("src/") || p.startsWith("scripts/") || p.startsWith("public/"));
+  if (ignored.length) {
+    fail(
+      `${ignored.length} source file(s) are ignored by .gitignore`,
+      `They will be missing from a deployed build: ${ignored.slice(0, 5).join(", ")}${ignored.length > 5 ? " …" : ""}`,
+    );
+  } else {
+    ok("every source file is tracked by git");
+  }
+} catch {
+  // Not a git checkout (a downloaded ZIP, for example) — nothing to check.
+}
 
 console.log("\nEnvironment");
 if (fs.existsSync(".env")) ok(".env found");
