@@ -105,6 +105,23 @@ if (!raw) {
             const { rows } = await client.query("select count(*)::int as n from beats");
             ok(`beats table has ${rows[0].n} row(s)${rows[0].n === 0 ? " — demo data is seeded on first page load" : ""}`);
           }
+          // Beat files (covers, previews, masters, stems) are stored in these
+          // tables, so a database without them accepts logins but rejects every
+          // upload with "relation stored_files does not exist".
+          const hasFiles = tables.rows.some((r) => r.table_name === "stored_files");
+          const hasChunks = tables.rows.some((r) => r.table_name === "stored_file_chunks");
+          if (hasFiles && hasChunks) {
+            const { rows } = await client.query(
+              "select count(*)::int as files, coalesce(sum(size), 0)::bigint as bytes from stored_files where is_complete",
+            );
+            const mb = (Number(rows[0].bytes) / (1024 * 1024)).toFixed(1);
+            ok(`upload storage ready (${rows[0].files} file(s), ${mb} MB)`);
+          } else {
+            fail(
+              "the upload storage tables are missing (stored_files / stored_file_chunks)",
+              "Run `npm run db:push` — uploads will fail until these exist.",
+            );
+          }
         }
       } catch (err) {
         fail(`query failed: ${err.message}`, "Check the user/password/database name in DATABASE_URL.");

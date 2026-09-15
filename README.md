@@ -94,6 +94,36 @@ Paystack webhook URL: `https://<your-domain>/api/paystack/webhook` (event `charg
 - **Checkout**: customer name, email, network + MoMo number → Paystack (or simulated prompt in test mode) → verification → licenses issued → email with download links + printable license certificate.
 - **Downloads**: token-protected links tied to the license (MP3 / WAV / stems as included).
 - **Studio bookings**: services, opening hours, live slot availability with conflict prevention, deposit payment, email confirmation, balance due at studio.
-- **Admin dashboard**: revenue split overview, beat upload with progress (cover, tagged preview, MP3, WAV, stems), license/price management, orders (resend email), bookings (confirm / complete / cancel), services & hours, license types, settings, payout subaccount creator, test email, password change.
+- **Admin dashboard**: revenue split overview, beat upload with real progress (cover, tagged preview, MP3, WAV, stems), license/price management, orders (resend email), bookings (confirm / complete / cancel), services & hours, license types, settings, payout subaccount creator, test email, password change.
 
-Uploaded files are stored in `./uploads` (outside `public/`) and streamed through protected API routes.
+## Where uploaded files live
+
+Beat files (cover art, previews, masters, stems) are stored **in PostgreSQL**, in
+`stored_files` + `stored_file_chunks`, and streamed back through protected API routes
+(`/api/media/...`, `/api/beats/[id]/preview`, `/api/download/[token]`) with HTTP `Range`
+support so buyers can pause/resume downloads and the player can seek.
+
+This is deliberate: on a serverless host (Vercel) the deployment bundle is read-only, so the
+old `mkdir('./uploads')` step failed with
+`ENOENT: no such file or directory, mkdir '/var/task/uploads'` and every upload — plus the
+demo previews written during seeding — failed. The database is the one durable store the app
+already has, so no extra service or API keys are needed.
+
+How it works:
+
+- The browser asks `POST /api/admin/uploads` for a session, then sends the file in **4 MB
+  parts** (`PUT /api/admin/uploads/[id]?index=n`) and finishes with `POST /api/admin/uploads/[id]`.
+  Chunking is what makes large masters possible: serverless hosts reject request bodies over
+  **4.5 MB**, so a single multipart WAV upload could never work there whatever the storage.
+- A part is validated as it arrives (size, position) and re-sending a part overwrites it, so a
+  dropped request is recoverable. Nothing is readable until the last part is in.
+- Max **512 MB per file**. Storage grows with uploads — a few hundred MB of WAVs/stem zips is
+  normal; abandoned uploads are cleaned up automatically (half-finished after 24 h, finished
+  but never attached to a beat after 7 days).
+- Files uploaded by the older disk-backed version are copied into the database the first time
+  the app seeds (`./uploads` still existing is the trigger), so beats that pointed at
+  `mp3/…` keep playing.
+
+`npm run doctor` reports the upload tables and how much they hold. If a deployment ever reports
+that `stored_files` does not exist, its build ran without a database connection — run
+`npm run db:push` (or redeploy) and uploads work again.

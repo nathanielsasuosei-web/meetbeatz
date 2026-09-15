@@ -11,7 +11,20 @@
 - [ ] Email provider configured (Gmail, Brevo, Resend)
 - [ ] Domain registered (meetbeatz.com)
 
-> **Important:** Vercel's local filesystem is ephemeral. Before enabling admin uploads in production, move `uploads/` to durable object storage such as Cloudinary, S3, or UploadThing and store the resulting URLs in the database. The current local-disk upload implementation is suitable for local development and a persistent VPS, but not for reliable Vercel production use.
+> **Uploads work on Vercel as-is — no object storage needed.** Beat files (cover, preview,
+> MP3, WAV, stems) are stored in PostgreSQL (`stored_files` / `stored_file_chunks`) and the
+> browser sends them in **4 MB parts**, which solves the two things that used to break uploads
+> there: the read-only deployment filesystem (`ENOENT: … mkdir '/var/task/uploads'`) and
+> Vercel's 4.5 MB request-body limit. Nothing extra to sign up for or configure.
+>
+> Two consequences to keep in mind: a single file is capped at **512 MB**, and uploads count
+> towards your database size (a beat with a WAV master is typically 30–60 MB, stems more). If
+> the catalog ever grows into hundreds of gigabytes, *that* is when moving the bytes to
+> Cloudinary/S3 becomes worth it — the storage layer is isolated in `src/lib/files.ts`.
+>
+> Abandoned uploads clean themselves up: half-finished sessions after 24 hours, finished files
+> that no beat references after 7 days. `npm run doctor` prints how many files are stored and
+> their total size.
 
 ## Environment Variables Needed
 
@@ -97,12 +110,14 @@ git push -u origin main
 
 - [ ] Visit https://your-domain.com
 - [ ] Login at https://your-domain.com/admin
-- [ ] Upload a test beat
+- [ ] Upload a test beat (watch the progress bar finish, then play the preview on `/beats`)
 - [ ] Test a payment (test mode)
 - [ ] Verify email sends
 - [ ] Check `/admin/settings` for warnings
 
-If using Vercel before object storage is integrated, deploy the public storefront for review only and do not rely on production admin uploads or stored downloads.
+If an upload ever reports that `stored_files` does not exist, that deployment's build ran without a
+database connection, so the schema sync was skipped — run `npm run db:push` against the same
+connection string (or redeploy) and uploads work again.
 
 ## If the deployed preview shows "Something went wrong"
 

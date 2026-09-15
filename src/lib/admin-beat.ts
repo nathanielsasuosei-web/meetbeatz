@@ -1,10 +1,9 @@
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { beatLicenses, beats, licenseTypes } from "@/db/schema";
-import { deleteUpload, isValidUpload, saveUpload, type UploadKind } from "./files";
+import { deleteUpload, getReadyFile, type UploadKind } from "./files";
 import { slugify } from "./format";
-
-export class UploadError extends Error {}
+import { UploadError } from "./upload-error";
 
 function str(fd: FormData, key: string): string {
   const v = fd.get(key);
@@ -43,27 +42,39 @@ export function parseBeatFields(fd: FormData) {
   };
 }
 
-const FILE_KINDS: { field: string; kind: UploadKind; column: "coverPath" | "previewPath" | "mp3Path" | "wavPath" | "stemsPath" }[] = [
-  { field: "cover", kind: "covers", column: "coverPath" },
-  { field: "preview", kind: "previews", column: "previewPath" },
-  { field: "mp3", kind: "mp3", column: "mp3Path" },
-  { field: "wav", kind: "wav", column: "wavPath" },
-  { field: "stems", kind: "stems", column: "stemsPath" },
+export type BeatFileColumn = "coverPath" | "previewPath" | "mp3Path" | "wavPath" | "stemsPath";
+
+/**
+ * The file slots of the beat form. The browser uploads each file separately
+ * (in parts, straight into the database) and posts the resulting storage path
+ * in `<slot>Path`; nothing arrives here as a multipart file any more.
+ */
+export const BEAT_FILE_FIELDS: { field: string; kind: UploadKind; column: BeatFileColumn }[] = [
+  { field: "coverPath", kind: "covers", column: "coverPath" },
+  { field: "previewPath", kind: "previews", column: "previewPath" },
+  { field: "mp3Path", kind: "mp3", column: "mp3Path" },
+  { field: "wavPath", kind: "wav", column: "wavPath" },
+  { field: "stemsPath", kind: "stems", column: "stemsPath" },
 ];
 
-/** Saves any uploaded files and returns a partial column map. */
-export async function saveBeatFiles(fd: FormData): Promise<Partial<Record<(typeof FILE_KINDS)[number]["column"], string>>> {
-  const saved: Partial<Record<(typeof FILE_KINDS)[number]["column"], string>> = {};
-  try {
-    for (const f of FILE_KINDS) {
-      const file = fd.get(f.field);
-      if (isValidUpload(file as File | null)) {
-        saved[f.column] = await saveUpload(file as File, f.kind);
-      }
+/**
+ * Resolves the completed uploads the form references into beat columns.
+ * Every path must be a finished upload of the right kind, so a client cannot
+ * point a beat at someone else's half-written file.
+ */
+export async function collectBeatFiles(fd: FormData): Promise<Partial<Record<BeatFileColumn, string>>> {
+  const saved: Partial<Record<BeatFileColumn, string>> = {};
+  for (const f of BEAT_FILE_FIELDS) {
+    const rel = str(fd, f.field);
+    if (!rel) continue;
+    const file = await getReadyFile(rel);
+    if (!file) {
+      throw new UploadError(`The ${f.kind} file did not finish uploading. Please add it again.`);
     }
-  } catch (err) {
-    for (const p of Object.values(saved)) await deleteUpload(p);
-    throw new UploadError(err instanceof Error ? err.message : "File upload failed.");
+    if (file.kind !== f.kind) {
+      throw new UploadError(`The ${f.kind} file is not valid for this slot.`);
+    }
+    saved[f.column] = file.path;
   }
   return saved;
 }

@@ -2,9 +2,9 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats } from "@/db/schema";
-import { parseBeatFields, removeOldFiles, saveBeatFiles, syncBeatPrices, uniqueSlug, UploadError } from "@/lib/admin-beat";
+import { collectBeatFiles, parseBeatFields, removeOldFiles, syncBeatPrices, uniqueSlug } from "@/lib/admin-beat";
 import { getAdminSession } from "@/lib/auth";
-import { deleteUpload } from "@/lib/files";
+import { UploadError } from "@/lib/upload-error";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +16,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const [existing] = await db.select().from(beats).where(eq(beats.id, beatId)).limit(1);
   if (!existing) return Response.json({ error: "Beat not found" }, { status: 404 });
 
-  let saved: Awaited<ReturnType<typeof saveBeatFiles>> = {};
+  let saved: Awaited<ReturnType<typeof collectBeatFiles>> = {};
   try {
     const fd = await req.formData();
     const fields = parseBeatFields(fd);
-    saved = await saveBeatFiles(fd);
+    saved = await collectBeatFiles(fd);
     const slug = fields.title !== existing.title ? await uniqueSlug(fields.title, beatId) : existing.slug;
     await db
       .update(beats)
@@ -33,7 +33,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     revalidatePath(`/beats/${slug}`);
     return Response.json({ id: beatId, slug });
   } catch (err) {
-    for (const p of Object.values(saved)) await deleteUpload(p);
+    // Files stay stored (see the POST route): the admin can correct the form and
+    // submit again without re-uploading. `removeOldFiles` still deletes the
+    // previous version of any file that was actually replaced.
     if (err instanceof UploadError) return Response.json({ error: err.message }, { status: 400 });
     console.error("[admin/beats PATCH]", err);
     return Response.json({ error: err instanceof Error ? err.message : "Update failed" }, { status: 500 });
