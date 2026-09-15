@@ -2,10 +2,11 @@ import path from "path";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, licenses } from "@/db/schema";
-import { fileResponse, resolveUpload } from "@/lib/files";
+import { getReadyFile, storedFileResponse } from "@/lib/files";
 import { deliverableList, slugify } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -23,16 +24,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
   if (!beat) return new Response("The beat for this license is no longer available. Contact the producer.", { status: 410 });
 
   const rel = file === "mp3" ? beat.mp3Path : file === "wav" ? beat.wavPath : beat.stemsPath;
-  const abs = resolveUpload(rel);
-  if (!abs) return new Response("This file has not been uploaded yet. Please contact the producer.", { status: 404 });
+  const stored = await getReadyFile(rel);
+  if (!stored || !rel) return new Response("This file has not been uploaded yet. Please contact the producer.", { status: 404 });
 
   await db
     .update(licenses)
     .set({ downloadCount: sql`${licenses.downloadCount} + 1` })
     .where(eq(licenses.id, license.id));
 
-  const ext = path.extname(abs);
-  return fileResponse(abs, {
+  const ext = path.extname(stored.path);
+  return storedFileResponse(rel, {
     downloadName: `${slugify(beat.title)}-${file}-meetbeatz${ext}`,
     rangeHeader: req.headers.get("range"),
   });

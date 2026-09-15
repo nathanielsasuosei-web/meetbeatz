@@ -1,8 +1,9 @@
+import fs from "fs";
 import { db } from "@/db";
 import { admins, beatLicenses, beats, licenseTypes, services, studioHours } from "@/db/schema";
 import { hashPassword } from "./auth";
 import { synthBeat } from "./audio-synth";
-import { resolveUpload, writeUploadBuffer } from "./files";
+import { UPLOAD_ROOT, importFilesFromDisk, putStoredFile, storedFileExists } from "./files";
 
 export const DEFAULT_ADMIN_EMAIL = "admin@meetbeatz.com";
 export const DEFAULT_ADMIN_PASSWORD = "meetbeatz123";
@@ -187,8 +188,9 @@ async function runSeed() {
       const demo = DEMO_BEATS[i];
       const fileName = `demo-${i + 1}.wav`;
       const rel = `previews/${fileName}`;
-      if (!resolveUpload(rel)) {
-        await writeUploadBuffer("previews", fileName, synthBeat(demo.synth));
+      // Demo previews live in the database with every other uploaded file.
+      if (!(await storedFileExists(rel))) {
+        await putStoredFile("previews", fileName, synthBeat(demo.synth));
       }
       const [beat] = await db
         .insert(beats)
@@ -222,5 +224,44 @@ async function runSeed() {
         );
       }
     }
+  }
+
+  await importDiskUploads();
+}
+
+/**
+ * Beat files used to be written to `./uploads` on disk. Any deployment that
+ * ran that version (a VPS, or local development) still has beats pointing at
+ * those paths, which would now 404 — so anything the catalog references and the
+ * database does not have yet is copied across once.
+ *
+ * On a serverless host there is no `uploads` folder and this does nothing.
+ */
+let importedDiskUploads = false;
+async function importDiskUploads() {
+  if (importedDiskUploads || !fs.existsSync(UPLOAD_ROOT)) return;
+  importedDiskUploads = true;
+  try {
+    const rows = await db
+      .select({
+        coverPath: beats.coverPath,
+        previewPath: beats.previewPath,
+        mp3Path: beats.mp3Path,
+        wavPath: beats.wavPath,
+        stemsPath: beats.stemsPath,
+      })
+      .from(beats);
+    const referenced: string[] = [];
+    for (const row of rows) {
+      for (const rel of Object.values(row)) {
+        if (rel && !rel.startsWith("/") && !rel.startsWith("http")) referenced.push(rel);
+      }
+    }
+    const imported = await importFilesFromDisk(referenced);
+    if (imported) {
+      console.log(`[seed] copied ${imported} file(s) from ./uploads into the database`);
+    }
+  } catch (err) {
+    console.warn("[seed] could not import ./uploads:", err instanceof Error ? err.message : err);
   }
 }

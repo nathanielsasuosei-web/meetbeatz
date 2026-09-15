@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   integer,
   jsonb,
   numeric,
@@ -9,6 +10,11 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+
+/** Postgres `bytea`. node-postgres hands it back (and accepts it) as a Buffer. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => "bytea",
+});
 
 // ---------------------------------------------------------------------------
 // Admin (only Meetbeatz can log in and upload beats)
@@ -207,6 +213,47 @@ export const emailLogs = pgTable("email_logs", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ---------------------------------------------------------------------------
+// Uploaded files (beat covers, previews, masters, stems)
+//
+// These used to be written to ./uploads on the app's filesystem, which cannot
+// work on a serverless host: the deployment bundle is read-only, so
+// `mkdir('/var/task/uploads')` threw ENOENT and every upload failed. They live
+// in PostgreSQL instead, split into fixed-size chunks so a large WAV or stem
+// zip never has to travel in a single request (Vercel rejects bodies over
+// 4.5 MB) and so reads can stream and slice without loading the whole file.
+// ---------------------------------------------------------------------------
+export const storedFiles = pgTable("stored_files", {
+  id: serial("id").primaryKey(),
+  /** Relative path used everywhere else in the app, e.g. `mp3/lq3k-9f2.mp3`. */
+  path: text("path").notNull().unique(),
+  /** covers | previews | mp3 | wav | stems */
+  kind: text("kind").notNull(),
+  contentType: text("content_type").notNull(),
+  /** Byte length of the whole file, as declared by the client. */
+  size: integer("size").notNull(),
+  chunkSize: integer("chunk_size").notNull(),
+  /** Bytes stored so far; a file only becomes readable once it is complete. */
+  uploadedBytes: integer("uploaded_bytes").default(0).notNull(),
+  isComplete: boolean("is_complete").default(false).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const storedFileChunks = pgTable(
+  "stored_file_chunks",
+  {
+    id: serial("id").primaryKey(),
+    fileId: integer("file_id")
+      .notNull()
+      .references(() => storedFiles.id, { onDelete: "cascade" }),
+    /** 0-based part number; part N starts at N * chunk_size. */
+    idx: integer("idx").notNull(),
+    data: bytea("data").notNull(),
+  },
+  (t) => [uniqueIndex("stored_file_chunks_file_idx").on(t.fileId, t.idx)],
+);
+
 export type Beat = typeof beats.$inferSelect;
 export type LicenseType = typeof licenseTypes.$inferSelect;
 export type BeatLicense = typeof beatLicenses.$inferSelect;
@@ -217,3 +264,5 @@ export type OrderItem = typeof orderItems.$inferSelect;
 export type License = typeof licenses.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type EmailLog = typeof emailLogs.$inferSelect;
+export type StoredFile = typeof storedFiles.$inferSelect;
+export type StoredFileChunk = typeof storedFileChunks.$inferSelect;

@@ -3,6 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { money } from "@/lib/format";
+import {
+  ALLOWED_EXT,
+  CHUNK_SIZE,
+  MAX_UPLOAD_BYTES,
+  MIN_CHUNK_SIZE,
+  assertUploadAllowed,
+  formatBytes,
+  type UploadKind,
+} from "@/lib/upload-rules";
 
 export type LicenseTypeLite = {
   id: number;
@@ -31,19 +40,146 @@ export type BeatFormValues = {
   prices: Record<number, { enabled: boolean; price: number }>;
 };
 
-const FILE_FIELDS: { key: "cover" | "preview" | "mp3" | "wav" | "stems"; label: string; hint: string; accept: string }[] = [
-  { key: "cover", label: "Cover art", hint: "JPG/PNG/WebP, square (e.g. 1500×1500)", accept: "image/jpeg,image/png,image/webp" },
-  { key: "preview", label: "Tagged preview (optional)", hint: "MP3 with your producer tag — streamed publicly on the site. If empty, the MP3 below is used.", accept: ".mp3,.wav,.m4a,.ogg" },
-  { key: "mp3", label: "Untagged MP3 (delivered to buyers)", hint: "320kbps MP3. Required unless you upload a WAV.", accept: ".mp3,.m4a,.wav" },
-  { key: "wav", label: "WAV master (optional)", hint: "24-bit WAV for Premium/Unlimited/Exclusive buyers.", accept: ".wav,.aif,.aiff,.flac,.zip" },
-  { key: "stems", label: "Track stems ZIP (optional)", hint: "Zipped stems for Unlimited/Exclusive buyers.", accept: ".zip,.rar,.7z" },
+type FileSlot = { key: "cover" | "preview" | "mp3" | "wav" | "stems"; kind: UploadKind; label: string; hint: string };
+
+const LIMIT = formatBytes(MAX_UPLOAD_BYTES);
+
+const FILE_FIELDS: FileSlot[] = [
+  {
+    key: "cover",
+    kind: "covers",
+    label: "Cover art",
+    hint: `JPG/PNG/WebP, square (e.g. 1500×1500) · up to ${LIMIT}`,
+  },
+  {
+    key: "preview",
+    kind: "previews",
+    label: "Tagged preview (optional)",
+    hint: "MP3 with your producer tag — streamed publicly on the site. If empty, the MP3 below is used.",
+  },
+  {
+    key: "mp3",
+    kind: "mp3",
+    label: "Untagged MP3 (delivered to buyers)",
+    hint: "320kbps MP3. Required unless you upload a WAV.",
+  },
+  {
+    key: "wav",
+    kind: "wav",
+    label: "WAV master (optional)",
+    hint: `24-bit WAV for Premium/Unlimited/Exclusive buyers · up to ${LIMIT}`,
+  },
+  {
+    key: "stems",
+    kind: "stems",
+    label: "Track stems ZIP (optional)",
+    hint: `Zipped stems for Unlimited/Exclusive buyers · up to ${LIMIT}`,
+  },
 ];
+
+function readJson(text: string): { error?: string; [key: string]: unknown } {
+  try {
+    return JSON.parse(text) as { error?: string };
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Part size that a proxy in front of the app is willing to accept.
+ *
+ * The app cannot see that limit — the proxy answers 413 without ever reaching
+ * it — so the only way to find out is to try. It is remembered in
+ * `sessionStorage`, because a part size that failed once will fail identically
+ * on the next page load and there is no point rediscovering it per file.
+ */
+const CHUNK_STORAGE_KEY = "mb-upload-chunk-size";
+
+function readStoredChunkSize(): number {
+  try {
+    const stored = Number(window.sessionStorage.getItem(CHUNK_STORAGE_KEY));
+    if (Number.isFinite(stored) && stored >= MIN_CHUNK_SIZE && stored <= CHUNK_SIZE) return stored;
+  } catch {
+    // sessionStorage can be unavailable (private mode, blocked cookies)
+  }
+  return CHUNK_SIZE;
+}
+
+function rememberChunkSize(size: number) {
+  try {
+    window.sessionStorage.setItem(CHUNK_STORAGE_KEY, String(size));
+  } catch {
+    // not fatal — the upload still works, it just rediscovers the limit
+  }
+}
+
+/**
+ * Sends one part of a file.
+ *
+ * Files are stored in the database, so they cannot be posted as one multipart
+ * form: serverless hosts (Vercel included) reject a request body over 4.5 MB,
+ * which every WAV and stem zip exceeds. The server hands back a part size, and
+ * each part goes up as its own request — which is also what makes the progress
+ * bar below real rather than decorative.
+ */
+function putChunk(sessionId: number, index: number, blob: Blob, onProgress: (loaded: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", `/api/admin/uploads/${sessionId}?index=${index}`);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable) onProgress(ev.loaded);
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(readJson(xhr.responseText).error ?? `Upload failed (${xhr.status}).`));
+    };
+    xhr.onerror = () => reject(new Error("Network error while uploading. Check your connection and try again."));
+    xhr.send(blob);
+  });
+}
+
+/**
+ * True when a request was refused for its size — by the platform (Vercel's
+ * 4.5 MB body cap) or by a proxy in front of it. The app never sees these
+ * requests, so no error message of its own will match.
+ */
+function isTooLarge(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /\b413\b|too large|payload too large|content too large/i.test(message);
+}
+
+/** One send, retried twice: mobile connections drop a multi-megabyte request often enough. */
+async function putChunkWithRetry(
+  sessionId: number,
+  index: number,
+  blob: Blob,
+  onProgress: (loaded: number) => void,
+): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await putChunk(sessionId, index, blob, onProgress);
+      return;
+    } catch (err) {
+      lastError = err;
+      if (isTooLarge(err)) throw err; // retrying the same size cannot help
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Upload failed.");
+}
 
 export function BeatForm({ licenseTypes, beat, currency }: { licenseTypes: LicenseTypeLite[]; beat: BeatFormValues | null; currency: string }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [progressLabel, setProgressLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Files already stored by the server, keyed by slot+file, so a retry after a
+  // failed submit does not re-send a 200 MB master over a slow connection.
+  const storedFiles = useRef(new Map<string, string>());
+  const activeSession = useRef<number | null>(null);
   const [prices, setPrices] = useState<Record<number, { enabled: boolean; price: number }>>(() => {
     const init: Record<number, { enabled: boolean; price: number }> = {};
     for (const lt of licenseTypes) {
@@ -52,41 +188,159 @@ export function BeatForm({ licenseTypes, beat, currency }: { licenseTypes: Licen
     return init;
   });
 
-  function submit(e: React.FormEvent<HTMLFormElement>) {
+  function fileKey(slot: FileSlot, file: File): string {
+    return `${slot.key}:${file.name}:${file.size}:${file.lastModified}`;
+  }
+
+  /**
+   * Uploads one file, halving the part size whenever a part is refused for
+   * being too large — a reverse proxy in front of the app can cap request
+   * bodies far below the platform limit, and its 413 never reaches the server.
+   * A session stores its part size, so abandoning it and starting a smaller
+   * one is the whole recovery; the parts already sent are simply sent again.
+   */
+  async function uploadFile(file: File, kind: UploadKind, onProgress: (sentInFile: number) => void): Promise<string> {
+    let partSize = readStoredChunkSize();
+
+    for (;;) {
+      const start = await fetch("/api/admin/uploads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, kind, size: file.size, chunkSize: partSize }),
+      });
+      const info = readJson(await start.text());
+      const sessionId = Number(info.id);
+      const chunkSize = Number(info.chunkSize) || partSize;
+      if (start.status === 404) {
+        // The endpoint ships with the form, so a 404 means this deployment was
+        // built from an older commit — the form is calling an API that is not
+        // there. Say so, rather than leaving "404" to be interpreted.
+        throw new Error(
+          "This deployment does not include the upload API (/api/admin/uploads). Deploy the latest version of the app and try again.",
+        );
+      }
+      if (!start.ok || !sessionId) {
+        throw new Error(info.error ?? `Could not start the upload (${start.status}).`);
+      }
+      activeSession.current = sessionId;
+
+      try {
+        let sent = 0;
+        for (let index = 0; sent < file.size; index++) {
+          const blob = file.slice(sent, Math.min(sent + chunkSize, file.size));
+          const offset = sent;
+          await putChunkWithRetry(sessionId, index, blob, (loaded) => onProgress(offset + loaded));
+          sent += blob.size;
+          onProgress(sent);
+        }
+
+        const done = await fetch(`/api/admin/uploads/${sessionId}`, { method: "POST" });
+        const finished = readJson(await done.text());
+        const path = typeof finished.path === "string" ? finished.path : "";
+        if (!done.ok || !path) {
+          throw new Error(finished.error ?? "The file uploaded but could not be saved. Please try again.");
+        }
+        activeSession.current = null;
+        rememberChunkSize(chunkSize);
+        return path;
+      } catch (err) {
+        activeSession.current = null;
+        // Release the abandoned session's parts before retrying smaller.
+        void fetch(`/api/admin/uploads/${sessionId}`, { method: "DELETE" }).catch(() => {});
+        const smaller = Math.max(MIN_CHUNK_SIZE, Math.floor(chunkSize / 2));
+        if (!isTooLarge(err) || chunkSize <= MIN_CHUNK_SIZE) {
+          if (isTooLarge(err)) {
+            throw new Error(
+              `${file.name} is too large for the upload proxy to accept, even in ${formatBytes(MIN_CHUNK_SIZE)} pieces. ` +
+                "Try a smaller file, or upload it from a deployment with a higher request-body limit.",
+            );
+          }
+          throw err;
+        }
+        partSize = smaller;
+        onProgress(0);
+        setProgressLabel(`Uploading ${file.name} in smaller pieces (${formatBytes(smaller)})…`);
+      }
+    }
+  }
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     const form = e.currentTarget;
-    const fd = new FormData(form);
-    for (const lt of licenseTypes) {
-      fd.set(`enabled_${lt.id}`, prices[lt.id]?.enabled ? "1" : "0");
-      fd.set(`price_${lt.id}`, String(prices[lt.id]?.price ?? 0));
+
+    const chosen: { slot: FileSlot; file: File }[] = [];
+    for (const slot of FILE_FIELDS) {
+      const field = form.elements.namedItem(slot.key);
+      const file = field instanceof HTMLInputElement ? field.files?.[0] : undefined;
+      if (file) chosen.push({ slot, file });
     }
-    const xhr = new XMLHttpRequest();
-    xhr.open(beat ? "PATCH" : "POST", beat ? `/api/admin/beats/${beat.id}` : "/api/admin/beats");
-    xhr.upload.onprogress = (ev) => {
-      if (ev.lengthComputable) setProgress(Math.round((ev.loaded / ev.total) * 100));
-    };
-    xhr.onload = () => {
-      setProgress(null);
-      let json: { error?: string; id?: number } = {};
-      try {
-        json = JSON.parse(xhr.responseText);
-      } catch {
-        /* ignore */
+    try {
+      for (const { slot, file } of chosen) assertUploadAllowed(slot.kind, file.name, file.size);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That file cannot be uploaded.");
+      return;
+    }
+
+    const totalBytes = chosen.reduce((sum, { file }) => sum + file.size, 0);
+    const paths: Record<string, string> = {};
+    let uploadedBytes = 0;
+
+    try {
+      if (totalBytes > 0) setProgress(0);
+      for (const { slot, file } of chosen) {
+        const key = fileKey(slot, file);
+        const already = storedFiles.current.get(key);
+        if (already) {
+          paths[`${slot.key}Path`] = already;
+          uploadedBytes += file.size;
+          continue;
+        }
+        setProgressLabel(`Uploading ${file.name} (${formatBytes(file.size)})`);
+        const before = uploadedBytes;
+        const path = await uploadFile(file, slot.kind, (sentInFile) => {
+          const done = before + Math.min(sentInFile, file.size);
+          setProgress(Math.min(99, Math.round((done / totalBytes) * 100)));
+        });
+        storedFiles.current.set(key, path);
+        paths[`${slot.key}Path`] = path;
+        uploadedBytes += file.size;
+        setProgress(Math.round((uploadedBytes / totalBytes) * 100));
       }
-      if (xhr.status >= 200 && xhr.status < 300) {
-        router.push(`/admin/beats?msg=${encodeURIComponent(beat ? "Beat updated." : "Beat uploaded and live.")}`);
-        router.refresh();
-      } else {
-        setError(json.error ?? `Upload failed (${xhr.status}).`);
+
+      if (totalBytes > 0) setProgressLabel("Saving beat…");
+      const fd = new FormData(form);
+      // The raw <input type="file"> entries never go to the server; only the
+      // storage paths of the files that finished uploading do.
+      for (const slot of FILE_FIELDS) fd.delete(slot.key);
+      for (const [key, value] of Object.entries(paths)) fd.set(key, value);
+      for (const lt of licenseTypes) {
+        fd.set(`enabled_${lt.id}`, prices[lt.id]?.enabled ? "1" : "0");
+        fd.set(`price_${lt.id}`, String(prices[lt.id]?.price ?? 0));
       }
-    };
-    xhr.onerror = () => {
+
+      const res = await fetch(beat ? `/api/admin/beats/${beat.id}` : "/api/admin/beats", {
+        method: beat ? "PATCH" : "POST",
+        body: fd,
+      });
+      const json = readJson(await res.text());
+      if (!res.ok) throw new Error(json.error ?? `Upload failed (${res.status}).`);
+
+      router.push(`/admin/beats?msg=${encodeURIComponent(beat ? "Beat updated." : "Beat uploaded and live.")}`);
+      router.refresh();
+    } catch (err) {
+      // Cancel only the part-uploaded file; anything already complete stays
+      // usable, so the admin can fix the problem and submit again.
+      const session = activeSession.current;
+      if (session) {
+        activeSession.current = null;
+        void fetch(`/api/admin/uploads/${session}`, { method: "DELETE" }).catch(() => {});
+      }
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
       setProgress(null);
-      setError("Network error during upload. Please try again.");
-    };
-    setProgress(0);
-    xhr.send(fd);
+      setProgressLabel("");
+    }
   }
 
   return (
@@ -197,11 +451,20 @@ export function BeatForm({ licenseTypes, beat, currency }: { licenseTypes: Licen
                 <label className="label" htmlFor={`file-${f.key}`}>
                   {f.label} {beat && has && <span className="ml-1 normal-case text-ok">· uploaded (choose a file to replace)</span>}
                 </label>
-                <input id={`file-${f.key}`} name={f.key} type="file" accept={f.accept} className="field file:mr-3 file:rounded-full file:border-0 file:bg-acid file:px-3 file:py-1 file:text-xs file:font-bold file:text-ink" />
+                <input
+                  id={`file-${f.key}`}
+                  name={f.key}
+                  type="file"
+                  accept={ALLOWED_EXT[f.kind].join(",")}
+                  className="field file:mr-3 file:rounded-full file:border-0 file:bg-acid file:px-3 file:py-1 file:text-xs file:font-bold file:text-ink"
+                />
                 <p className="mt-1 text-[11px] text-muted">{f.hint}</p>
               </div>
             );
           })}
+          <p className="text-[11px] text-muted">
+            Large files are uploaded in parts, so a 200 MB stem zip works over a normal connection. Keep this tab open until it finishes.
+          </p>
         </div>
 
         {progress !== null && (
@@ -210,7 +473,7 @@ export function BeatForm({ licenseTypes, beat, currency }: { licenseTypes: Licen
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-line">
               <div className="h-full bg-acid transition-all" style={{ width: `${progress}%` }} />
             </div>
-            <p className="mt-2 text-xs text-muted">Large WAV files can take a minute. Keep this tab open.</p>
+            <p className="mt-2 text-xs text-muted">{progressLabel || "Large WAV files can take a minute. Keep this tab open."}</p>
           </div>
         )}
         {error && <p className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">{error}</p>}

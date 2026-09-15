@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import { Client } from "pg";
@@ -26,6 +27,28 @@ else fail(`Node ${process.versions.node}`, "Node 18+ is required (22 recommended
 
 if (fs.existsSync("node_modules/next/package.json")) ok("next is installed");
 else fail("dependencies are not installed", "Run `npm install`.");
+
+// A deploy is built from what git tracks, so a source file that .gitignore
+// happens to match is silently missing in production — that is how `/api/admin/uploads`
+// once shipped without its own API routes, and the only symptom was a 404 in the
+// browser. Over-broad rules (`uploads/` instead of `/uploads/`) are the usual cause.
+try {
+  const ignored = execFileSync("git", ["status", "--ignored", "--porcelain"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+    .split("\n")
+    .filter((line) => line.startsWith("!!"))
+    .map((line) => line.slice(3).trim())
+    .filter((p) => p.startsWith("src/") || p.startsWith("scripts/") || p.startsWith("public/"));
+  if (ignored.length) {
+    fail(
+      `${ignored.length} source file(s) are ignored by .gitignore`,
+      `They will be missing from a deployed build: ${ignored.slice(0, 5).join(", ")}${ignored.length > 5 ? " …" : ""}`,
+    );
+  } else {
+    ok("every source file is tracked by git");
+  }
+} catch {
+  // Not a git checkout (a downloaded ZIP, for example) — nothing to check.
+}
 
 console.log("\nEnvironment");
 if (fs.existsSync(".env")) ok(".env found");
@@ -104,6 +127,23 @@ if (!raw) {
           if (beatRows) {
             const { rows } = await client.query("select count(*)::int as n from beats");
             ok(`beats table has ${rows[0].n} row(s)${rows[0].n === 0 ? " — demo data is seeded on first page load" : ""}`);
+          }
+          // Beat files (covers, previews, masters, stems) are stored in these
+          // tables, so a database without them accepts logins but rejects every
+          // upload with "relation stored_files does not exist".
+          const hasFiles = tables.rows.some((r) => r.table_name === "stored_files");
+          const hasChunks = tables.rows.some((r) => r.table_name === "stored_file_chunks");
+          if (hasFiles && hasChunks) {
+            const { rows } = await client.query(
+              "select count(*)::int as files, coalesce(sum(size), 0)::bigint as bytes from stored_files where is_complete",
+            );
+            const mb = (Number(rows[0].bytes) / (1024 * 1024)).toFixed(1);
+            ok(`upload storage ready (${rows[0].files} file(s), ${mb} MB)`);
+          } else {
+            fail(
+              "the upload storage tables are missing (stored_files / stored_file_chunks)",
+              "Run `npm run db:push` — uploads will fail until these exist.",
+            );
           }
         }
       } catch (err) {

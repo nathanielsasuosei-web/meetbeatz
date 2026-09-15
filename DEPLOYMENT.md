@@ -11,7 +11,26 @@
 - [ ] Email provider configured (Gmail, Brevo, Resend)
 - [ ] Domain registered (meetbeatz.com)
 
-> **Important:** Vercel's local filesystem is ephemeral. Before enabling admin uploads in production, move `uploads/` to durable object storage such as Cloudinary, S3, or UploadThing and store the resulting URLs in the database. The current local-disk upload implementation is suitable for local development and a persistent VPS, but not for reliable Vercel production use.
+> **Uploads work on Vercel as-is — no object storage needed.** Beat files (cover, preview,
+> MP3, WAV, stems) are stored in PostgreSQL (`stored_files` / `stored_file_chunks`) and the
+> browser sends them in **4 MB parts**, which solves the two things that used to break uploads
+> there: the read-only deployment filesystem (`ENOENT: … mkdir '/var/task/uploads'`) and
+> Vercel's 4.5 MB request-body limit. Nothing extra to sign up for or configure.
+>
+> Two consequences to keep in mind: a single file is capped at **512 MB**, and uploads count
+> towards your database size (a beat with a WAV master is typically 30–60 MB, stems more). If
+> the catalog ever grows into hundreds of gigabytes, *that* is when moving the bytes to
+> Cloudinary/S3 becomes worth it — the storage layer is isolated in `src/lib/files.ts`.
+>
+> Abandoned uploads clean themselves up: half-finished sessions after 24 hours, finished files
+> that no beat references after 7 days. `npm run doctor` prints how many files are stored and
+> their total size.
+>
+> If the form ever reports **`Upload failed (413)`**, something in front of the app — a preview
+> gateway, Cloudflare, nginx's 1 MB `client_max_body_size` default — refused the request body
+> before it reached the app. The form halves its part size (4 MB → 2 MB → … → 128 KB) until the
+> proxy accepts it and remembers that size for the next upload; Admin → Settings → *Upload path*
+> shows it and clears it if a gateway's limit is later raised.
 
 ## Environment Variables Needed
 
@@ -71,6 +90,16 @@ git push -u origin main
 > if you would rather a failed sync stop the build. Either way the variable must exist for the
 > environment Vercel builds with — a Production-only variable leaves preview deployments without
 > a database, and `POSTGRES_URL` (what Vercel's own integrations provide) is read too.
+>
+> The same command runs two guards against the failure mode where the deployment is
+> "green" but the admin form cannot reach the server. `scripts/check-tracked-sources.mjs`
+> warns when a source file is ignored by git (such a file exists locally, in tests and in
+> the working tree, yet is absent from the deployment — this is what once hid the upload
+> API behind the `.gitignore` rule for the runtime `uploads/` folder), and
+> `scripts/check-upload-routes.mjs` runs after `next build` and **fails the build** if the
+> uploaded-beat routes (`/api/admin/uploads`, `/api/admin/uploads/[id]`, `/api/admin/beats`,
+> `/api/admin/beats/[id]`) are missing from the build output. A failed build is much easier
+> to notice than "Could not start the upload (404)" in the admin form.
 
 ### 3. Add Environment Variables in Vercel
 
@@ -97,12 +126,14 @@ git push -u origin main
 
 - [ ] Visit https://your-domain.com
 - [ ] Login at https://your-domain.com/admin
-- [ ] Upload a test beat
+- [ ] Upload a test beat (watch the progress bar finish, then play the preview on `/beats`)
 - [ ] Test a payment (test mode)
 - [ ] Verify email sends
 - [ ] Check `/admin/settings` for warnings
 
-If using Vercel before object storage is integrated, deploy the public storefront for review only and do not rely on production admin uploads or stored downloads.
+If an upload ever reports that `stored_files` does not exist, that deployment's build ran without a
+database connection, so the schema sync was skipped — run `npm run db:push` against the same
+connection string (or redeploy) and uploads work again.
 
 ## If the deployed preview shows "Something went wrong"
 
