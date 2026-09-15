@@ -88,7 +88,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
           <p className="mt-1 text-sm text-muted">Tell us where to send the beat, then approve the payment on your phone.</p>
           <div className="mt-6">
             <CheckoutForm
-              endpoint="/api/checkout/beat"
+              endpoint="/api/checkout/beats"
               payload={{ beatSlug: data.beat.slug, licenseTypeId: selected.id }}
               buttonLabel={`Pay ${money(totals.total, settings.currency)}`}
             />

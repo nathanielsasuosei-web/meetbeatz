@@ -1,19 +1,30 @@
 # Local PostgreSQL for development.
 #   docker compose up -d      → start database
 #   docker compose down       → stop (data is kept in the volume)
+#
+# This publishes port 5433 (not 5432) so it never collides with a PostgreSQL you
+# already have installed. Because of that, using this container means pointing
+# .env at 5433, e.g.:
+#   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/app_db
+# (see .env.example). Run `npm run doctor` to check what the app actually connects to.
 services:
   db:
     image: postgres:16-alpine
     container_name: meetbeatz-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: app_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-app_db}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - meetbeatz_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-app_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
   meetbeatz_pgdata:

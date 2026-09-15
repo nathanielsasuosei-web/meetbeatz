@@ -3,8 +3,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/push-schema-on-build.mjs && next build",
     "start": "next start",
+    "doctor": "node scripts/doctor.mjs",
+    "db:create": "node scripts/db-create.mjs",
+    "db:push": "drizzle-kit push",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
@@ -20,6 +23,7 @@
     "react-dom": "18.2.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^2.1.4",
     "@tailwindcss/postcss": "4.1.17",
     "@types/node": "22.19.15",
     "@types/pg": "8.18.0",
