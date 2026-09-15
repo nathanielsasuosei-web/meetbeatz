@@ -65,10 +65,12 @@ git push -u origin main
 7. Build Command: `npm run build`
 8. Click "Deploy"
 
-> `npm run build` syncs the schema to `DATABASE_URL` before compiling, so Vercel creates the
-> tables for you and there is no separate migration step. The variable must be set for every
-> environment Vercel builds with — a missing `DATABASE_URL` warns and skips the sync rather than
-> failing the build, which is how a Production-only variable leaves preview deployments tableless.
+> `npm run build` attempts a schema sync against the configured connection string first, so a
+> deploy normally creates its own tables. It is **best effort**: if the sync cannot run, the build
+> logs why and continues, so a deploy is never blocked by this step. Set `REQUIRE_SCHEMA_PUSH=1`
+> if you would rather a failed sync stop the build. Either way the variable must exist for the
+> environment Vercel builds with — a Production-only variable leaves preview deployments without
+> a database, and `POSTGRES_URL` (what Vercel's own integrations provide) is read too.
 
 ### 3. Add Environment Variables in Vercel
 

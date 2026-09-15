@@ -79,11 +79,29 @@ const result = spawnSync("npx", ["drizzle-kit", "push"], {
 });
 
 if (result.status !== 0) {
-  console.error(
-    "[build] schema sync failed. Reproduce and review it interactively with `npm run db:push`\n" +
-      "[build] (destructive changes are refused without a terminal, by design).",
-  );
-  process.exit(result.status ?? 1);
+  // Best effort by design. A schema sync that cannot run — no credentials at build
+  // time, a pooler that refuses DDL, TLS interception — must not block the deployment
+  // that would otherwise boot and explain itself through /api/health. This exact step
+  // was briefly fatal here and turned three working preview deployments into failed
+  // builds, which is strictly worse than a missing table.
+  //
+  // Teams that *want* the build to stop on an unsynced schema opt in with
+  // REQUIRE_SCHEMA_PUSH=1, where a silent partial deploy is the bigger risk.
+  const strict = process.env.REQUIRE_SCHEMA_PUSH === "1";
+  const guidance =
+    "[build] The app will still deploy; check /api/health after it starts, or run\n" +
+    "[build] `npm run db:push` against the same connection string to see the real error.\n" +
+    "[build] Set REQUIRE_SCHEMA_PUSH=1 to make this failure stop the build instead.";
+
+  if (strict) {
+    console.error("[build] schema sync failed and REQUIRE_SCHEMA_PUSH=1 is set — failing the build.");
+    console.error(guidance);
+    process.exit(result.status ?? 1);
+  }
+
+  console.warn(`[build] schema sync failed (exit ${result.status ?? "unknown"}) — continuing without it.`);
+  console.warn(guidance);
+  process.exit(0);
 }
 
 console.log("[build] schema is up to date.");
