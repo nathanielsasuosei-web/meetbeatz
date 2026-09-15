@@ -1,5 +1,6 @@
 import { verifyWebhookSignature } from "@/lib/paystack";
 import { markOrderFailed, verifyPaystackAndFinalize } from "@/lib/payments";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
  * Paystack dashboard so orders are fulfilled even if the customer closes the browser.
  */
 export async function POST(req: Request) {
+  await ensureSeeded();
   const raw = await req.text();
   const signature = req.headers.get("x-paystack-signature");
   if (!verifyWebhookSignature(raw, signature)) {

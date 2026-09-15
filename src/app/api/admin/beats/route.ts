@@ -4,10 +4,12 @@ import { beats } from "@/db/schema";
 import { parseBeatFields, saveBeatFiles, syncBeatPrices, uniqueSlug, UploadError } from "@/lib/admin-beat";
 import { getAdminSession } from "@/lib/auth";
 import { deleteUpload } from "@/lib/files";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  await ensureSeeded();
   const session = await getAdminSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 

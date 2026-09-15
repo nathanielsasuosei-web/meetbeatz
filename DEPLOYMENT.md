@@ -9,7 +9,7 @@
 - [ ] PostgreSQL database provisioned (Railway recommended)
 - [ ] Paystack account set up
 - [ ] Email provider configured (Gmail, Brevo, Resend)
-- [ ] Domain registered (meetbeatz.com)
+- [ ] Domain registered (meetbeatz.app)
 
 > **Important:** Vercel's local filesystem is ephemeral. Before enabling admin uploads in production, move `uploads/` to durable object storage such as Cloudinary, S3, or UploadThing and store the resulting URLs in the database. The current local-disk upload implementation is suitable for local development and a persistent VPS, but not for reliable Vercel production use.
 
@@ -23,8 +23,8 @@ PAYSTACK_SECRET_KEY=sk_live_your_key_here
 SESSION_SECRET=generate-a-random-32-char-string
 ADMIN_EMAIL=meetbeatz@gmail.com
 ADMIN_PASSWORD=YourSecurePassword
-NEXT_PUBLIC_APP_URL=https://meetbeatz.com
-EMAIL_FROM=Meetbeatz <no-reply@meetbeatz.com>
+NEXT_PUBLIC_APP_URL=https://meetbeatz.app
+EMAIL_FROM=Meetbeatz <no-reply@meetbeatz.app>
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
@@ -74,7 +74,7 @@ git push -u origin main
 ### 4. Set Up Custom Domain
 
 1. Settings → Domains
-2. Add `meetbeatz.com`
+2. Add `meetbeatz.app`
 3. Update DNS at your registrar (Vercel will show instructions)
 4. Wait 5-15 minutes for SSL
 
@@ -99,7 +99,8 @@ If using Vercel before object storage is integrated, deploy the public storefron
 
 ## First Time Setup on Production
 
-After deployment, the database auto-seeds on first page load:
+After deployment, the database sets itself up on first page load — no manual steps needed:
+- All tables created automatically (even on a brand-new empty database)
 - Admin account created
 - 3 demo beats added
 - License types & studio services configured

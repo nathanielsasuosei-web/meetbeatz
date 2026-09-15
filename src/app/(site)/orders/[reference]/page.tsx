@@ -14,10 +14,12 @@ import {
 } from "@/lib/format";
 import { loadOrderByReference } from "@/lib/payments";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export const metadata: Metadata = { title: "Your order" };
 
 export default async function OrderPage({ params }: { params: Promise<{ reference: string }> }) {
+  await ensureSeeded();
   const { reference } = await params;
   const bundle = await loadOrderByReference(decodeURIComponent(reference));
   if (!bundle) notFound();

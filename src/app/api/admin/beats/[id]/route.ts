@@ -5,10 +5,12 @@ import { beats } from "@/db/schema";
 import { parseBeatFields, removeOldFiles, saveBeatFiles, syncBeatPrices, uniqueSlug, UploadError } from "@/lib/admin-beat";
 import { getAdminSession } from "@/lib/auth";
 import { deleteUpload } from "@/lib/files";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  await ensureSeeded();
   const session = await getAdminSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;

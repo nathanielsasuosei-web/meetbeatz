@@ -1,10 +1,12 @@
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { admins, beatLicenses, beats, licenseTypes, services, studioHours } from "@/db/schema";
 import { hashPassword } from "./auth";
-import { synthBeat } from "./audio-synth";
+import { ensureMigrated } from "./migrate";
+import { DEMO_SYNTH_BY_SLUG, synthBeat } from "./audio-synth";
 import { resolveUpload, writeUploadBuffer } from "./files";
 
-export const DEFAULT_ADMIN_EMAIL = "admin@meetbeatz.com";
+export const DEFAULT_ADMIN_EMAIL = "admin@meetbeatz.app";
 export const DEFAULT_ADMIN_PASSWORD = "meetbeatz123";
 
 const LICENSE_TYPES = [
@@ -101,7 +103,7 @@ const DEMO_BEATS = [
     musicalKey: "F# minor",
     tags: "afrobeats, wizkid type beat, burna boy, smooth",
     description: "Late-night Afrobeats groove with rolling log drums, warm keys and a bassline that sits deep in the pocket.",
-    synth: { bpm: 102, rootHz: 92.5, minor: true, seed: 11, style: "afro" as const },
+    synth: DEMO_SYNTH_BY_SLUG["midnight-in-osu"],
     cover: "/images/covers/demo-1.jpg",
     featured: true,
   },
@@ -114,7 +116,7 @@ const DEMO_BEATS = [
     musicalKey: "C minor",
     tags: "asakaa, drill, kumerica, dark, sliding 808",
     description: "Hard-hitting Asakaa drill with sliding 808s, eerie bells and skipping hi-hats built for the streets of Kumasi.",
-    synth: { bpm: 142, rootHz: 65.4, minor: true, seed: 23, style: "drill" as const },
+    synth: DEMO_SYNTH_BY_SLUG["kumasi-drill"],
     cover: "/images/covers/demo-2.jpg",
     featured: true,
   },
@@ -127,7 +129,7 @@ const DEMO_BEATS = [
     musicalKey: "G major",
     tags: "highlife, guitar, uplifting, kuami eugene type beat",
     description: "Feel-good highlife with palm-wine guitars, bright horns and a bounce made for weddings and Sunday afternoons.",
-    synth: { bpm: 118, rootHz: 98, minor: false, seed: 37, style: "highlife" as const },
+    synth: DEMO_SYNTH_BY_SLUG["sunday-highlife"],
     cover: "/images/covers/demo-3.jpg",
     featured: true,
   },
@@ -146,6 +148,7 @@ export function ensureSeeded(): Promise<void> {
 }
 
 async function runSeed() {
+  await ensureMigrated();
   const [existingAdmin] = await db.select({ id: admins.id }).from(admins).limit(1);
   if (!existingAdmin) {
     const configuredEmail = process.env.ADMIN_EMAIL?.trim();
@@ -155,17 +158,17 @@ async function runSeed() {
     }
     const email = (configuredEmail || DEFAULT_ADMIN_EMAIL).toLowerCase();
     const password = configuredPassword || DEFAULT_ADMIN_PASSWORD;
-    await db.insert(admins).values({ email, name: "Meetbeatz", passwordHash: hashPassword(password) });
+    await db.insert(admins).values({ email, name: "Meetbeatz", passwordHash: hashPassword(password) }).onConflictDoNothing({ target: admins.email });
   }
 
   const [existingLicense] = await db.select({ id: licenseTypes.id }).from(licenseTypes).limit(1);
   if (!existingLicense) {
-    await db.insert(licenseTypes).values(LICENSE_TYPES);
+    await db.insert(licenseTypes).values(LICENSE_TYPES).onConflictDoNothing({ target: licenseTypes.slug });
   }
 
   const [existingService] = await db.select({ id: services.id }).from(services).limit(1);
   if (!existingService) {
-    await db.insert(services).values(SERVICES);
+    await db.insert(services).values(SERVICES).onConflictDoNothing({ target: services.slug });
   }
 
   const [existingHours] = await db.select({ id: studioHours.id }).from(studioHours).limit(1);
@@ -176,8 +179,8 @@ async function runSeed() {
         opensAt: dow === 6 ? "10:00" : "09:00",
         closesAt: dow === 6 ? "18:00" : "21:00",
         isOpen: dow !== 0,
-      })),
-    );
+      })))
+      .onConflictDoNothing({ target: studioHours.dayOfWeek });
   }
 
   const [existingBeat] = await db.select({ id: beats.id }).from(beats).limit(1);
@@ -188,7 +191,13 @@ async function runSeed() {
       const fileName = `demo-${i + 1}.wav`;
       const rel = `previews/${fileName}`;
       if (!resolveUpload(rel)) {
-        await writeUploadBuffer("previews", fileName, synthBeat(demo.synth));
+        try {
+          await writeUploadBuffer("previews", fileName, synthBeat(demo.synth));
+        } catch (err) {
+          // Read-only filesystem (e.g. Vercel serverless): seeding must not
+          // fail — the preview API regenerates demo audio in memory instead.
+          console.warn(`[seed] could not write ${rel}, using in-memory demo audio:`, err);
+        }
       }
       const [beat] = await db
         .insert(beats)
@@ -210,16 +219,22 @@ async function runSeed() {
           isFeatured: demo.featured,
           isDemo: true,
         })
+        .onConflictDoNothing({ target: beats.slug })
         .returning();
+      const beatRow = beat ?? (await db.select().from(beats).where(eq(beats.slug, demo.slug)).limit(1))[0];
+      if (!beatRow) continue;
       if (types.length) {
-        await db.insert(beatLicenses).values(
-          types.map((t) => ({
-            beatId: beat.id,
-            licenseTypeId: t.id,
-            price: t.defaultPrice,
-            isEnabled: t.deliverables.includes("stems") ? false : true,
-          })),
-        );
+        await db
+          .insert(beatLicenses)
+          .values(
+            types.map((t) => ({
+              beatId: beatRow.id,
+              licenseTypeId: t.id,
+              price: t.defaultPrice,
+              isEnabled: t.deliverables.includes("stems") ? false : true,
+            })),
+          )
+          .onConflictDoNothing();
       }
     }
   }

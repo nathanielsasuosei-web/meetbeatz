@@ -1,9 +1,11 @@
 import { getAdminSession } from "@/lib/auth";
 import { listGhanaBanks } from "@/lib/paystack";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  await ensureSeeded();
   const session = await getAdminSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const type = new URL(req.url).searchParams.get("type") === "ghipss" ? "ghipss" : "mobile_money";

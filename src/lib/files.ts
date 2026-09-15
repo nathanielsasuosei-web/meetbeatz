@@ -133,3 +133,42 @@ export function fileResponse(absPath: string, opts: FileResponseOptions = {}): R
   const stream = Readable.toWeb(fs.createReadStream(absPath)) as ReadableStream;
   return new Response(stream, { status: 200, headers });
 }
+
+/** Serves an in-memory buffer with HTTP Range support (demo audio fallback). */
+export function bufferResponse(data: Buffer, contentType: string, opts: FileResponseOptions = {}): Response {
+  const total = data.length;
+  const headers = new Headers({
+    "Content-Type": contentType,
+    "Accept-Ranges": "bytes",
+    "Cache-Control": opts.cache ? "public, max-age=31536000, immutable" : "private, no-store",
+  });
+  if (opts.downloadName) {
+    headers.set(
+      "Content-Disposition",
+      `attachment; filename="${opts.downloadName.replace(/[^\w.\- ]+/g, "_")}"`,
+    );
+  }
+
+  const range = opts.rangeHeader;
+  if (range && /^bytes=\d*-\d*$/.test(range)) {
+    const [startStr, endStr] = range.replace("bytes=", "").split("-");
+    let start = startStr ? parseInt(startStr, 10) : 0;
+    let end = endStr ? parseInt(endStr, 10) : total - 1;
+    if (Number.isNaN(start)) start = 0;
+    if (Number.isNaN(end) || end >= total) end = total - 1;
+    if (start > end || start >= total) {
+      return new Response(null, {
+        status: 416,
+        headers: { "Content-Range": `bytes */${total}` },
+      });
+    }
+    headers.set("Content-Range", `bytes ${start}-${end}/${total}`);
+    const body = data.subarray(start, end + 1);
+    return new Response(body as unknown as BodyInit, {
+      status: 206,
+      headers,
+    });
+  }
+
+  return new Response(data as unknown as BodyInit, { status: 200, headers });
+}

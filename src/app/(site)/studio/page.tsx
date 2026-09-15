@@ -6,11 +6,13 @@ import { BookingForm, type ServiceOption } from "@/components/booking-form";
 import { listActiveServices } from "@/lib/catalog";
 import { DAY_NAMES, formatTime12, money, num } from "@/lib/format";
 import { getPaymentMode, getSettings } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export const metadata: Metadata = { title: "Studio bookings" };
 export const dynamic = "force-dynamic";
 
 export default async function StudioPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
+  await ensureSeeded();
   const { service: serviceSlug } = await searchParams;
   const [settings, services, hours] = await Promise.all([
     getSettings(),

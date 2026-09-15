@@ -4,10 +4,12 @@ import { db } from "@/db";
 import { beats, licenses } from "@/db/schema";
 import { fileResponse, resolveUpload } from "@/lib/files";
 import { deliverableList, slugify } from "@/lib/format";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
+  await ensureSeeded();
   const { token } = await params;
   const url = new URL(req.url);
   const file = (url.searchParams.get("file") ?? "mp3").toLowerCase();

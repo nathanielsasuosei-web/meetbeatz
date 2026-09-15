@@ -5,6 +5,7 @@ import { Flash, PageHeader } from "@/components/admin/flash";
 import { DAY_NAMES } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { deleteService, saveHours, saveService } from "../actions";
+import { ensureSeeded } from "@/lib/seed";
 
 function ServiceForm({ service, currency }: { service: typeof services.$inferSelect | null; currency: string }) {
   return (
@@ -55,6 +56,7 @@ function ServiceForm({ service, currency }: { service: typeof services.$inferSel
 }
 
 export default async function AdminStudioPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
+  await ensureSeeded();
   const { msg, err } = await searchParams;
   const [settings, rows, hours] = await Promise.all([
     getSettings(),

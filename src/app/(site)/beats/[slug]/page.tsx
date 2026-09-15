@@ -8,18 +8,21 @@ import { getBeatBySlug, listBeats, toCard } from "@/lib/catalog";
 import { num } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { toTrack } from "@/lib/track";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await ensureSeeded();
   const { slug } = await params;
   const data = await getBeatBySlug(slug);
   return { title: data ? `${data.beat.title} — ${data.beat.genre || "Beat"}` : "Beat" };
 }
 
 export default async function BeatDetailPage({ params }: Props) {
+  await ensureSeeded();
   const { slug } = await params;
   const data = await getBeatBySlug(slug);
   if (!data || (!data.beat.isPublished && !data.beat.exclusiveSold)) notFound();

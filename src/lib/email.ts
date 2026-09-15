@@ -16,7 +16,7 @@ export type SendEmailResult = {
 };
 
 function fromAddress(): string {
-  return process.env.EMAIL_FROM?.trim() || "Meetbeatz <no-reply@meetbeatz.com>";
+  return process.env.EMAIL_FROM?.trim() || "Meetbeatz <no-reply@meetbeatz.app>";
 }
 
 async function log(input: SendEmailInput, result: SendEmailResult) {

@@ -2,10 +2,12 @@ import { revalidatePath } from "next/cache";
 import { getAdminSession } from "@/lib/auth";
 import { createSubaccount } from "@/lib/paystack";
 import { getSettings, saveSettings } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  await ensureSeeded();
   const session = await getAdminSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
   const body = (await req.json().catch(() => ({}))) as { businessName?: string; bankCode?: string; accountNumber?: string };

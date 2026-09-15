@@ -7,8 +7,10 @@ import { formatDate, formatTime12, money, num } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { todayString } from "@/lib/slots";
 import { resendOrderEmail, updateBookingStatus } from "../actions";
+import { ensureSeeded } from "@/lib/seed";
 
 export default async function AdminBookingsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; view?: string }> }) {
+  await ensureSeeded();
   const { msg, err, view } = await searchParams;
   const settings = await getSettings();
   const rows = await db

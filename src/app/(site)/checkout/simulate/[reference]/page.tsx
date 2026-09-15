@@ -3,8 +3,10 @@ import { SimulatePayment } from "@/components/simulate-payment";
 import { formatDate, formatTime12 } from "@/lib/format";
 import { loadOrderByReference } from "@/lib/payments";
 import { getPaymentMode } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export default async function SimulatePage({ params }: { params: Promise<{ reference: string }> }) {
+  await ensureSeeded();
   const { reference } = await params;
   const bundle = await loadOrderByReference(reference);
   if (!bundle) notFound();

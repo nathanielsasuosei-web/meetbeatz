@@ -7,10 +7,12 @@ import { licenses, orders } from "@/db/schema";
 import { PrintButton } from "@/components/print-button";
 import { DELIVERABLE_LABELS, deliverableList, formatDate, money } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export const metadata: Metadata = { title: "License certificate" };
 
 export default async function LicensePage({ params }: { params: Promise<{ key: string }> }) {
+  await ensureSeeded();
   const { key } = await params;
   const [row] = await db
     .select({ lic: licenses, order: orders })

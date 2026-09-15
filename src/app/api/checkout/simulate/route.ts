@@ -1,9 +1,11 @@
 import { finalizeOrder, loadOrderByReference, markOrderFailed } from "@/lib/payments";
 import { getPaymentMode } from "@/lib/settings";
+import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  await ensureSeeded();
   if (getPaymentMode() !== "simulation") {
     return Response.json({ error: "Simulated payments are disabled because Paystack is configured." }, { status: 403 });
   }

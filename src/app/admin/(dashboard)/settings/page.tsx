@@ -4,8 +4,10 @@ import { isPaystackConfigured } from "@/lib/paystack";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
 import { changePasswordAction, saveSettingsAction, sendTestEmailAction } from "../actions";
+import { ensureSeeded } from "@/lib/seed";
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
+  await ensureSeeded();
   const { msg, err } = await searchParams;
   const [settings, baseUrl] = await Promise.all([getSettings(), getBaseUrl()]);
   const paystack = isPaystackConfigured();
