@@ -31,15 +31,31 @@ console.log("\nEnvironment");
 if (fs.existsSync(".env")) ok(".env found");
 else fail(".env is missing", "Run `cp .env.example .env` (PowerShell: `Copy-Item .env.example .env`) and fill it in.");
 
-const raw = process.env.DATABASE_URL;
+// Same priority order the app uses (src/lib/database-url.ts). A doctor that checked only
+// DATABASE_URL would report "not set" for a working Vercel deployment, where the attached
+// database is exposed as POSTGRES_URL.
+const SOURCES = ["DATABASE_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING", "PRISMA_SCHEMA_URL", "SUPABASE_DATABASE_URL"];
+let sourceName = null;
+let raw = null;
+for (const name of SOURCES) {
+  const value = String(process.env[name] ?? "").trim().replace(/^["']|["']$/g, "");
+  if (value) {
+    sourceName = name;
+    raw = value;
+    break;
+  }
+}
+
 if (!raw) {
-  fail("DATABASE_URL is not set", "It belongs in .env — see .env.example.");
+  fail("no database connection string set", `Set one of ${SOURCES.join(", ")} — see .env.example.`);
 } else {
+  console.log(`  ✓ using ${sourceName}`);
   let url;
   try {
     url = new URL(raw);
   } catch {
-    fail(`DATABASE_URL is not a valid connection string: ${raw}`, "Expected postgresql://user:password@host:port/db");
+    // Deliberately never echo the value: it contains the password.
+    fail(`${sourceName} is not a valid connection string`, "Expected postgresql://user:password@host:port/db");
   }
   if (url) {
     const host = url.hostname || "127.0.0.1";

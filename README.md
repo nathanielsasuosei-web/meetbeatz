@@ -77,7 +77,7 @@ git push -u origin main
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string (copy it from `.env.example` and pick your port) |
+| `DATABASE_URL` | PostgreSQL connection string (copy it from `.env.example` and pick your port). `POSTGRES_URL` is also read, which is the name Vercel's database integrations provide |
 | `PAYSTACK_SECRET_KEY` | Enables live Paystack payments. Without it the app runs in **test mode** with a simulated MoMo prompt. |
 | `NEXT_PUBLIC_APP_URL` | Public URL used in emails and the Paystack callback (auto-detected if unset) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | Email delivery via SMTP |
