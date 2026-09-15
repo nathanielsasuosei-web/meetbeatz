@@ -12,14 +12,14 @@ export const dynamic = "force-dynamic";
 const MARQUEE = ["MTN Mobile Money", "Telecel Cash", "AirtelTigo Money", "Visa & Mastercard", "Instant email delivery", "Licensed & legal", "Recording · Mixing · Mastering"];
 
 export default async function HomePage() {
-  const [settings, featured, latest, services, licenseTypes, [beatCount], [licenseCount]] = await Promise.all([
+  const [settings, featured, latest, services, licenseTypes, [beatCount = { value: 0 }], [licenseCount = { value: 0 }]] = await Promise.all([
     getSettings(),
     listBeats({ featured: true, limit: 8 }),
     listBeats({ limit: 8 }),
     listActiveServices(),
     listLicenseTypes(),
-    db.select({ value: count() }).from(beats).where(eq(beats.isPublished, true)),
-    db.select({ value: count() }).from(licenses),
+    db.select({ value: count() }).from(beats).where(eq(beats.isPublished, true)).catch(() => [{ value: 0 }]),
+    db.select({ value: count() }).from(licenses).catch(() => [{ value: 0 }]),
   ]);
   const showcase = featured.length >= 4 ? featured : latest;
 

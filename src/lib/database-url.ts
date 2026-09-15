@@ -59,10 +59,22 @@ function ensureSslMode(value: string, issues: string[]): string {
   } catch {
     return value;
   }
-  if (url.searchParams.has("sslmode") || LOCAL_HOSTS.has(url.hostname.toLowerCase())) return value;
-  url.searchParams.set("sslmode", "require");
-  issues.push("added sslmode=require for a remote host");
-  return url.toString();
+  if (LOCAL_HOSTS.has(url.hostname.toLowerCase())) return value;
+
+  if (!url.searchParams.has("sslmode")) {
+    url.searchParams.set("sslmode", "require");
+    url.searchParams.set("uselibpqcompat", "true");
+    issues.push("added sslmode=require for a remote host");
+    return url.toString();
+  }
+
+  if (url.searchParams.get("sslmode") === "require" && !url.searchParams.has("uselibpqcompat")) {
+    url.searchParams.set("uselibpqcompat", "true");
+    issues.push("added uselibpqcompat=true for libpq compatibility with sslmode=require");
+    return url.toString();
+  }
+
+  return value;
 }
 
 export function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env): ResolvedDatabaseUrl {

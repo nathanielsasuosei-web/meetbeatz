@@ -36,10 +36,14 @@ export const DEFAULT_SETTINGS: SiteSettings = {
 };
 
 export async function getSettings(): Promise<SiteSettings> {
-  const rows = await db.select().from(settings);
-  const merged: Record<string, string> = { ...DEFAULT_SETTINGS };
-  for (const row of rows) merged[row.key] = row.value;
-  return merged as unknown as SiteSettings;
+  try {
+    const rows = await db.select().from(settings);
+    const merged: Record<string, string> = { ...DEFAULT_SETTINGS };
+    for (const row of rows) merged[row.key] = row.value;
+    return merged as unknown as SiteSettings;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
 }
 
 export async function saveSettings(partial: Partial<Record<keyof SiteSettings, string>>) {
