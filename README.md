@@ -115,6 +115,13 @@ How it works:
   parts** (`PUT /api/admin/uploads/[id]?index=n`) and finishes with `POST /api/admin/uploads/[id]`.
   Chunking is what makes large masters possible: serverless hosts reject request bodies over
   **4.5 MB**, so a single multipart WAV upload could never work there whatever the storage.
+- **If an upload still fails with `413` (Request Entity Too Large)**, a proxy in front of the
+  app has a smaller limit than the platform's — the app itself never sees those requests, so the
+  form discovers the limit by trying: it starts at 4 MB and **halves the part size** (down to
+  128 KB) until the proxy accepts it, then remembers the working size in that browser for the
+  next upload. Admin → Settings → *Upload path* shows which size is in use and clears it, which
+  is worth doing after a gateway's limit is raised. If even 128 KB is refused, the error says so
+  instead of failing silently.
 - A part is validated as it arrives (size, position) and re-sending a part overwrites it, so a
   dropped request is recoverable. Nothing is readable until the last part is in.
 - Max **512 MB per file**. Storage grows with uploads — a few hundred MB of WAVs/stem zips is

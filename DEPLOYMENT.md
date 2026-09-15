@@ -25,6 +25,12 @@
 > Abandoned uploads clean themselves up: half-finished sessions after 24 hours, finished files
 > that no beat references after 7 days. `npm run doctor` prints how many files are stored and
 > their total size.
+>
+> If the form ever reports **`Upload failed (413)`**, something in front of the app — a preview
+> gateway, Cloudflare, nginx's 1 MB `client_max_body_size` default — refused the request body
+> before it reached the app. The form halves its part size (4 MB → 2 MB → … → 128 KB) until the
+> proxy accepts it and remembers that size for the next upload; Admin → Settings → *Upload path*
+> shows it and clears it if a gateway's limit is later raised.
 
 ## Environment Variables Needed
 

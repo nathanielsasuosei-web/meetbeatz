@@ -1,5 +1,6 @@
 import { Flash, PageHeader } from "@/components/admin/flash";
 import { SubaccountCreator } from "@/components/admin/subaccount-creator";
+import { UploadMemory } from "@/components/admin/upload-memory";
 import { isPaystackConfigured } from "@/lib/paystack";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
@@ -140,6 +141,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
               Paystack webhook URL: <span className="font-mono text-cream/80">{baseUrl}/api/paystack/webhook</span>
             </p>
           </section>
+
+          <UploadMemory />
 
           <form action={sendTestEmailAction} className="card p-5">
             <h2 className="font-bold">Send a test email</h2>

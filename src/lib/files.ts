@@ -11,6 +11,7 @@ import {
   CHUNK_SIZE,
   MAX_UPLOAD_BYTES,
   assertUploadAllowed,
+  clampChunkSize,
   isUploadKind,
   type UploadKind,
 } from "./upload-rules";
@@ -137,9 +138,20 @@ export type UploadSession = {
  * Opens an upload session. Called once per file, before the first part is sent;
  * the returned `id` is used for every part and for the final `complete` call.
  */
-export async function createUpload(kind: UploadKind, fileName: string, size: number): Promise<UploadSession> {
+export async function createUpload(
+  kind: UploadKind,
+  fileName: string,
+  size: number,
+  /**
+   * Part size the browser reports is safe for its network. Hosts differ — this
+   * app's own preview gateway rejects bodies far smaller than Vercel's 4.5 MB —
+   * so the client may ask for smaller parts (it is clamped, never enlarged).
+   */
+  chunkSize: number = CHUNK_SIZE,
+): Promise<UploadSession> {
   const ext = assertUploadAllowed(kind, fileName, size);
   await collectGarbage();
+  const partSize = clampChunkSize(chunkSize);
   const relative = `${kind}/${randomFileName(ext)}`;
   const [row] = await db
     .insert(storedFiles)
@@ -148,7 +160,7 @@ export async function createUpload(kind: UploadKind, fileName: string, size: num
       kind,
       contentType: contentTypeFor(relative),
       size: Math.floor(size),
-      chunkSize: CHUNK_SIZE,
+      chunkSize: partSize,
       uploadedBytes: 0,
       isComplete: false,
     })
@@ -156,10 +168,10 @@ export async function createUpload(kind: UploadKind, fileName: string, size: num
   return {
     id: row.id,
     path: row.path,
-    chunkSize: CHUNK_SIZE,
+    chunkSize: row.chunkSize,
     size: row.size,
     uploadedBytes: 0,
-    chunksExpected: Math.ceil(row.size / CHUNK_SIZE),
+    chunksExpected: Math.ceil(row.size / row.chunkSize),
   };
 }
 
@@ -185,14 +197,17 @@ export async function writeChunk(
     throw new UploadError(`Part ${index} is larger than the ${Math.round(chunkSize / (1024 * 1024))} MB limit.`);
   }
   const isLast = index === chunksExpected - 1;
-  // A short middle part means the request was cut off in transit; storing it
-  // would silently corrupt the file, so ask for that part again instead.
-  if (!isLast && data.length !== chunkSize) {
-    throw new UploadError(`Part ${index} arrived incomplete (${data.length} of ${chunkSize} bytes). Retrying…`);
-  }
   if (isLast && data.length !== row.size - index * chunkSize) {
     throw new UploadError(`The last part of this file is the wrong size. Please upload the file again.`);
   }
+  // Rejecting a part that arrived short used to be the rule here, on the
+  // assumption that the request had been cut off in transit. That is true of a
+  // dropped connection, but a reverse proxy can also *deliberately* truncate a
+  // body it is willing to forward (nginx's `client_max_body_size` answers 413,
+  // and gateways commonly do the same for anything larger). Retrying that part
+  // can never succeed, so a short part is stored in order until one arrives
+  // whole — `completeUpload` verifies the assembled file byte for byte, so a
+  // truncated body can never be mistaken for a finished file.
 
   await db
     .insert(storedFileChunks)
@@ -224,6 +239,11 @@ export async function completeUpload(id: number): Promise<StoredFileInfo> {
 
   const chunkSize = row.chunkSize > 0 ? row.chunkSize : CHUNK_SIZE;
   const chunksExpected = Math.ceil(row.size / chunkSize);
+  // Every check below is pure arithmetic over the *stored* part lengths, not
+  // counts: a truncated body leaves a short part, and a file whose bytes do not
+  // add up to the declared size stays invisible to buyers. Stored bytes exceed
+  // the declared size if a retry was cut short mid-overwrite, which the same
+  // check catches.
   const [{ received, parts, minIdx, maxIdx, shortParts }] = await db
     .select({
       received: sql<number>`COALESCE(SUM(length(${storedFileChunks.data})), 0)::int`,
@@ -235,7 +255,8 @@ export async function completeUpload(id: number): Promise<StoredFileInfo> {
     .from(storedFileChunks)
     .where(eq(storedFileChunks.fileId, id));
 
-  const missing = received < row.size || parts !== chunksExpected || minIdx !== 0 || maxIdx !== chunksExpected - 1 || shortParts > 0;
+  const missing =
+    received !== row.size || parts !== chunksExpected || minIdx !== 0 || maxIdx !== chunksExpected - 1 || shortParts > 0;
   if (missing) {
     throw new UploadError(
       `Upload incomplete: ${received} of ${row.size} bytes received. Please try uploading the file again.`,

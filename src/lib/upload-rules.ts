@@ -26,6 +26,23 @@ export const ALLOWED_EXT: Record<UploadKind, string[]> = {
  */
 export const CHUNK_SIZE = 4 * 1024 * 1024;
 
+/**
+ * Smallest part the browser will fall back to.
+ *
+ * Not every host allows 4 MB: a reverse proxy in front of the app (the
+ * gateway that fronts a preview deployment, Cloudflare, nginx with its 1 MB
+ * default) can answer 413 long before the app sees the request. The browser
+ * then retries the file with smaller parts, and this is as small as it goes.
+ */
+export const MIN_CHUNK_SIZE = 128 * 1024;
+
+/** Clamps a part size requested by the browser to something storage can honour. */
+export function clampChunkSize(requested: unknown): number {
+  const value = Math.floor(Number(requested));
+  if (!Number.isFinite(value) || value <= 0) return CHUNK_SIZE;
+  return Math.min(CHUNK_SIZE, Math.max(MIN_CHUNK_SIZE, value));
+}
+
 /** Ceiling per file. Everything lives in Postgres, so this is a storage decision. */
 export const MAX_UPLOAD_BYTES = 512 * 1024 * 1024;
 

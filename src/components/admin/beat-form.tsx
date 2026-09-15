@@ -5,7 +5,9 @@ import { useRef, useState } from "react";
 import { money } from "@/lib/format";
 import {
   ALLOWED_EXT,
+  CHUNK_SIZE,
   MAX_UPLOAD_BYTES,
+  MIN_CHUNK_SIZE,
   assertUploadAllowed,
   formatBytes,
   type UploadKind,
@@ -84,6 +86,34 @@ function readJson(text: string): { error?: string; [key: string]: unknown } {
 }
 
 /**
+ * Part size that a proxy in front of the app is willing to accept.
+ *
+ * The app cannot see that limit — the proxy answers 413 without ever reaching
+ * it — so the only way to find out is to try. It is remembered in
+ * `sessionStorage`, because a part size that failed once will fail identically
+ * on the next page load and there is no point rediscovering it per file.
+ */
+const CHUNK_STORAGE_KEY = "mb-upload-chunk-size";
+
+function readStoredChunkSize(): number {
+  try {
+    const stored = Number(window.sessionStorage.getItem(CHUNK_STORAGE_KEY));
+    if (Number.isFinite(stored) && stored >= MIN_CHUNK_SIZE && stored <= CHUNK_SIZE) return stored;
+  } catch {
+    // sessionStorage can be unavailable (private mode, blocked cookies)
+  }
+  return CHUNK_SIZE;
+}
+
+function rememberChunkSize(size: number) {
+  try {
+    window.sessionStorage.setItem(CHUNK_STORAGE_KEY, String(size));
+  } catch {
+    // not fatal — the upload still works, it just rediscovers the limit
+  }
+}
+
+/**
  * Sends one part of a file.
  *
  * Files are stored in the database, so they cannot be posted as one multipart
@@ -109,7 +139,17 @@ function putChunk(sessionId: number, index: number, blob: Blob, onProgress: (loa
   });
 }
 
-/** One retry-friendly send per part: mobile connections drop a 4 MB request often enough. */
+/**
+ * True when a request was refused for its size — by the platform (Vercel's
+ * 4.5 MB body cap) or by a proxy in front of it. The app never sees these
+ * requests, so no error message of its own will match.
+ */
+function isTooLarge(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /\b413\b|too large|payload too large|content too large/i.test(message);
+}
+
+/** One send, retried twice: mobile connections drop a multi-megabyte request often enough. */
 async function putChunkWithRetry(
   sessionId: number,
   index: number,
@@ -123,6 +163,7 @@ async function putChunkWithRetry(
       return;
     } catch (err) {
       lastError = err;
+      if (isTooLarge(err)) throw err; // retrying the same size cannot help
       if (attempt < 2) await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
     }
   }
@@ -151,35 +192,68 @@ export function BeatForm({ licenseTypes, beat, currency }: { licenseTypes: Licen
     return `${slot.key}:${file.name}:${file.size}:${file.lastModified}`;
   }
 
+  /**
+   * Uploads one file, halving the part size whenever a part is refused for
+   * being too large — a reverse proxy in front of the app can cap request
+   * bodies far below the platform limit, and its 413 never reaches the server.
+   * A session stores its part size, so abandoning it and starting a smaller
+   * one is the whole recovery; the parts already sent are simply sent again.
+   */
   async function uploadFile(file: File, kind: UploadKind, onProgress: (sentInFile: number) => void): Promise<string> {
-    const start = await fetch("/api/admin/uploads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: file.name, kind, size: file.size }),
-    });
-    const info = readJson(await start.text());
-    const sessionId = Number(info.id);
-    const chunkSize = Number(info.chunkSize);
-    if (!start.ok || !sessionId || !chunkSize) {
-      throw new Error(info.error ?? `Could not start the upload (${start.status}).`);
-    }
-    activeSession.current = sessionId;
+    let partSize = readStoredChunkSize();
 
-    let sent = 0;
-    for (let index = 0; sent < file.size; index++) {
-      const blob = file.slice(sent, Math.min(sent + chunkSize, file.size));
-      const offset = sent;
-      await putChunkWithRetry(sessionId, index, blob, (loaded) => onProgress(offset + loaded));
-      sent += blob.size;
-      onProgress(sent);
-    }
+    for (;;) {
+      const start = await fetch("/api/admin/uploads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, kind, size: file.size, chunkSize: partSize }),
+      });
+      const info = readJson(await start.text());
+      const sessionId = Number(info.id);
+      const chunkSize = Number(info.chunkSize) || partSize;
+      if (!start.ok || !sessionId) {
+        throw new Error(info.error ?? `Could not start the upload (${start.status}).`);
+      }
+      activeSession.current = sessionId;
 
-    const done = await fetch(`/api/admin/uploads/${sessionId}`, { method: "POST" });
-    const finished = readJson(await done.text());
-    const path = typeof finished.path === "string" ? finished.path : "";
-    if (!done.ok || !path) throw new Error(finished.error ?? "The file uploaded but could not be saved. Please try again.");
-    activeSession.current = null;
-    return path;
+      try {
+        let sent = 0;
+        for (let index = 0; sent < file.size; index++) {
+          const blob = file.slice(sent, Math.min(sent + chunkSize, file.size));
+          const offset = sent;
+          await putChunkWithRetry(sessionId, index, blob, (loaded) => onProgress(offset + loaded));
+          sent += blob.size;
+          onProgress(sent);
+        }
+
+        const done = await fetch(`/api/admin/uploads/${sessionId}`, { method: "POST" });
+        const finished = readJson(await done.text());
+        const path = typeof finished.path === "string" ? finished.path : "";
+        if (!done.ok || !path) {
+          throw new Error(finished.error ?? "The file uploaded but could not be saved. Please try again.");
+        }
+        activeSession.current = null;
+        rememberChunkSize(chunkSize);
+        return path;
+      } catch (err) {
+        activeSession.current = null;
+        // Release the abandoned session's parts before retrying smaller.
+        void fetch(`/api/admin/uploads/${sessionId}`, { method: "DELETE" }).catch(() => {});
+        const smaller = Math.max(MIN_CHUNK_SIZE, Math.floor(chunkSize / 2));
+        if (!isTooLarge(err) || chunkSize <= MIN_CHUNK_SIZE) {
+          if (isTooLarge(err)) {
+            throw new Error(
+              `${file.name} is too large for the upload proxy to accept, even in ${formatBytes(MIN_CHUNK_SIZE)} pieces. ` +
+                "Try a smaller file, or upload it from a deployment with a higher request-body limit.",
+            );
+          }
+          throw err;
+        }
+        partSize = smaller;
+        onProgress(0);
+        setProgressLabel(`Uploading ${file.name} in smaller pieces (${formatBytes(smaller)})…`);
+      }
+    }
   }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
