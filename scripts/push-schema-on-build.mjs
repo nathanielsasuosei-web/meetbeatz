@@ -34,6 +34,7 @@ function withSslMode(value) {
     const url = new URL(value);
     if (url.searchParams.has("sslmode") || LOCAL_HOSTS.has(url.hostname.toLowerCase())) return value;
     url.searchParams.set("sslmode", "require");
+    url.searchParams.set("uselibpqcompat", "true");
     return url.toString();
   } catch {
     return value;

@@ -61,6 +61,7 @@ function ensureSslMode(value: string, issues: string[]): string {
   }
   if (url.searchParams.has("sslmode") || LOCAL_HOSTS.has(url.hostname.toLowerCase())) return value;
   url.searchParams.set("sslmode", "require");
+  url.searchParams.set("uselibpqcompat", "true");
   issues.push("added sslmode=require for a remote host");
   return url.toString();
 }
