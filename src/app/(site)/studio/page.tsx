@@ -15,7 +15,7 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
   const [settings, services, hours] = await Promise.all([
     getSettings(),
     listActiveServices(),
-    db.select().from(studioHours).orderBy(asc(studioHours.dayOfWeek)),
+    db.select().from(studioHours).orderBy(asc(studioHours.dayOfWeek)).catch(() => []),
   ]);
   const options: ServiceOption[] = services.map((s) => ({
     id: s.id,
