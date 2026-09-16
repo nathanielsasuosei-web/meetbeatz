@@ -12,6 +12,7 @@ import { slugify } from "@/lib/format";
 import { sendEmail } from "@/lib/email";
 import { emailLayout } from "@/lib/email-templates";
 import { sendOrderEmails } from "@/lib/payments";
+import { isPaystackConfigured, subaccountIsUsable } from "@/lib/paystack";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
 
@@ -184,12 +185,19 @@ export async function saveLicenseType(formData: FormData) {
 export async function saveSettingsAction(formData: FormData) {
   await guard();
   const feePercent = parseFloat(str(formData, "feePercent", "10"));
+  const subaccount = str(formData, "paystackSubaccount").trim();
+  if (subaccount && isPaystackConfigured()) {
+    const check = await subaccountIsUsable(subaccount);
+    if (!check.ok) {
+      done("/admin/settings", `Subaccount rejected by Paystack: ${check.error} Check that the code belongs to the same (test/live) account as your secret key.`);
+    }
+  }
   await saveSettings({
     siteName: str(formData, "siteName") || "Meetbeatz",
     tagline: str(formData, "tagline"),
     currency: (str(formData, "currency") || "GHS").toUpperCase().slice(0, 3),
     feePercent: (Number.isFinite(feePercent) ? Math.min(50, Math.max(0, feePercent)) : 10).toString(),
-    paystackSubaccount: str(formData, "paystackSubaccount"),
+    paystackSubaccount: subaccount,
     feeBearer: str(formData, "feeBearer") === "subaccount" ? "subaccount" : "account",
     contactEmail: str(formData, "contactEmail"),
     contactPhone: str(formData, "contactPhone"),

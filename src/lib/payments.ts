@@ -19,7 +19,7 @@ import { sendEmail } from "./email";
 import { adminNewOrderHtml, bookingEmailHtml, purchaseEmailHtml } from "./email-templates";
 import { minutesToTime, num, round2, timeToMinutes, toMinor } from "./format";
 import { makeLicenseKey, makeReference, randomToken } from "./ids";
-import { initializeTransaction, verifyTransaction, type VerifyResult } from "./paystack";
+import { initializeTransaction, isValidSubaccountCode, verifyTransaction, type VerifyResult } from "./paystack";
 import { getPaymentMode, getSettings, type SiteSettings } from "./settings";
 import { isSlotAvailable, isValidDateString, todayString } from "./slots";
 import { getBaseUrl } from "./url";
@@ -62,8 +62,16 @@ async function startPayment(order: Order, settings: SiteSettings, baseUrl: strin
   if (mode === "simulation") {
     return `${baseUrl}/checkout/simulate/${order.reference}`;
   }
-  const subaccount = settings.paystackSubaccount.trim() || null;
-  const result = await initializeTransaction({
+  const rawSubaccount = settings.paystackSubaccount.trim() || null;
+  // A malformed/foreign subaccount code makes Paystack reject the whole
+  // transaction with "Invalid Subaccount". Never let that block a sale:
+  // skip the split (money lands in the main account) and log it loudly.
+  let subaccount = rawSubaccount && isValidSubaccountCode(rawSubaccount) ? rawSubaccount : null;
+  if (rawSubaccount && !subaccount) {
+    console.error(`[payments] Ignoring malformed Paystack subaccount code "${rawSubaccount}" — expected ACCT_xxxxxxxxxx.`);
+  }
+
+  const build = () => ({
     email: order.customerEmail,
     amountMinor: toMinor(num(order.total)),
     currency: order.currency,
@@ -81,9 +89,28 @@ async function startPayment(order: Order, settings: SiteSettings, baseUrl: strin
     },
     subaccount,
     transactionChargeMinor: subaccount ? toMinor(num(order.fee)) : null,
-    bearer: settings.feeBearer === "subaccount" ? "subaccount" : "account",
+    bearer: (settings.feeBearer === "subaccount" ? "subaccount" : "account") as "account" | "subaccount",
     channels: order.network === "card" ? ["card"] : ["mobile_money", "card"],
   });
+
+  let result;
+  try {
+    result = await initializeTransaction(build());
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    // Paystack returns "Invalid Subaccount" when the code does not belong to
+    // the account behind PAYSTACK_SECRET_KEY (a very common test-vs-live key
+    // mismatch). Retry once without the split so the customer can still pay.
+    if (subaccount && /subaccount/i.test(message)) {
+      console.error(`[payments] Paystack rejected subaccount ${subaccount} (${message}). Retrying without split.`);
+      subaccount = null;
+      result = await initializeTransaction(build());
+      await db.update(orders).set({ splitSubaccount: null }).where(eq(orders.id, order.id));
+    } else {
+      throw err;
+    }
+  }
+
   await db
     .update(orders)
     .set({ providerData: { access_code: result.access_code, authorization_url: result.authorization_url } })
