@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
@@ -17,8 +18,11 @@ export default async function LoginPage() {
   return (
     <div className="grid min-h-screen place-items-center px-4 py-12">
       <div className="w-full max-w-md">
-        <Link href="/" className="display block text-center text-2xl tracking-[0.18em]">
-          MEET<span className="text-acid">BEATZ</span>
+        <Link href="/" className="flex items-center justify-center gap-3">
+          <Image src="/images/logo.png" alt="Meetbeatz logo" width={44} height={44} priority className="h-11 w-11 rounded-xl" />
+          <span className="display text-2xl tracking-[0.18em]">
+            MEET<span className="text-acid">BEATZ</span>
+          </span>
         </Link>
         <div className="card mt-8 p-8">
           <p className="eyebrow">Producer area</p>
