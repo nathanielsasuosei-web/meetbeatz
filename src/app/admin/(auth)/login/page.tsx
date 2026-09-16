@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { BrandMark } from "@/components/brand-mark";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/admin/login-form";
@@ -19,7 +19,7 @@ export default async function LoginPage() {
     <div className="grid min-h-screen place-items-center px-4 py-12">
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center justify-center gap-3">
-          <Image src="/images/logo.png" alt="Meetbeatz logo" width={44} height={44} priority className="h-11 w-11 rounded-xl" />
+          <BrandMark size={44} priority className="h-11 w-11 rounded-xl" />
           <span className="display text-2xl tracking-[0.18em]">
             MEET<span className="text-acid">BEATZ</span>
           </span>

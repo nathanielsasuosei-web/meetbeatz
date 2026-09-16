@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { BrandMark } from "@/components/brand-mark";
 import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, licenses } from "@/db/schema";
@@ -38,11 +38,9 @@ export default async function HomePage() {
         <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
           <p className="eyebrow">Beat store · Recording studio · {settings.location}</p>
           <h1 className="mt-5 flex flex-wrap items-center gap-4 sm:gap-6">
-            <Image
-              src="/images/logo.png"
-              alt={`${settings.siteName} logo`}
-              width={128}
-              height={128}
+            <BrandMark
+              siteName={settings.siteName}
+              size={128}
               priority
               className="h-16 w-16 rounded-2xl sm:h-24 sm:w-24 md:h-32 md:w-32"
             />

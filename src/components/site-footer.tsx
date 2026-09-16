@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { BrandMark } from "./brand-mark";
 import type { SiteSettings } from "@/lib/settings";
 
 const PAYMENT_BADGES = ["MTN MoMo", "Telecel Cash", "AirtelTigo Money", "Visa / Mastercard"];
@@ -10,7 +10,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
-            <Image src="/images/logo.png" alt={`${settings.siteName} logo`} width={40} height={40} className="h-10 w-10 rounded-lg" />
+            <BrandMark siteName={settings.siteName} size={40} className="h-10 w-10 rounded-lg" />
             <p className="display text-2xl tracking-[0.18em]">
               MEET<span className="text-acid">BEATZ</span>
             </p>
