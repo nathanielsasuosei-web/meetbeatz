@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { SiteSettings } from "@/lib/settings";
 
@@ -8,9 +9,12 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
     <footer className="border-t border-line bg-ink-2">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
-          <p className="display text-2xl tracking-[0.18em]">
-            MEET<span className="text-acid">BEATZ</span>
-          </p>
+          <div className="flex items-center gap-3">
+            <Image src="/images/logo.png" alt={`${settings.siteName} logo`} width={40} height={40} className="h-10 w-10 rounded-lg" />
+            <p className="display text-2xl tracking-[0.18em]">
+              MEET<span className="text-acid">BEATZ</span>
+            </p>
+          </div>
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">{settings.tagline}</p>
           <div className="mt-5 flex flex-wrap gap-2">
             {PAYMENT_BADGES.map((b) => (

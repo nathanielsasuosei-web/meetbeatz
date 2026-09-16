@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -15,9 +16,12 @@ const NAV = [
 export function Logo({ siteName }: { siteName: string }) {
   const [a, b] = siteName.toLowerCase().startsWith("meet") ? ["MEET", siteName.slice(4).toUpperCase()] : [siteName.toUpperCase(), ""];
   return (
-    <Link href="/" className="display text-xl tracking-[0.18em]">
-      {a}
-      <span className="text-acid">{b}</span>
+    <Link href="/" className="flex items-center gap-2.5">
+      <Image src="/images/logo.png" alt={`${siteName} logo`} width={36} height={36} priority className="h-9 w-9 rounded-lg" />
+      <span className="display text-xl tracking-[0.18em]">
+        {a}
+        <span className="text-acid">{b}</span>
+      </span>
     </Link>
   );
 }
