@@ -173,7 +173,7 @@ export default async function HomePage() {
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div className="relative aspect-4/3 overflow-hidden rounded-3xl border border-line">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/producer-console.jpg" alt={`${settings.siteName} at the mixing console`} className="h-full w-full object-cover" />
+            <img src="/images/meetbeatz-studio.jpeg" alt={`${settings.siteName} recording studio`} className="h-full w-full object-cover object-[center_35%]" />
             <div className="absolute inset-0 bg-linear-to-t from-ink/70 to-transparent" />
             <div className="absolute bottom-6 left-6">
               <p className="eyebrow">The studio</p>
