@@ -23,7 +23,6 @@ export default async function HomePage() {
     db.select({ value: count() }).from(licenses),
   ]);
   const showcase = featured.length >= 4 ? featured : latest;
-  const [a, b] = settings.siteName.toLowerCase().startsWith("meet") ? ["MEET", settings.siteName.slice(4).toUpperCase()] : [settings.siteName.toUpperCase(), ""];
 
   return (
     <>
@@ -31,13 +30,13 @@ export default async function HomePage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/hero.jpg" alt="" className="h-full w-full object-cover opacity-60" />
+          <img src="/images/meetbeatz-producer.jpeg" alt="" className="h-full w-full object-cover object-[center_30%] opacity-60" />
           <div className="absolute inset-0 bg-linear-to-b from-ink/30 via-ink/70 to-ink" />
           <div className="hero-grid absolute inset-0" />
         </div>
         <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
           <p className="eyebrow">Beat store · Recording studio · {settings.location}</p>
-          <h1 className="mt-5 flex flex-wrap items-center gap-4 sm:gap-6">
+          <h1 className="mt-5">
             <Image
               src="/images/logo.png"
               alt={`${settings.siteName} logo`}
@@ -46,10 +45,7 @@ export default async function HomePage() {
               priority
               className="h-16 w-16 rounded-2xl sm:h-24 sm:w-24 md:h-32 md:w-32"
             />
-            <span className="display text-5xl tracking-[0.18em] sm:text-7xl md:text-[6.5rem]">
-              {a}
-              <span className="text-acid">{b}</span>
-            </span>
+            <span className="sr-only">{settings.siteName}</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream/80">
             Original Afrobeats, Asakaa drill, Highlife and more — produced by {settings.siteName}. Pay with any mobile money network and your
@@ -138,12 +134,46 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Meet the producer */}
+      <section id="producer" className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+        <div className="grid items-center gap-12 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="relative aspect-4/5 overflow-hidden rounded-3xl border border-line">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/meetbeatz-producer.jpeg" alt={`${settings.siteName} in the studio`} className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-linear-to-t from-ink/70 via-transparent to-transparent" />
+            <div className="absolute bottom-6 left-6">
+              <p className="eyebrow">The man behind the boards</p>
+              <p className="display mt-1 text-3xl">{settings.siteName}</p>
+            </div>
+          </div>
+          <div>
+            <p className="eyebrow">Meet the producer</p>
+            <h2 className="display mt-2 text-4xl md:text-5xl">Built on feel. Mixed with intent.</h2>
+            <p className="mt-5 text-base leading-relaxed text-muted">
+              {settings.siteName} is a producer and mixing engineer out of {settings.location} — cooking up original Afrobeats, Asakaa drill, Highlife
+              and everything in between. Every beat is tracked, mixed and mastered in-house, so what you preview is exactly what lands in your inbox.
+            </p>
+            <p className="mt-4 text-base leading-relaxed text-muted">
+              No ghost-production middlemen, no resold loops — when you buy a beat or book a session here, you work directly with the source.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
+                Hear the beats
+              </Link>
+              <Link href="/studio" className="btn-ghost px-7! py-3.5! text-base">
+                Book studio time
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Studio */}
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div className="relative aspect-4/3 overflow-hidden rounded-3xl border border-line">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/studio.jpg" alt="Meetbeatz recording studio" className="h-full w-full object-cover" />
+            <img src="/images/meetbeatz-studio.jpeg" alt={`${settings.siteName} recording studio`} className="h-full w-full object-cover object-[center_35%]" />
             <div className="absolute inset-0 bg-linear-to-t from-ink/70 to-transparent" />
             <div className="absolute bottom-6 left-6">
               <p className="eyebrow">The studio</p>
