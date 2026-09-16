@@ -30,7 +30,7 @@ export default async function HomePage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/hero.jpg" alt="" className="h-full w-full object-cover object-[68%_center] opacity-60 md:object-center" />
+          <img src="/images/meetbeatz-producer.jpeg" alt="" className="h-full w-full object-cover object-[center_30%] opacity-60" />
           <div className="absolute inset-0 bg-linear-to-b from-ink/30 via-ink/70 to-ink" />
           <div className="hero-grid absolute inset-0" />
         </div>
@@ -139,7 +139,7 @@ export default async function HomePage() {
         <div className="grid items-center gap-12 lg:grid-cols-[0.85fr_1.15fr]">
           <div className="relative aspect-4/5 overflow-hidden rounded-3xl border border-line">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/producer.jpg" alt={`${settings.siteName} in the studio`} className="h-full w-full object-cover object-top" />
+            <img src="/images/meetbeatz-producer.jpeg" alt={`${settings.siteName} in the studio`} className="h-full w-full object-cover" />
             <div className="absolute inset-0 bg-linear-to-t from-ink/70 via-transparent to-transparent" />
             <div className="absolute bottom-6 left-6">
               <p className="eyebrow">The man behind the boards</p>
