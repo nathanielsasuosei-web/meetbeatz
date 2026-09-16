@@ -19,7 +19,7 @@ import { sendEmail } from "./email";
 import { adminNewOrderHtml, bookingEmailHtml, purchaseEmailHtml } from "./email-templates";
 import { minutesToTime, num, round2, timeToMinutes, toMinor } from "./format";
 import { makeLicenseKey, makeReference, randomToken } from "./ids";
-import { initializeTransaction, isValidSubaccountCode, verifyTransaction, type VerifyResult } from "./paystack";
+import { initializeTransaction, isValidSplitCode, isValidSubaccountCode, verifyTransaction, type VerifyResult } from "./paystack";
 import { getPaymentMode, getSettings, type SiteSettings } from "./settings";
 import { isSlotAvailable, isValidDateString, todayString } from "./slots";
 import { getBaseUrl } from "./url";
@@ -62,13 +62,33 @@ async function startPayment(order: Order, settings: SiteSettings, baseUrl: strin
   if (mode === "simulation") {
     return `${baseUrl}/checkout/simulate/${order.reference}`;
   }
-  const rawSubaccount = settings.paystackSubaccount.trim() || null;
-  // A malformed/foreign subaccount code makes Paystack reject the whole
-  // transaction with "Invalid Subaccount". Never let that block a sale:
-  // skip the split (money lands in the main account) and log it loudly.
-  let subaccount = rawSubaccount && isValidSubaccountCode(rawSubaccount) ? rawSubaccount : null;
-  if (rawSubaccount && !subaccount) {
-    console.error(`[payments] Ignoring malformed Paystack subaccount code "${rawSubaccount}" — expected ACCT_xxxxxxxxxx.`);
+  const rawSplitValue = settings.paystackSubaccount.trim() || null;
+
+  // The settings.paystackSubaccount field may hold either:
+  //   • a Paystack Split code   (SPL_xxx) — preferred, pre-defined split plan
+  //   • a subaccount code       (ACCT_xxx) — legacy subaccount-based split
+  // Detect which one it is. If it's neither, skip the split entirely so the
+  // customer can still pay (money lands in the main account).
+  let splitCode: string | null = null;
+  let subaccount: string | null = null;
+
+  if (rawSplitValue) {
+    if (isValidSplitCode(rawSplitValue)) {
+      splitCode = rawSplitValue;
+    } else if (isValidSubaccountCode(rawSplitValue)) {
+      subaccount = rawSplitValue;
+    } else {
+      console.error(`[payments] Ignoring unrecognised Paystack split/subaccount code "${rawSplitValue}" — expected SPL_xxx or ACCT_xxx.`);
+    }
+  }
+
+  // For legacy subaccount splits, we need a positive transaction charge (the
+  // platform fee). If the fee is 0, skip the split — Paystack rejects
+  // transaction_charge = 0 with "Invalid split transaction values".
+  const transactionChargeMinor = toMinor(num(order.fee));
+  if (subaccount && transactionChargeMinor <= 0) {
+    console.warn(`[payments] Skipping subaccount split: fee is ${order.fee} (minor: ${transactionChargeMinor}). Money will go to main account.`);
+    subaccount = null;
   }
 
   const build = () => ({
@@ -87,8 +107,9 @@ async function startPayment(order: Order, settings: SiteSettings, baseUrl: strin
         { display_name: "Order", variable_name: "order_reference", value: order.reference },
       ],
     },
+    splitCode,
     subaccount,
-    transactionChargeMinor: subaccount ? toMinor(num(order.fee)) : null,
+    transactionChargeMinor: subaccount ? transactionChargeMinor : null,
     bearer: (settings.feeBearer === "subaccount" ? "subaccount" : "account") as "account" | "subaccount",
     channels: order.network === "card" ? ["card"] : ["mobile_money", "card"],
   });
@@ -100,9 +121,13 @@ async function startPayment(order: Order, settings: SiteSettings, baseUrl: strin
     const message = err instanceof Error ? err.message : String(err);
     // Paystack returns "Invalid Subaccount" when the code does not belong to
     // the account behind PAYSTACK_SECRET_KEY (a very common test-vs-live key
-    // mismatch). Retry once without the split so the customer can still pay.
-    if (subaccount && /subaccount/i.test(message)) {
-      console.error(`[payments] Paystack rejected subaccount ${subaccount} (${message}). Retrying without split.`);
+    // mismatch). It returns "Invalid split transaction values" when the split
+    // configuration is wrong. In either case, retry without the split so the
+    // customer can still pay.
+    const hasSplit = splitCode || subaccount;
+    if (hasSplit && (/subaccount/i.test(message) || /split/i.test(message))) {
+      console.error(`[payments] Paystack rejected split (${message}). Retrying without split.`);
+      splitCode = null;
       subaccount = null;
       result = await initializeTransaction(build());
       await db.update(orders).set({ splitSubaccount: null }).where(eq(orders.id, order.id));

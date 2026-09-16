@@ -44,10 +44,10 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 </select>
               </div>
               <div className="sm:col-span-3">
-                <label className="label">Meetbeatz payout subaccount code</label>
-                <input name="paystackSubaccount" className="field font-mono" defaultValue={settings.paystackSubaccount} placeholder="ACCT_xxxxxxxxxxxx" />
+                <label className="label">Paystack split code or subaccount code</label>
+                <input name="paystackSubaccount" className="field font-mono" defaultValue={settings.paystackSubaccount} placeholder="SPL_xxx or ACCT_xxx" />
                 <p className="mt-1 text-[11px] text-muted">
-                  Create one in Paystack → Settings → Subaccounts (bank account or Mobile Money wallet), or use the helper on the right.
+                  Paste a <strong>Split code</strong> (SPL_xxx) from Paystack → Splits, or a <strong>subaccount code</strong> (ACCT_xxx) from Paystack → Subaccounts. Split codes are recommended — they handle recipients and percentages automatically.
                 </p>
               </div>
             </div>

@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   tagline: "Premium beats & studio sessions. Pay with Mobile Money, get your files instantly.",
   currency: "GHS",
   feePercent: "10",
-  paystackSubaccount: "",
+  paystackSubaccount: "SPL_u2dhKWTU3y",
   feeBearer: "account",
   contactEmail: "hello@meetbeatz.com",
   contactPhone: "+233 20 000 0000",

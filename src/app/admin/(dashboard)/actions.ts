@@ -12,7 +12,7 @@ import { slugify } from "@/lib/format";
 import { sendEmail } from "@/lib/email";
 import { emailLayout } from "@/lib/email-templates";
 import { sendOrderEmails } from "@/lib/payments";
-import { isPaystackConfigured, subaccountIsUsable } from "@/lib/paystack";
+import { isPaystackConfigured, isValidSplitCode, subaccountIsUsable } from "@/lib/paystack";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
 
@@ -186,7 +186,10 @@ export async function saveSettingsAction(formData: FormData) {
   await guard();
   const feePercent = parseFloat(str(formData, "feePercent", "10"));
   const subaccount = str(formData, "paystackSubaccount").trim();
-  if (subaccount && isPaystackConfigured()) {
+  // Only validate subaccount codes (ACCT_xxx) against Paystack. Split codes
+  // (SPL_xxx) are pre-configured in the Paystack dashboard and don't need
+  // validation here — they'll be verified when the first transaction runs.
+  if (subaccount && isPaystackConfigured() && !isValidSplitCode(subaccount)) {
     const check = await subaccountIsUsable(subaccount);
     if (!check.ok) {
       done("/admin/settings", `Subaccount rejected by Paystack: ${check.error} Check that the code belongs to the same (test/live) account as your secret key.`);

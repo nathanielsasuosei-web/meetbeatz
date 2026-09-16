@@ -38,6 +38,9 @@ export type InitializeParams = {
   reference: string;
   callbackUrl: string;
   metadata?: Record<string, unknown>;
+  /** Paystack split code (SPL_xxx) — preferred over subaccount for newer setups */
+  splitCode?: string | null;
+  /** Paystack subaccount code (ACCT_xxx) — legacy split mechanism */
   subaccount?: string | null;
   transactionChargeMinor?: number | null;
   bearer?: "account" | "subaccount";
@@ -60,11 +63,19 @@ export async function initializeTransaction(params: InitializeParams): Promise<I
     channels: params.channels ?? ["mobile_money", "card"],
     metadata: params.metadata ?? {},
   };
-  if (params.subaccount) {
+  // Paystack Split codes (SPL_xxx) are the newer, simpler split mechanism:
+  // the split configuration (recipients, percentages) is pre-defined in the
+  // Paystack dashboard and referenced by code. No transaction_charge or bearer
+  // needed — Paystack splits automatically per the split plan.
+  if (params.splitCode) {
+    body.split_code = params.splitCode;
+  }
+  // Legacy subaccount-based splits (ACCT_xxx) require explicit charge + bearer.
+  // Only include these if we have a valid subaccount AND a valid transaction charge.
+  // Paystack rejects incomplete or invalid splits with "Invalid split transaction values".
+  else if (params.subaccount && params.transactionChargeMinor && params.transactionChargeMinor > 0) {
     body.subaccount = params.subaccount;
-    if (params.transactionChargeMinor && params.transactionChargeMinor > 0) {
-      body.transaction_charge = params.transactionChargeMinor;
-    }
+    body.transaction_charge = params.transactionChargeMinor;
     body.bearer = params.bearer ?? "account";
   }
   return paystackFetch<InitializeResult>("/transaction/initialize", {
@@ -145,6 +156,16 @@ export async function createSubaccount(params: {
 
 export function isValidSubaccountCode(code: string | null | undefined): boolean {
   return /^ACCT_[A-Za-z0-9]{6,}$/.test((code ?? "").trim());
+}
+
+/** Returns true if code looks like a Paystack Split plan code (SPL_xxx). */
+export function isValidSplitCode(code: string | null | undefined): boolean {
+  return /^SPL_[A-Za-z0-9]{5,}$/.test((code ?? "").trim());
+}
+
+/** Returns true if the code is either a valid subaccount or split code. */
+export function isValidSplitIdentifier(code: string | null | undefined): boolean {
+  return isValidSubaccountCode(code) || isValidSplitCode(code);
 }
 
 /** Returns the subaccount if the code exists on the account tied to the current secret key. */
