@@ -142,3 +142,22 @@ export async function createSubaccount(params: {
     }),
   });
 }
+
+export function isValidSubaccountCode(code: string | null | undefined): boolean {
+  return /^ACCT_[A-Za-z0-9]{6,}$/.test((code ?? "").trim());
+}
+
+/** Returns the subaccount if the code exists on the account tied to the current secret key. */
+export async function fetchSubaccount(code: string): Promise<SubaccountResult> {
+  return paystackFetch<SubaccountResult>(`/subaccount/${encodeURIComponent(code.trim())}`, { method: "GET" });
+}
+
+export async function subaccountIsUsable(code: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isValidSubaccountCode(code)) return { ok: false, error: "Subaccount code must look like ACCT_xxxxxxxxxx." };
+  try {
+    await fetchSubaccount(code);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Subaccount could not be verified." };
+  }
+}
