@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { recordBeatPlay } from "@/lib/record-beat-play";
 
 export type Track = {
   id: number;
@@ -39,6 +40,8 @@ const PlayerContext = createContext<PlayerContextValue | null>(null);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const trackIdRef = useRef<number | null>(null);
+  const countedRef = useRef(false);
   const [current, setCurrent] = useState<Track | null>(null);
   const [queue, setQueue] = useState<Track[]>([]);
   const [playing, setPlaying] = useState(false);
@@ -56,17 +59,32 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     };
     const onMeta = () => setDuration(audio.duration || 0);
     const onPlay = () => setPlaying(true);
+    const onPlaying = () => {
+      // "play" can fire while the audio is still loading (or about to fail).
+      // Count only once it really starts; pause/resume and seeking don't add plays.
+      if (trackIdRef.current !== null && !countedRef.current) {
+        countedRef.current = true;
+        recordBeatPlay(trackIdRef.current);
+      }
+    };
     const onPause = () => setPlaying(false);
+    const onEnded = () => {
+      countedRef.current = false;
+    };
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onMeta);
     audio.addEventListener("play", onPlay);
+    audio.addEventListener("playing", onPlaying);
     audio.addEventListener("pause", onPause);
+    audio.addEventListener("ended", onEnded);
     return () => {
       audio.pause();
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onMeta);
       audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("playing", onPlaying);
       audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("ended", onEnded);
     };
   }, []);
 
@@ -74,14 +92,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current;
     if (!audio) return;
     if (newQueue) setQueue(newQueue);
-    setCurrent((prev) => {
-      if (!prev || prev.id !== track.id) {
-        audio.src = track.src;
-        setProgress(0);
-        setCurrentTime(0);
-      }
-      return track;
-    });
+    if (trackIdRef.current !== track.id) {
+      trackIdRef.current = track.id;
+      countedRef.current = false;
+      audio.src = track.src;
+      setProgress(0);
+      setCurrentTime(0);
+    }
+    setCurrent(track);
     void audio.play().catch(() => setPlaying(false));
   }, []);
 
