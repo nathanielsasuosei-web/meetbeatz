@@ -34,7 +34,7 @@ export function verifyPassword(password: string, stored: string): boolean {
 }
 
 export async function createAdminSession(admin: AdminSession) {
-  const token = await new SignJWT({ email: admin.email, name: admin.name })
+  const token = await new SignJWT({ email: admin.email, name: admin.name, role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(String(admin.id))
     .setIssuedAt()
@@ -61,7 +61,9 @@ export async function getAdminSession(): Promise<AdminSession | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey());
-    if (!payload.sub) return null;
+    // Sessions minted before roles existed carry no claim; a customer token
+    // must never open the admin dashboard.
+    if (!payload.sub || payload.role === "customer") return null;
     return {
       id: parseInt(payload.sub, 10),
       email: String(payload.email ?? ""),

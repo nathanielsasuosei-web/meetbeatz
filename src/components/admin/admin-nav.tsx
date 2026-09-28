@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/admin/beats", label: "Beats", icon: "♫" },
   { href: "/admin/orders", label: "Orders", icon: "◎" },
   { href: "/admin/bookings", label: "Bookings", icon: "◷" },
+  { href: "/admin/messages", label: "Messages", icon: "✉" },
   { href: "/admin/studio", label: "Studio & hours", icon: "◍" },
   { href: "/admin/licenses", label: "Licenses", icon: "✎" },
   { href: "/admin/settings", label: "Settings", icon: "⚙" },
