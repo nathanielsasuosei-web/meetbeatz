@@ -49,6 +49,8 @@ export const beats = pgTable("beats", {
   tags: text("tags").default("").notNull(),
   coverPath: text("cover_path"),
   previewPath: text("preview_path"),
+  /** Optional video preview (visualizer, studio clip…), streamed on the beat page. */
+  videoPath: text("video_path"),
   mp3Path: text("mp3_path"),
   wavPath: text("wav_path"),
   stemsPath: text("stems_path"),
@@ -227,7 +229,7 @@ export const storedFiles = pgTable("stored_files", {
   id: serial("id").primaryKey(),
   /** Relative path used everywhere else in the app, e.g. `mp3/lq3k-9f2.mp3`. */
   path: text("path").notNull().unique(),
-  /** covers | previews | mp3 | wav | stems */
+  /** covers | previews | videos | mp3 | wav | stems */
   kind: text("kind").notNull(),
   contentType: text("content_type").notNull(),
   /** Byte length of the whole file, as declared by the client. */

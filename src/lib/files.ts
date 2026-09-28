@@ -44,6 +44,10 @@ const MIME: Record<string, string> = {
   ".aif": "audio/aiff",
   ".aiff": "audio/aiff",
   ".flac": "audio/flac",
+  ".mp4": "video/mp4",
+  ".m4v": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
   ".zip": "application/zip",
   ".rar": "application/vnd.rar",
   ".7z": "application/x-7z-compressed",
@@ -333,6 +337,7 @@ async function collectGarbage(): Promise<void> {
           SELECT 1 FROM beats b
           WHERE b.cover_path = f.path
              OR b.preview_path = f.path
+             OR b.video_path = f.path
              OR b.mp3_path = f.path
              OR b.wav_path = f.path
              OR b.stems_path = f.path

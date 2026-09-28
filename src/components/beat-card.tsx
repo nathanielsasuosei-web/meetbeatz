@@ -40,6 +40,7 @@ export function BeatCard({ beat, queue, currency }: { beat: BeatCardData; queue:
         </button>
         <div className="absolute right-3 top-3 flex gap-1.5">
           {beat.isDemo && <span className="badge bg-black/60 backdrop-blur">Demo</span>}
+          {beat.videoUrl && <span className="badge bg-black/60 backdrop-blur">Video</span>}
           {beat.isFeatured && <span className="badge-acid bg-black/60 backdrop-blur">Featured</span>}
         </div>
         {isPlaying && (

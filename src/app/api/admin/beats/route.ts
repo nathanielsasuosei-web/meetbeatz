@@ -27,6 +27,7 @@ export async function POST(req: Request) {
         slug,
         coverPath: saved.coverPath ?? null,
         previewPath: saved.previewPath ?? null,
+        videoPath: saved.videoPath ?? null,
         mp3Path: saved.mp3Path ?? saved.wavPath ?? null,
         wavPath: saved.wavPath ?? null,
         stemsPath: saved.stemsPath ?? null,

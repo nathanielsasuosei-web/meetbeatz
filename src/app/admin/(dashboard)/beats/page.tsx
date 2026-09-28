@@ -95,6 +95,7 @@ export default async function AdminBeatsPage({ searchParams }: { searchParams: P
                     <td>
                       <div className="flex flex-wrap gap-1">
                         {b.previewPath && <span className="badge">Preview</span>}
+                        {b.videoPath && <span className="badge">Video</span>}
                         {b.mp3Path && <span className="badge">MP3</span>}
                         {b.wavPath && <span className="badge">WAV</span>}
                         {b.stemsPath && <span className="badge">Stems</span>}

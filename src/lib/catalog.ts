@@ -14,6 +14,8 @@ export type BeatCardData = {
   tags: string;
   cover: string | null;
   previewUrl: string;
+  /** Video preview URL when the admin uploaded one, else null. */
+  videoUrl: string | null;
   priceFrom: number | null;
   isDemo: boolean;
   isFeatured: boolean;
@@ -33,6 +35,7 @@ export function toCard(beat: Beat, priceFrom: string | number | null): BeatCardD
     tags: beat.tags,
     cover: coverUrl(beat.coverPath),
     previewUrl: `/api/beats/${beat.id}/preview`,
+    videoUrl: beat.videoPath ? `/api/beats/${beat.id}/video` : null,
     priceFrom: priceFrom === null ? null : num(priceFrom),
     isDemo: beat.isDemo,
     isFeatured: beat.isFeatured,

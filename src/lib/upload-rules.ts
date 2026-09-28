@@ -8,13 +8,14 @@
  */
 import { UploadError } from "./upload-error";
 
-export type UploadKind = "covers" | "previews" | "mp3" | "wav" | "stems";
+export type UploadKind = "covers" | "previews" | "videos" | "mp3" | "wav" | "stems";
 
-export const UPLOAD_KINDS: UploadKind[] = ["covers", "previews", "mp3", "wav", "stems"];
+export const UPLOAD_KINDS: UploadKind[] = ["covers", "previews", "videos", "mp3", "wav", "stems"];
 
 export const ALLOWED_EXT: Record<UploadKind, string[]> = {
   covers: [".jpg", ".jpeg", ".png", ".webp"],
   previews: [".mp3", ".wav", ".m4a", ".ogg", ".aac"],
+  videos: [".mp4", ".webm", ".mov", ".m4v"],
   mp3: [".mp3", ".m4a", ".wav", ".aac"],
   wav: [".wav", ".aif", ".aiff", ".flac", ".zip"],
   stems: [".zip", ".rar", ".7z"],
