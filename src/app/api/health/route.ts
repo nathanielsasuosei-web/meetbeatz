@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { DATABASE_URL_SOURCES, describeTarget, resolveDatabaseUrl } from "@/lib/database-url";
+import { DATABASE_URL_SOURCES, describeTarget, isLoopback, isServerlessRuntime, resolveDatabaseUrl } from "@/lib/database-url";
 
 export const dynamic = "force-dynamic";
 
@@ -40,13 +40,15 @@ export async function GET() {
 
   const target = describeTarget(resolved.value);
 
-  if (process.env.NODE_ENV === "production" && /^localhost:|^127\.|^::1:|^0\.0\.0\.0:/.test(target ?? "")) {
+  // Loopback is only fatal on a serverless host, where no local Postgres can
+  // exist. A self-hosted production server beside its own Postgres is fine.
+  if (process.env.NODE_ENV === "production" && isLoopback(resolved.value) && isServerlessRuntime()) {
     return Response.json(
       {
         ok: false,
         source: resolved.source,
         database: target,
-        reason: "The connection string points at localhost, which is unreachable once deployed.",
+        reason: "The connection string points at localhost, which is unreachable in a serverless runtime.",
         hint: "Replace it with a hosted PostgreSQL connection string (Neon, Railway, Supabase), then run `npm run db:push`.",
       },
       { status: 503 },

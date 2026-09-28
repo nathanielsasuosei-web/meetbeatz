@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { describeTarget, isLoopback, resolveDatabaseUrl } from "@/lib/database-url";
+import { describeTarget, isLoopback, isServerlessRuntime, resolveDatabaseUrl } from "@/lib/database-url";
 
 const globalForDb = globalThis as typeof globalThis & {
   __arenaNextJsPostgresqlPool?: { url: string; pool: Pool };
@@ -38,10 +38,11 @@ function ensurePool(): Pool {
     throw new Error(MISSING_URL);
   }
 
-  // A loopback URL is correct locally and impossible when deployed. Returning an
-  // empty pool here turned a one-line misconfiguration into a blank "Something went
-  // wrong" page with no mention of the database, so state the cause instead.
-  if (process.env.NODE_ENV === "production" && isLoopback(resolved.value)) {
+  // A loopback URL is correct locally and on a self-hosted server next to its own
+  // Postgres — but impossible inside a serverless runtime. Returning an empty pool
+  // here turned a one-line misconfiguration into a blank "Something went wrong"
+  // page with no mention of the database, so state the cause instead.
+  if (process.env.NODE_ENV === "production" && isLoopback(resolved.value) && isServerlessRuntime()) {
     throw new Error(LOOPBACK_URL);
   }
 
