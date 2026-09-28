@@ -34,13 +34,16 @@ export type BeatFormValues = {
   isFeatured: boolean;
   cover: string | null;
   hasPreview: boolean;
+  hasVideo: boolean;
+  /** URL of the stored video preview (for the edit page), or null. */
+  videoUrl: string | null;
   hasMp3: boolean;
   hasWav: boolean;
   hasStems: boolean;
   prices: Record<number, { enabled: boolean; price: number }>;
 };
 
-type FileSlot = { key: "cover" | "preview" | "mp3" | "wav" | "stems"; kind: UploadKind; label: string; hint: string };
+type FileSlot = { key: "cover" | "preview" | "video" | "mp3" | "wav" | "stems"; kind: UploadKind; label: string; hint: string };
 
 const LIMIT = formatBytes(MAX_UPLOAD_BYTES);
 
@@ -56,6 +59,12 @@ const FILE_FIELDS: FileSlot[] = [
     kind: "previews",
     label: "Tagged preview (optional)",
     hint: "MP3 with your producer tag — streamed publicly on the site. If empty, the MP3 below is used.",
+  },
+  {
+    key: "video",
+    kind: "videos",
+    label: "Video preview (optional)",
+    hint: `MP4/WebM/MOV — a visualizer, studio clip or music video shown on the beat page · up to ${LIMIT}`,
   },
   {
     key: "mp3",
@@ -443,9 +452,27 @@ export function BeatForm({ licenseTypes, beat, currency }: { licenseTypes: Licen
               <img src={beat.cover} alt="Current cover" className="h-full w-full object-cover" />
             </div>
           )}
+          {beat?.videoUrl && (
+            // eslint-disable-next-line jsx-a11y/media-has-caption -- preview clip, no caption track
+            <video
+              src={beat.videoUrl}
+              controls
+              playsInline
+              preload="metadata"
+              className="h-28 max-w-xs overflow-hidden rounded-xl border border-line bg-black"
+            />
+          )}
           {FILE_FIELDS.map((f) => {
             const has =
-              f.key === "cover" ? !!beat?.cover : f.key === "preview" ? beat?.hasPreview : f.key === "mp3" ? beat?.hasMp3 : f.key === "wav" ? beat?.hasWav : beat?.hasStems;
+              f.key === "cover"
+                ? !!beat?.cover
+                : {
+                    preview: beat?.hasPreview,
+                    video: beat?.hasVideo,
+                    mp3: beat?.hasMp3,
+                    wav: beat?.hasWav,
+                    stems: beat?.hasStems,
+                  }[f.key];
             return (
               <div key={f.key}>
                 <label className="label" htmlFor={`file-${f.key}`}>

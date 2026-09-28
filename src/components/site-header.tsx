@@ -26,7 +26,7 @@ export function Logo({ siteName }: { siteName: string }) {
   );
 }
 
-export function SiteHeader({ siteName }: { siteName: string }) {
+export function SiteHeader({ siteName, customer }: { siteName: string; customer: { name: string } | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -52,6 +52,15 @@ export function SiteHeader({ siteName }: { siteName: string }) {
           <Link href="/admin" className="text-xs font-semibold text-muted hover:text-cream">
             Producer login
           </Link>
+          {customer ? (
+            <Link href="/account" className="btn-ghost">
+              My account
+            </Link>
+          ) : (
+            <Link href="/account/login" className="text-xs font-semibold text-muted hover:text-cream">
+              Sign in
+            </Link>
+          )}
           <Link href="/studio" className="btn-primary">
             Book a session
           </Link>
@@ -70,6 +79,13 @@ export function SiteHeader({ siteName }: { siteName: string }) {
             ))}
             <Link href="/admin" onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 text-sm font-semibold text-muted">
               Producer login
+            </Link>
+            <Link
+              href={customer ? "/account" : "/account/login"}
+              onClick={() => setOpen(false)}
+              className="rounded-xl px-3 py-3 text-sm font-semibold text-muted"
+            >
+              {customer ? "My account" : "Sign in"}
             </Link>
             <Link href="/studio" onClick={() => setOpen(false)} className="btn-primary mt-2">
               Book a session

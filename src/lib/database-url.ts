@@ -104,3 +104,22 @@ export function isLoopback(value: string): boolean {
     return false;
   }
 }
+
+/**
+ * True inside a serverless functions runtime (Vercel, AWS Lambda, Azure
+ * Functions, Netlify), where each request runs in a short-lived function with
+ * no Postgres on localhost — a loopback URL there is always a misconfiguration.
+ *
+ * A long-lived Node server (`next start` on a VPS, or beside the repo's
+ * docker-compose Postgres) is NOT serverless: localhost is correct there and
+ * must keep working in production mode.
+ */
+export function isServerlessRuntime(env: NodeJS.ProcessEnv = process.env): boolean {
+  return Boolean(
+    env.VERCEL ||
+      env.AWS_LAMBDA_FUNCTION_NAME ||
+      env.FUNCTIONS_WORKER_RUNTIME ||
+      env.NETLIFY ||
+      env.DENO_DEPLOYMENT_ID,
+  );
+}

@@ -150,6 +150,8 @@ export async function createBeatOrder(input: {
   beatSlug: string;
   licenseTypeId: number;
   customer: Partial<CustomerInput>;
+  /** Signed-in artist — puts the order straight onto their account. */
+  customerId?: number | null;
 }): Promise<{ url: string; reference: string }> {
   const customer = cleanCustomer(input.customer);
   const [beat] = await db
@@ -185,6 +187,7 @@ export async function createBeatOrder(input: {
     .values({
       reference,
       kind: "beat",
+      customerId: input.customerId ?? null,
       customerName: customer.name,
       customerEmail: customer.email,
       customerPhone: customer.phone,
@@ -228,6 +231,8 @@ export async function createBookingOrder(input: {
   hours: number;
   notes: string;
   customer: Partial<CustomerInput>;
+  /** Signed-in artist — puts the order straight onto their account. */
+  customerId?: number | null;
 }): Promise<{ url: string; reference: string }> {
   const customer = cleanCustomer(input.customer);
   const [service] = await db
@@ -259,6 +264,7 @@ export async function createBookingOrder(input: {
     .values({
       reference,
       kind: "booking",
+      customerId: input.customerId ?? null,
       customerName: customer.name,
       customerEmail: customer.email,
       customerPhone: customer.phone,

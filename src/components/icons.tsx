@@ -60,6 +60,15 @@ export function CloseIcon(props: P) {
   );
 }
 
+export function ChatIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M21 12a8 8 0 0 1-8 8H5l-2 2V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z" />
+      <path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01" />
+    </svg>
+  );
+}
+
 export function Equalizer({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex h-4 items-end gap-[3px] ${className}`} aria-hidden>

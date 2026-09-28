@@ -35,6 +35,35 @@ export const settings = pgTable("settings", {
 });
 
 // ---------------------------------------------------------------------------
+// Customers (artist accounts) & support chat
+// ---------------------------------------------------------------------------
+
+/** Artist/customer accounts — separate from admins. Owns a purchase history and a chat thread. */
+export const customers = pgTable("customers", {
+  id: serial("id").primaryKey(),
+  /** Always stored lowercase so sign-in and order matching are case-insensitive. */
+  email: text("email").notNull().unique(),
+  name: text("name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  phone: text("phone").default("").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** One support thread per customer: customer ↔ admin messages, plus system notices. */
+export const customerMessages = pgTable("customer_messages", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
+  /** customer | admin | system */
+  fromRole: text("from_role").default("customer").notNull(),
+  body: text("body").notNull(),
+  /** Set when the other side has seen it — drives the unread badges. */
+  readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ---------------------------------------------------------------------------
 // Beats & licensing
 // ---------------------------------------------------------------------------
 export const beats = pgTable("beats", {
@@ -49,6 +78,8 @@ export const beats = pgTable("beats", {
   tags: text("tags").default("").notNull(),
   coverPath: text("cover_path"),
   previewPath: text("preview_path"),
+  /** Optional video preview (visualizer, studio clip…), streamed on the beat page. */
+  videoPath: text("video_path"),
   mp3Path: text("mp3_path"),
   wavPath: text("wav_path"),
   stemsPath: text("stems_path"),
@@ -124,6 +155,8 @@ export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   reference: text("reference").notNull().unique(),
   kind: text("kind").notNull(), // beat | booking
+  /** Set when the buyer was signed in — puts the order on their account page. */
+  customerId: integer("customer_id").references(() => customers.id, { onDelete: "set null" }),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email").notNull(),
   customerPhone: text("customer_phone").default("").notNull(),
@@ -227,7 +260,7 @@ export const storedFiles = pgTable("stored_files", {
   id: serial("id").primaryKey(),
   /** Relative path used everywhere else in the app, e.g. `mp3/lq3k-9f2.mp3`. */
   path: text("path").notNull().unique(),
-  /** covers | previews | mp3 | wav | stems */
+  /** covers | previews | videos | mp3 | wav | stems */
   kind: text("kind").notNull(),
   contentType: text("content_type").notNull(),
   /** Byte length of the whole file, as declared by the client. */
@@ -255,6 +288,8 @@ export const storedFileChunks = pgTable(
 );
 
 export type Beat = typeof beats.$inferSelect;
+export type Customer = typeof customers.$inferSelect;
+export type CustomerMessage = typeof customerMessages.$inferSelect;
 export type LicenseType = typeof licenseTypes.$inferSelect;
 export type BeatLicense = typeof beatLicenses.$inferSelect;
 export type Service = typeof services.$inferSelect;

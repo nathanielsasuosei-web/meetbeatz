@@ -42,7 +42,7 @@ export function parseBeatFields(fd: FormData) {
   };
 }
 
-export type BeatFileColumn = "coverPath" | "previewPath" | "mp3Path" | "wavPath" | "stemsPath";
+export type BeatFileColumn = "coverPath" | "previewPath" | "videoPath" | "mp3Path" | "wavPath" | "stemsPath";
 
 /**
  * The file slots of the beat form. The browser uploads each file separately
@@ -52,6 +52,7 @@ export type BeatFileColumn = "coverPath" | "previewPath" | "mp3Path" | "wavPath"
 export const BEAT_FILE_FIELDS: { field: string; kind: UploadKind; column: BeatFileColumn }[] = [
   { field: "coverPath", kind: "covers", column: "coverPath" },
   { field: "previewPath", kind: "previews", column: "previewPath" },
+  { field: "videoPath", kind: "videos", column: "videoPath" },
   { field: "mp3Path", kind: "mp3", column: "mp3Path" },
   { field: "wavPath", kind: "wav", column: "wavPath" },
   { field: "stemsPath", kind: "stems", column: "stemsPath" },
@@ -99,7 +100,14 @@ export async function syncBeatPrices(beatId: number, fd: FormData) {
 }
 
 export async function removeOldFiles(
-  old: { coverPath: string | null; previewPath: string | null; mp3Path: string | null; wavPath: string | null; stemsPath: string | null },
+  old: {
+    coverPath: string | null;
+    previewPath: string | null;
+    videoPath: string | null;
+    mp3Path: string | null;
+    wavPath: string | null;
+    stemsPath: string | null;
+  },
   replaced: Partial<Record<string, string>>,
 ) {
   for (const [column, newPath] of Object.entries(replaced)) {

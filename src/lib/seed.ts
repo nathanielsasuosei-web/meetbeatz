@@ -246,6 +246,7 @@ async function importDiskUploads() {
       .select({
         coverPath: beats.coverPath,
         previewPath: beats.previewPath,
+        videoPath: beats.videoPath,
         mp3Path: beats.mp3Path,
         wavPath: beats.wavPath,
         stemsPath: beats.stemsPath,

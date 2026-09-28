@@ -1,4 +1,5 @@
 import { CheckoutError, createBookingOrder } from "@/lib/payments";
+import { getCustomerSession } from "@/lib/customer-auth";
 import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,8 @@ export async function POST(req: Request) {
       notes?: string;
       customer?: Record<string, string>;
     };
+    // A signed-in artist's booking lands on their account page automatically.
+    const session = await getCustomerSession();
     const result = await createBookingOrder({
       serviceId: Number(body.serviceId),
       date: String(body.date ?? ""),
@@ -21,6 +24,7 @@ export async function POST(req: Request) {
       hours: Number(body.hours),
       notes: String(body.notes ?? ""),
       customer: body.customer ?? {},
+      customerId: session?.id ?? null,
     });
     return Response.json(result);
   } catch (err) {

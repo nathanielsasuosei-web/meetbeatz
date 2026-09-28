@@ -33,6 +33,8 @@ export default async function EditBeatPage({ params }: { params: Promise<{ id: s
     isFeatured: beat.isFeatured,
     cover: coverUrl(beat.coverPath),
     hasPreview: !!beat.previewPath,
+    hasVideo: !!beat.videoPath,
+    videoUrl: beat.videoPath ? `/api/beats/${beat.id}/video` : null,
     hasMp3: !!beat.mp3Path,
     hasWav: !!beat.wavPath,
     hasStems: !!beat.stemsPath,

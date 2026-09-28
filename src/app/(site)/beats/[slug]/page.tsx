@@ -36,14 +36,35 @@ export default async function BeatDetailPage({ params }: Props) {
       </Link>
       <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,420px)_1fr]">
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <div className="relative aspect-square overflow-hidden rounded-3xl border border-line bg-panel-2">
-            <CoverArt beat={card} />
-            {!beat.exclusiveSold && (
-              <div className="absolute bottom-5 left-5">
-                <PlayButton track={toTrack(card)} className="px-5 py-3 shadow-2xl" label="Play preview" />
-              </div>
-            )}
-          </div>
+          {card.videoUrl ? (
+            <>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption -- producer preview clip, no caption track */}
+              <video
+                src={card.videoUrl}
+                poster={card.cover ?? undefined}
+                controls
+                playsInline
+                preload="metadata"
+                className="aspect-video w-full rounded-3xl border border-line bg-black object-cover"
+              >
+                Your browser does not support embedded video.
+              </video>
+              {!beat.exclusiveSold && (
+                <div className="mt-4">
+                  <PlayButton track={toTrack(card)} className="px-5 py-3 shadow-xl" label="Play audio preview" />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="relative aspect-square overflow-hidden rounded-3xl border border-line bg-panel-2">
+              <CoverArt beat={card} />
+              {!beat.exclusiveSold && (
+                <div className="absolute bottom-5 left-5">
+                  <PlayButton track={toTrack(card)} className="px-5 py-3 shadow-2xl" label="Play preview" />
+                </div>
+              )}
+            </div>
+          )}
           <dl className="mt-5 grid grid-cols-3 gap-3 text-center">
             {[
               ["BPM", beat.bpm ? String(beat.bpm) : "—"],

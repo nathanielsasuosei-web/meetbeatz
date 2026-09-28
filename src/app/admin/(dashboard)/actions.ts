@@ -75,7 +75,7 @@ export async function deleteBeat(id: number) {
   const [beat] = await db.select().from(beats).where(eq(beats.id, id)).limit(1);
   if (beat) {
     await db.delete(beats).where(eq(beats.id, id));
-    for (const p of [beat.coverPath, beat.previewPath, beat.mp3Path, beat.wavPath, beat.stemsPath]) {
+    for (const p of [beat.coverPath, beat.previewPath, beat.videoPath, beat.mp3Path, beat.wavPath, beat.stemsPath]) {
       if (p && !p.startsWith("/") && !p.startsWith("previews/demo-")) await deleteUpload(p);
     }
   }
