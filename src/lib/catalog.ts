@@ -20,6 +20,8 @@ export type BeatCardData = {
   isDemo: boolean;
   isFeatured: boolean;
   exclusiveSold: boolean;
+  /** Total full-preview plays counted on the store. */
+  plays: number;
   createdAt: string;
 };
 
@@ -40,6 +42,7 @@ export function toCard(beat: Beat, priceFrom: string | number | null): BeatCardD
     isDemo: beat.isDemo,
     isFeatured: beat.isFeatured,
     exclusiveSold: beat.exclusiveSold,
+    plays: beat.plays,
     createdAt: beat.createdAt.toISOString(),
   };
 }

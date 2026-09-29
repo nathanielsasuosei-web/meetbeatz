@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, count, desc, eq, gt, gte, sum } from "drizzle-orm";
+import { and, count, desc, eq, gte, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, bookings, licenses, orders } from "@/db/schema";
 import { PageHeader, StatusBadge } from "@/components/admin/flash";
@@ -10,14 +10,14 @@ import { todayString } from "@/lib/slots";
 
 export default async function AdminDashboard() {
   const settings = await getSettings();
-  const [[rev], [beatCount], [playCount], mostPlayed, [licCount], [upcoming], recentOrders, upcomingBookings] = await Promise.all([
+  const [[rev], [beatCount], [playCount], beatPlays, [licCount], [upcoming], recentOrders, upcomingBookings] = await Promise.all([
     db
       .select({ subtotal: sum(orders.subtotal), fee: sum(orders.fee), total: sum(orders.total), n: count() })
       .from(orders)
       .where(eq(orders.status, "paid")),
     db.select({ n: count() }).from(beats),
     db.select({ n: sum(beats.plays) }).from(beats),
-    db.select({ id: beats.id, title: beats.title, plays: beats.plays }).from(beats).where(gt(beats.plays, 0)).orderBy(desc(beats.plays), beats.id).limit(5),
+    db.select({ id: beats.id, title: beats.title, plays: beats.plays }).from(beats).orderBy(desc(beats.plays), desc(beats.id)).limit(100),
     db.select({ n: count() }).from(licenses),
     db
       .select({ n: count() })
@@ -48,6 +48,8 @@ export default async function AdminDashboard() {
     { label: "Beats in catalog", value: String(beatCount.n) },
     { label: "Beat plays", value: Number(playCount.n ?? 0).toLocaleString("en-US") },
   ];
+
+  const maxPlays = Math.max(0, ...beatPlays.map((b) => b.plays));
 
   return (
     <>
@@ -120,17 +122,33 @@ export default async function AdminDashboard() {
         <div className="space-y-6">
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-5 py-4">
-              <h2 className="font-bold">Most played beats</h2>
+              <h2 className="font-bold">Beat plays (previews)</h2>
               <Link href="/admin/beats" className="text-xs font-semibold text-acid">All beats →</Link>
             </div>
             <ul className="divide-y divide-line">
-              {mostPlayed.length === 0 && <li className="px-5 py-6 text-center text-sm text-muted">No plays yet.</li>}
-              {mostPlayed.map((beat) => (
-                <li key={beat.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
-                  <Link href={`/admin/beats/${beat.id}`} className="min-w-0 truncate font-semibold hover:text-acid">{beat.title}</Link>
-                  <span className="shrink-0 text-xs text-muted">{beat.plays.toLocaleString("en-US")} plays</span>
-                </li>
-              ))}
+              {beatPlays.length === 0 && <li className="px-5 py-6 text-center text-sm text-muted">No beats yet.</li>}
+              {beatPlays.map((beat, i) => {
+                const pct = maxPlays > 0 && beat.plays > 0 ? Math.max(4, Math.round((beat.plays / maxPlays) * 100)) : 0;
+                return (
+                  <li key={beat.id} className="relative overflow-hidden px-5 py-3 text-sm">
+                    {pct > 0 && (
+                      <span
+                        aria-hidden
+                        className="play-bar absolute inset-y-0 left-0 bg-acid/15"
+                        style={{ width: `${pct}%`, animationDelay: `${i * 70}ms` }}
+                      />
+                    )}
+                    <div className="relative flex items-center justify-between gap-3">
+                      <Link href={`/admin/beats/${beat.id}`} className="min-w-0 truncate font-semibold hover:text-acid">
+                        {beat.title}
+                      </Link>
+                      <span className="shrink-0 text-xs font-semibold text-muted">
+                        {beat.plays.toLocaleString("en-US")} {beat.plays === 1 ? "play" : "plays"}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 

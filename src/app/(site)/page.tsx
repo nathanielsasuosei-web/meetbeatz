@@ -4,6 +4,7 @@ import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, licenses } from "@/db/schema";
 import { BeatGrid } from "@/components/beat-card";
+import { Reveal } from "@/components/reveal";
 import { listActiveServices, listBeats, listLicenseTypes } from "@/lib/catalog";
 import { DELIVERABLE_LABELS, deliverableList, money, num } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
@@ -105,7 +106,9 @@ export default async function HomePage() {
             View all beats →
           </Link>
         </div>
-        <BeatGrid beats={showcase} currency={settings.currency} />
+        <Reveal target=".card" stagger={90}>
+          <BeatGrid beats={showcase} currency={settings.currency} />
+        </Reveal>
       </section>
 
       {/* How it works */}
@@ -113,7 +116,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
           <p className="eyebrow">How it works</p>
           <h2 className="display mt-2 max-w-2xl text-4xl md:text-5xl">From preview to your inbox in three taps.</h2>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
+          <Reveal className="mt-12 grid gap-6 md:grid-cols-3">
             {[
               {
                 n: "01",
@@ -137,7 +140,7 @@ export default async function HomePage() {
                 <p className="mt-3 text-sm leading-relaxed text-muted">{step.text}</p>
               </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -226,7 +229,7 @@ export default async function HomePage() {
             Prices shown are starting prices — each beat has its own pricing. Every purchase comes with a license certificate you can show to
             distributors, labels and streaming platforms.
           </p>
-          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <Reveal className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {licenseTypes.map((lt) => (
               <div key={lt.id} className={`${lt.isExclusive ? "glass-acid" : "card"} flex flex-col rounded-2xl p-6`}>
                 <p className="text-lg font-bold">{lt.name}</p>
@@ -245,7 +248,7 @@ export default async function HomePage() {
                 </Link>
               </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 

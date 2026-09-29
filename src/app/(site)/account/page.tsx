@@ -6,6 +6,7 @@ import { DownloadIcon } from "@/components/icons";
 import { loadAccountData } from "@/lib/account";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { DELIVERABLE_LABELS, deliverableList, formatDate, formatDateTime, money, statusLabel } from "@/lib/format";
+import { Reveal } from "@/components/reveal";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,7 @@ export default async function AccountPage() {
             certificate ready to download.
           </div>
         ) : (
-          <div className="mt-5 space-y-4">
+          <Reveal className="mt-5 space-y-4">
             {beatOrders.map(({ order, items, licenses }) => (
               <div key={order.id} className="card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -107,7 +108,7 @@ export default async function AccountPage() {
                 )}
               </div>
             ))}
-          </div>
+          </Reveal>
         )}
       </section>
 
@@ -126,7 +127,7 @@ export default async function AccountPage() {
             No studio sessions yet — book recording, mixing or mastering time and it will appear here.
           </div>
         ) : (
-          <div className="mt-5 space-y-3">
+          <Reveal className="mt-5 space-y-3">
             {bookings.map((b) => (
               <div key={b.id} className="card flex flex-wrap items-center justify-between gap-3 p-5">
                 <div>
@@ -148,7 +149,7 @@ export default async function AccountPage() {
                 </div>
               </div>
             ))}
-          </div>
+          </Reveal>
         )}
       </section>
 
