@@ -1,5 +1,5 @@
 import { CheckoutError, createBookingOrder } from "@/lib/payments";
-import { getCustomerSession } from "@/lib/customer-auth";
+import { getCustomerSession, normalizeEmail } from "@/lib/customer-auth";
 import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +17,9 @@ export async function POST(req: Request) {
     };
     // A signed-in artist's booking lands on their account page automatically.
     const session = await getCustomerSession();
+    if (session && normalizeEmail(body.customer?.email ?? "") !== session.email) {
+      throw new CheckoutError("Use your account email at checkout so this booking appears in your purchases.");
+    }
     const result = await createBookingOrder({
       serviceId: Number(body.serviceId),
       date: String(body.date ?? ""),

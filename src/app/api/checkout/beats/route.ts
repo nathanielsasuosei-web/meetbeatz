@@ -1,5 +1,5 @@
 import { CheckoutError, createBeatOrder } from "@/lib/payments";
-import { getCustomerSession } from "@/lib/customer-auth";
+import { getCustomerSession, normalizeEmail } from "@/lib/customer-auth";
 import { ensureSeeded } from "@/lib/seed";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,9 @@ export async function POST(req: Request) {
     };
     // A signed-in artist's purchase lands on their account page automatically.
     const session = await getCustomerSession();
+    if (session && normalizeEmail(body.customer?.email ?? "") !== session.email) {
+      throw new CheckoutError("Use your account email at checkout so this beat appears in your purchases.");
+    }
     const result = await createBeatOrder({
       beatSlug: String(body.beatSlug ?? ""),
       licenseTypeId: Number(body.licenseTypeId),

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { CoverArt } from "@/components/beat-card";
 import { CheckoutForm } from "@/components/checkout-form";
 import { getBeatBySlug, toCard } from "@/lib/catalog";
+import { getCustomerSession } from "@/lib/customer-auth";
 import { DELIVERABLE_LABELS, deliverableList, money, num } from "@/lib/format";
 import { computeTotals } from "@/lib/payments";
 import { getPaymentMode, getSettings } from "@/lib/settings";
@@ -18,7 +19,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const selected = data.licenses.find((l) => l.id === Number(license)) ?? data.licenses[0];
   if (!selected) notFound();
 
-  const settings = await getSettings();
+  const [settings, account] = await Promise.all([getSettings(), getCustomerSession()]);
   const totals = computeTotals(selected.price, num(settings.feePercent));
   const card = toCard(data.beat, selected.price);
   const mode = getPaymentMode();
@@ -89,6 +90,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
           <div className="mt-6">
             <CheckoutForm
               endpoint="/api/checkout/beats"
+              account={account}
               payload={{ beatSlug: data.beat.slug, licenseTypeId: selected.id }}
               buttonLabel={`Pay ${money(totals.total, settings.currency)}`}
             />

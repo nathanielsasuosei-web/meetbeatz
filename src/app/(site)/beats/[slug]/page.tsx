@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { BeatGrid, CoverArt } from "@/components/beat-card";
+import { BeatVideo } from "@/components/beat-video";
 import { LicensePicker } from "@/components/license-picker";
 import { PlayButton } from "@/components/play-button";
 import { getBeatBySlug, listBeats, toCard } from "@/lib/catalog";
@@ -38,17 +39,7 @@ export default async function BeatDetailPage({ params }: Props) {
         <div className="lg:sticky lg:top-24 lg:self-start">
           {card.videoUrl ? (
             <>
-              {/* eslint-disable-next-line jsx-a11y/media-has-caption -- producer preview clip, no caption track */}
-              <video
-                src={card.videoUrl}
-                poster={card.cover ?? undefined}
-                controls
-                playsInline
-                preload="metadata"
-                className="aspect-video w-full rounded-3xl border border-line bg-black object-cover"
-              >
-                Your browser does not support embedded video.
-              </video>
+              <BeatVideo key={beat.id} beatId={beat.id} src={card.videoUrl} poster={card.cover} />
               {!beat.exclusiveSold && (
                 <div className="mt-4">
                   <PlayButton track={toTrack(card)} className="px-5 py-3 shadow-xl" label="Play audio preview" />

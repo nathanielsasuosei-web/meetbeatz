@@ -7,10 +7,12 @@ export const dynamic = "force-dynamic";
  * The artist's support chat thread (see the chat widget).
  * GET returns the thread; POST appends a customer message.
  */
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getCustomerSession();
   if (!session) return Response.json({ error: "Sign in to use the chat." }, { status: 401 });
-  await markAdminMessagesRead(session.id);
+  // The closed widget polls for unread replies. Only opening the conversation
+  // should mark them as seen; polling in the background must preserve the badge.
+  if (new URL(req.url).searchParams.get("read") === "1") await markAdminMessagesRead(session.id);
   const [messages, unread] = await Promise.all([listThreadMessages(session.id), unreadReplyCount(session.id)]);
   return Response.json({ messages, unread });
 }

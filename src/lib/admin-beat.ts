@@ -1,7 +1,7 @@
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { beatLicenses, beats, licenseTypes } from "@/db/schema";
-import { deleteUpload, getReadyFile, type UploadKind } from "./files";
+import { getReadyFile, type UploadKind } from "./files";
 import { slugify } from "./format";
 import { UploadError } from "./upload-error";
 
@@ -97,23 +97,4 @@ export async function syncBeatPrices(beatId: number, fd: FormData) {
     })
     .filter((v): v is NonNullable<typeof v> => v !== null);
   if (values.length) await db.insert(beatLicenses).values(values);
-}
-
-export async function removeOldFiles(
-  old: {
-    coverPath: string | null;
-    previewPath: string | null;
-    videoPath: string | null;
-    mp3Path: string | null;
-    wavPath: string | null;
-    stemsPath: string | null;
-  },
-  replaced: Partial<Record<string, string>>,
-) {
-  for (const [column, newPath] of Object.entries(replaced)) {
-    const prev = (old as Record<string, string | null>)[column];
-    if (newPath && prev && !prev.startsWith("/") && !prev.startsWith("previews/demo-")) {
-      await deleteUpload(prev);
-    }
-  }
 }

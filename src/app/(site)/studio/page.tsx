@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { studioHours } from "@/db/schema";
 import { BookingForm, type ServiceOption } from "@/components/booking-form";
 import { listActiveServices } from "@/lib/catalog";
+import { getCustomerSession } from "@/lib/customer-auth";
 import { DAY_NAMES, formatTime12, money, num } from "@/lib/format";
 import { getPaymentMode, getSettings } from "@/lib/settings";
 
@@ -12,10 +13,11 @@ export const dynamic = "force-dynamic";
 
 export default async function StudioPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
   const { service: serviceSlug } = await searchParams;
-  const [settings, services, hours] = await Promise.all([
+  const [settings, services, hours, account] = await Promise.all([
     getSettings(),
     listActiveServices(),
     db.select().from(studioHours).orderBy(asc(studioHours.dayOfWeek)),
+    getCustomerSession(),
   ]);
   const options: ServiceOption[] = services.map((s) => ({
     id: s.id,
@@ -65,7 +67,7 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
             <strong>Test mode:</strong> payments are simulated until <code>PAYSTACK_SECRET_KEY</code> is configured.
           </div>
         )}
-        <BookingForm services={options} initialServiceId={initial} feePercent={num(settings.feePercent)} currency={settings.currency} />
+        <BookingForm services={options} initialServiceId={initial} feePercent={num(settings.feePercent)} currency={settings.currency} account={account} />
       </section>
 
       <section className="border-t border-line bg-ink-2">
