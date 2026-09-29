@@ -34,14 +34,21 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <section className="relative overflow-hidden border-b border-line">
+      <section className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/studio.jpg" alt="" className="h-full w-full object-cover opacity-40" />
           <div className="absolute inset-0 bg-linear-to-b from-ink/40 to-ink" />
+          <div className="liquid-orbs absolute inset-0">
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6">
-          <p className="eyebrow">Studio bookings · {settings.location}</p>
+          <div className="glass inline-flex rounded-full px-4 py-1.5">
+            <p className="eyebrow !tracking-[0.18em]">Studio bookings · {settings.location}</p>
+          </div>
           <h1 className="display mt-4 text-5xl md:text-7xl">Book your session.</h1>
           <p className="mt-5 max-w-xl text-base text-cream/80">
             Recording, mixing and mastering with {settings.siteName}. Pick a slot, pay the deposit with Mobile Money, and your confirmation is
@@ -49,9 +56,9 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
           </p>
           <div className="mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
             {services.map((s) => (
-              <div key={s.id} className="rounded-2xl border border-line bg-ink/70 p-4 backdrop-blur">
+              <div key={s.id} className="glass rounded-2xl p-4">
                 <p className="font-bold">{s.name}</p>
-                <p className="display mt-1 text-2xl text-acid">{money(s.pricePerHour, settings.currency)}</p>
+                <p className="display mt-1 text-2xl text-acid drop-shadow-[0_0_16px_rgba(198,241,53,0.3)]">{money(s.pricePerHour, settings.currency)}</p>
                 <p className="text-[11px] uppercase tracking-wider text-muted">
                   per hour · {s.minHours}–{s.maxHours} hrs · {s.depositPercent}% deposit
                 </p>
@@ -70,13 +77,13 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
         <BookingForm services={options} initialServiceId={initial} feePercent={num(settings.feePercent)} currency={settings.currency} account={account} />
       </section>
 
-      <section className="border-t border-line bg-ink-2">
+      <section className="glass-section">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2">
           <div>
             <p className="eyebrow">Opening hours</p>
-            <ul className="mt-4 divide-y divide-line border-y border-line text-sm">
+            <ul className="glass mt-4 divide-y divide-white/10 overflow-hidden rounded-2xl text-sm">
               {hours.map((h) => (
-                <li key={h.id} className="flex justify-between py-2.5">
+                <li key={h.id} className="flex justify-between px-4 py-2.5">
                   <span className="font-semibold">{DAY_NAMES[h.dayOfWeek]}</span>
                   <span className={h.isOpen ? "text-cream/80" : "text-muted"}>
                     {h.isOpen ? `${formatTime12(h.opensAt)} – ${formatTime12(h.closesAt)}` : "Closed"}

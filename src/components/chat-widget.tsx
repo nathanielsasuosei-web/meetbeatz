@@ -87,7 +87,7 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-24 right-4 z-50 grid h-14 w-14 place-items-center rounded-full bg-acid text-ink shadow-2xl transition hover:scale-105"
+        className="fixed bottom-24 right-4 z-50 grid h-14 w-14 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_10px_32px_-4px_rgba(198,241,53,0.5),0_8px_24px_-6px_rgba(0,0,0,0.5)] transition hover:scale-105"
         aria-label={open ? "Close chat" : "Chat with us"}
       >
         {open ? <CloseIcon className="h-6 w-6" /> : <ChatIcon className="h-6 w-6" />}
@@ -99,8 +99,8 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
       </button>
 
       {open && (
-        <div className="fixed bottom-44 right-4 z-50 flex h-[26rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
-          <div className="border-b border-line bg-panel-2 px-4 py-3">
+        <div className="glass-strong fixed bottom-44 right-4 z-50 flex h-[26rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl">
+          <div className="border-b border-white/10 bg-white/5 px-4 py-3">
             <p className="text-sm font-bold">Chat with Meetbeatz</p>
             <p className="text-[11px] text-muted">{customer ? `Hi ${customer.name.split(" ")[0]} — ask us anything` : "Sign in to start chatting"}</p>
           </div>
@@ -136,7 +136,9 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
                     <div key={m.id} className={`flex ${m.fromRole === "customer" ? "justify-end" : "justify-start"}`}>
                       <div
                         className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
-                          m.fromRole === "customer" ? "rounded-br-md bg-acid text-ink" : "rounded-bl-md bg-panel-2 text-cream"
+                          m.fromRole === "customer"
+                            ? "rounded-br-md bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset]"
+                            : "rounded-bl-md border border-white/10 bg-white/10 text-cream backdrop-blur-md"
                         }`}
                       >
                         {m.fromRole === "admin" && <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-acid">Meetbeatz</p>}
@@ -147,7 +149,7 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
                 )}
               </div>
               {error && <p className="px-3 pb-2 text-xs text-danger">{error}</p>}
-              <form onSubmit={send} className="flex items-end gap-2 border-t border-line p-3">
+              <form onSubmit={send} className="flex items-end gap-2 border-t border-white/10 p-3">
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}

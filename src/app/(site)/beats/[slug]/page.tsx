@@ -47,8 +47,9 @@ export default async function BeatDetailPage({ params }: Props) {
               )}
             </>
           ) : (
-            <div className="relative aspect-square overflow-hidden rounded-3xl border border-line bg-panel-2">
+            <div className="relative aspect-square overflow-hidden rounded-3xl border border-white/15 bg-panel-2 shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_20px_60px_-20px_rgba(0,0,0,0.6)]">
               <CoverArt beat={card} />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/12 via-transparent to-transparent" />
               {!beat.exclusiveSold && (
                 <div className="absolute bottom-5 left-5">
                   <PlayButton track={toTrack(card)} className="px-5 py-3 shadow-2xl" label="Play preview" />

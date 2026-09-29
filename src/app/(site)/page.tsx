@@ -30,20 +30,27 @@ export default async function HomePage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/meetbeatz-producer.jpeg" alt="" className="h-full w-full object-cover object-[center_30%] opacity-60" />
-          <div className="absolute inset-0 bg-linear-to-b from-ink/30 via-ink/70 to-ink" />
+          <img src="/images/meetbeatz-producer.jpeg" alt="" className="h-full w-full object-cover object-[center_30%] opacity-50" />
+          <div className="absolute inset-0 bg-linear-to-b from-ink/40 via-ink/75 to-ink" />
           <div className="hero-grid absolute inset-0" />
+          <div className="liquid-orbs absolute inset-0">
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
         <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
-          <p className="eyebrow">Beat store · Recording studio · {settings.location}</p>
-          <h1 className="mt-5">
+          <div className="glass inline-flex rounded-full px-4 py-1.5">
+            <p className="eyebrow !tracking-[0.18em]">Beat store · Recording studio · {settings.location}</p>
+          </div>
+          <h1 className="mt-6">
             <Image
               src="/images/logo.png"
               alt={`${settings.siteName} logo`}
               width={128}
               height={128}
               priority
-              className="h-16 w-16 rounded-2xl sm:h-24 sm:w-24 md:h-32 md:w-32"
+              className="h-16 w-16 rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-8px_rgba(0,0,0,0.5),0_0_40px_-10px_rgba(198,241,53,0.3)] sm:h-24 sm:w-24 md:h-32 md:w-32"
             />
             <span className="sr-only">{settings.siteName}</span>
           </h1>
@@ -59,7 +66,7 @@ export default async function HomePage() {
               Book studio time
             </Link>
           </div>
-          <dl className="mt-14 grid max-w-2xl grid-cols-3 gap-6 border-t border-line/70 pt-8">
+          <dl className="glass mt-14 grid max-w-2xl grid-cols-3 gap-6 rounded-2xl p-6">
             <div>
               <dt className="text-xs uppercase tracking-wider text-muted">Beats in store</dt>
               <dd className="display mt-1 text-3xl md:text-4xl">{beatCount.value}</dd>
@@ -77,7 +84,7 @@ export default async function HomePage() {
       </section>
 
       {/* Marquee */}
-      <div className="overflow-hidden border-y border-line bg-acid py-3 text-ink">
+      <div className="glass-marquee py-3">
         <div className="flex w-max animate-marquee gap-10 whitespace-nowrap text-sm font-black uppercase tracking-[0.2em]">
           {[...MARQUEE, ...MARQUEE].map((item, i) => (
             <span key={i} className="flex items-center gap-10">
@@ -88,7 +95,7 @@ export default async function HomePage() {
       </div>
 
       {/* Featured beats */}
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+      <section className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="eyebrow">Fresh from the lab</p>
@@ -102,7 +109,7 @@ export default async function HomePage() {
       </section>
 
       {/* How it works */}
-      <section id="how" className="border-y border-line bg-ink-2">
+      <section id="how" className="glass-section">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
           <p className="eyebrow">How it works</p>
           <h2 className="display mt-2 max-w-2xl text-4xl md:text-5xl">From preview to your inbox in three taps.</h2>
@@ -125,7 +132,7 @@ export default async function HomePage() {
               },
             ].map((step) => (
               <div key={step.n} className="card p-7">
-                <p className="display text-5xl text-acid">{step.n}</p>
+                <p className="display text-5xl text-acid drop-shadow-[0_0_20px_rgba(198,241,53,0.35)]">{step.n}</p>
                 <h3 className="mt-5 text-xl font-bold">{step.title}</h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted">{step.text}</p>
               </div>
@@ -137,11 +144,12 @@ export default async function HomePage() {
       {/* Meet the producer */}
       <section id="producer" className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
         <div className="grid items-center gap-12 lg:grid-cols-[0.85fr_1.15fr]">
-          <div className="relative aspect-4/5 overflow-hidden rounded-3xl border border-line">
+          <div className="relative aspect-4/5 overflow-hidden rounded-3xl border border-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_20px_60px_-20px_rgba(0,0,0,0.6)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/meetbeatz-producer.jpeg" alt={`${settings.siteName} in the studio`} className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-linear-to-t from-ink/70 via-transparent to-transparent" />
-            <div className="absolute bottom-6 left-6">
+            <div className="absolute inset-0 bg-linear-to-t from-ink/80 via-transparent to-white/5" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent" />
+            <div className="glass absolute bottom-6 left-6 right-6 rounded-2xl p-4 sm:right-auto">
               <p className="eyebrow">The man behind the boards</p>
               <p className="display mt-1 text-3xl">{settings.siteName}</p>
             </div>
@@ -171,11 +179,12 @@ export default async function HomePage() {
       {/* Studio */}
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div className="relative aspect-4/3 overflow-hidden rounded-3xl border border-line">
+          <div className="relative aspect-4/3 overflow-hidden rounded-3xl border border-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_20px_60px_-20px_rgba(0,0,0,0.6)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/meetbeatz-studio.jpeg" alt={`${settings.siteName} recording studio`} className="h-full w-full object-cover object-[center_35%]" />
-            <div className="absolute inset-0 bg-linear-to-t from-ink/70 to-transparent" />
-            <div className="absolute bottom-6 left-6">
+            <div className="absolute inset-0 bg-linear-to-t from-ink/80 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent" />
+            <div className="glass absolute bottom-6 left-6 right-6 rounded-2xl p-4 sm:right-auto">
               <p className="eyebrow">The studio</p>
               <p className="display mt-1 text-3xl">{settings.location}</p>
             </div>
@@ -187,9 +196,9 @@ export default async function HomePage() {
               Book time in the {settings.siteName} studio online. Choose a service, pick an open slot, pay the deposit with Mobile Money and
               your session is locked instantly — confirmation goes straight to your email.
             </p>
-            <ul className="mt-8 divide-y divide-line border-y border-line">
+            <ul className="glass mt-8 divide-y divide-white/10 overflow-hidden rounded-2xl">
               {services.map((s) => (
-                <li key={s.id} className="flex items-center justify-between gap-4 py-4">
+                <li key={s.id} className="flex items-center justify-between gap-4 px-5 py-4">
                   <div>
                     <p className="font-bold">{s.name}</p>
                     <p className="text-sm text-muted">{s.description}</p>
@@ -209,7 +218,7 @@ export default async function HomePage() {
       </section>
 
       {/* Licenses */}
-      <section id="licenses" className="border-t border-line bg-ink-2">
+      <section id="licenses" className="glass-section">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
           <p className="eyebrow">Licensing</p>
           <h2 className="display mt-2 text-4xl md:text-5xl">Pick the rights you need.</h2>
@@ -219,11 +228,11 @@ export default async function HomePage() {
           </p>
           <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {licenseTypes.map((lt) => (
-              <div key={lt.id} className={`card flex flex-col p-6 ${lt.isExclusive ? "border-acid/50 bg-acid/5" : ""}`}>
+              <div key={lt.id} className={`${lt.isExclusive ? "glass-acid" : "card"} flex flex-col rounded-2xl p-6`}>
                 <p className="text-lg font-bold">{lt.name}</p>
                 <p className="mt-1 text-xs text-muted">{lt.tagline}</p>
                 <p className="mt-4 text-sm text-muted">from</p>
-                <p className="display text-3xl text-acid">{money(lt.defaultPrice, settings.currency)}</p>
+                <p className="display text-3xl text-acid drop-shadow-[0_0_16px_rgba(198,241,53,0.3)]">{money(lt.defaultPrice, settings.currency)}</p>
                 <ul className="mt-5 space-y-1.5 text-sm text-cream/80">
                   {deliverableList(lt.deliverables).map((d) => (
                     <li key={d}>✓ {DELIVERABLE_LABELS[d] ?? d}</li>
@@ -242,7 +251,12 @@ export default async function HomePage() {
 
       {/* CTA */}
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-line bg-panel px-8 py-14 text-center md:px-16">
+        <div className="glass-strong relative overflow-hidden rounded-3xl px-8 py-14 text-center md:px-16">
+          <div className="liquid-orbs absolute inset-0 opacity-70">
+            <span />
+            <span />
+            <span />
+          </div>
           <div className="hero-grid absolute inset-0" />
           <div className="relative">
             <p className="eyebrow">Ready when you are</p>

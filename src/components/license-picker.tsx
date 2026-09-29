@@ -38,10 +38,14 @@ export function LicensePicker({
               key={lic.id}
               type="button"
               onClick={() => setSelectedId(lic.id)}
-              className={`relative rounded-2xl border p-4 text-left transition ${active ? "border-acid bg-acid/5" : "border-line bg-panel hover:border-line-2"}`}
+              className={`relative rounded-2xl p-4 text-left transition ${
+                active
+                  ? "glass-acid"
+                  : "glass hover:border-white/25"
+              }`}
             >
               {active && (
-                <span className="absolute right-3 top-3 grid h-6 w-6 place-items-center rounded-full bg-acid text-ink">
+                <span className="absolute right-3 top-3 z-10 grid h-6 w-6 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_4px_12px_-2px_rgba(198,241,53,0.5)]">
                   <CheckIcon className="h-3.5 w-3.5" />
                 </span>
               )}
@@ -63,7 +67,7 @@ export function LicensePicker({
       {selected && (
         <div className="card p-5">
           <p className="text-sm text-cream/80">{selected.description}</p>
-          <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
+          <dl className="mt-4 space-y-2 border-t border-white/10 pt-4 text-sm">
             <div className="flex justify-between text-cream/80">
               <dt>{selected.name}</dt>
               <dd>{money(selected.price, currency)}</dd>
@@ -72,7 +76,7 @@ export function LicensePicker({
               <dt>Service fee ({feePercent}%)</dt>
               <dd>{money(fee, currency)}</dd>
             </div>
-            <div className="flex justify-between border-t border-line pt-2 text-base font-black">
+            <div className="flex justify-between border-t border-white/10 pt-2 text-base font-black">
               <dt>Total</dt>
               <dd className="text-acid">{money(total, currency)}</dd>
             </div>

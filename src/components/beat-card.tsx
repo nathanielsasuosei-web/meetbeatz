@@ -24,27 +24,37 @@ export function BeatCard({ beat, queue, currency }: { beat: BeatCardData; queue:
   const isPlaying = active && playing;
 
   return (
-    <div className={`card group overflow-hidden transition hover:border-line-2 ${active ? "border-acid/50" : ""}`}>
-      <div className="relative aspect-square overflow-hidden bg-panel-2">
+    <div
+      className={`card group overflow-hidden ${
+        active
+          ? "border-acid/45! shadow-[0_0_0_1px_rgba(198,241,53,0.15)_inset,0_12px_40px_-12px_rgba(198,241,53,0.25),0_10px_32px_-12px_rgba(0,0,0,0.5)]"
+          : ""
+      }`}
+    >
+      <div className="relative aspect-square overflow-hidden bg-panel-2/80">
         <Link href={`/beats/${beat.slug}`} className="block h-full w-full">
           <CoverArt beat={beat} className="transition duration-500 group-hover:scale-105" />
         </Link>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+        {/* Glass sheen on cover */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/12 via-transparent to-transparent opacity-60" />
         <button
           type="button"
           onClick={() => toggle(toTrack(beat), queue.map(toTrack))}
-          className={`absolute bottom-3 left-3 grid h-12 w-12 place-items-center rounded-full bg-acid text-ink shadow-xl transition hover:scale-105 ${active ? "" : "sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"}`}
+          className={`absolute bottom-3 left-3 grid h-12 w-12 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_8px_24px_-4px_rgba(198,241,53,0.55),0_4px_12px_-2px_rgba(0,0,0,0.4)] transition hover:scale-105 ${
+            active ? "" : "sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
+          }`}
           aria-label={isPlaying ? "Pause preview" : "Play preview"}
         >
           {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="ml-0.5 h-5 w-5" />}
         </button>
         <div className="absolute right-3 top-3 flex gap-1.5">
-          {beat.isDemo && <span className="badge bg-black/60 backdrop-blur">Demo</span>}
-          {beat.videoUrl && <span className="badge bg-black/60 backdrop-blur">Video</span>}
-          {beat.isFeatured && <span className="badge-acid bg-black/60 backdrop-blur">Featured</span>}
+          {beat.isDemo && <span className="badge bg-black/40">Demo</span>}
+          {beat.videoUrl && <span className="badge bg-black/40">Video</span>}
+          {beat.isFeatured && <span className="badge-acid bg-black/40">Featured</span>}
         </div>
         {isPlaying && (
-          <div className="absolute bottom-5 right-3 text-acid">
+          <div className="absolute bottom-5 right-3 text-acid drop-shadow-[0_0_8px_rgba(198,241,53,0.6)]">
             <Equalizer />
           </div>
         )}
