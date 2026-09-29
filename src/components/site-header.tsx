@@ -49,9 +49,6 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
           })}
         </nav>
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/admin" className="text-xs font-semibold text-muted hover:text-cream">
-            Producer login
-          </Link>
           {customer ? (
             <Link href="/account" className="btn-ghost">
               My account
@@ -77,9 +74,6 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
                 {item.label}
               </Link>
             ))}
-            <Link href="/admin" onClick={() => setOpen(false)} className="rounded-xl px-3 py-3 text-sm font-semibold text-muted">
-              Producer login
-            </Link>
             <Link
               href={customer ? "/account" : "/account/login"}
               onClick={() => setOpen(false)}
