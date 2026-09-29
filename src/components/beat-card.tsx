@@ -48,6 +48,11 @@ export function BeatCard({ beat, queue, currency }: { beat: BeatCardData; queue:
         >
           {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="ml-0.5 h-5 w-5" />}
         </button>
+        <div className="absolute left-3 top-3">
+          <span className="badge bg-black/40 tabular-nums" title="Full preview plays">
+            ▶ {beat.plays.toLocaleString("en-US")} {beat.plays === 1 ? "play" : "plays"}
+          </span>
+        </div>
         <div className="absolute right-3 top-3 flex gap-1.5">
           {beat.isDemo && <span className="badge bg-black/40">Demo</span>}
           {beat.videoUrl && <span className="badge bg-black/40">Video</span>}

@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { CloseIcon, MenuIcon } from "./icons";
+import { LiquidPill, useLiquidPill } from "./liquid-pill";
 
 const NAV = [
   { href: "/beats", label: "Beats" },
@@ -41,8 +42,6 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
   const navRef = useRef<HTMLElement | null>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const [hover, setHover] = useState<number | null>(null);
-  const [pill, setPill] = useState<{ x: number; w: number } | null>(null);
-  const [pillOn, setPillOn] = useState(false);
 
   const isActive = (item: NavItem) =>
     pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !item.href.includes("#"));
@@ -50,30 +49,7 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
   const focusIndex = hover ?? activeIndex;
 
   // Track the hovered/active link so the liquid pill can glide to it
-  useEffect(() => {
-    const compute = () => {
-      const container = navRef.current;
-      if (!container) return;
-      const el = focusIndex >= 0 ? itemRefs.current[focusIndex] : null;
-      if (!el) {
-        setPillOn(false);
-        return;
-      }
-      const c = container.getBoundingClientRect();
-      const r = el.getBoundingClientRect();
-      setPill({ x: r.left - c.left, w: r.width });
-      setPillOn(true);
-    };
-    compute();
-    const ro = new ResizeObserver(compute);
-    if (navRef.current) ro.observe(navRef.current);
-    itemRefs.current.forEach((el) => el && ro.observe(el));
-    window.addEventListener("resize", compute);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", compute);
-    };
-  }, [focusIndex, pathname]);
+  const { pill, pillOn } = useLiquidPill(navRef, itemRefs, focusIndex);
 
   return (
     <header className="sticky top-0 z-40">
@@ -86,22 +62,7 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
             className="relative hidden items-center gap-1 md:flex"
             onMouseLeave={() => setHover(null)}
           >
-            {pill && (
-              <>
-                {/* Trailing liquid smear */}
-                <span
-                  aria-hidden
-                  className={`nav-pill-ghost${pillOn ? " is-on" : ""}`}
-                  style={{ transform: `translateX(${pill.x}px)`, width: pill.w }}
-                />
-                {/* Main glass droplet */}
-                <span
-                  aria-hidden
-                  className={`nav-pill${pillOn ? " is-on" : ""}${activeIndex >= 0 && focusIndex === activeIndex ? " is-acid" : ""}`}
-                  style={{ transform: `translateX(${pill.x}px)`, width: pill.w }}
-                />
-              </>
-            )}
+            <LiquidPill pill={pill} on={pillOn} glow={activeIndex >= 0 && focusIndex === activeIndex ? "is-acid" : ""} />
             {NAV.map((item, i) => {
               const active = isActive(item);
               return (

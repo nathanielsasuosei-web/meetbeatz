@@ -671,6 +671,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   transition:
     transform 0.55s cubic-bezier(0.34, 1.45, 0.64, 1),
     width 0.55s cubic-bezier(0.34, 1.45, 0.64, 1),
+    height 0.55s cubic-bezier(0.34, 1.45, 0.64, 1),
     opacity 0.35s ease,
     background-color 0.4s ease,
     border-color 0.4s ease,
@@ -696,6 +697,20 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
     0 8px 24px -8px rgba(0, 0, 0, 0.5);
 }
 
+/* Solid acid droplet — the admin sidebar's active state */
+.nav-pill.is-solid {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, transparent 45%),
+    linear-gradient(180deg, #d4f85a 0%, var(--color-acid) 40%, var(--color-acid-2) 100%);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.45) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.12) inset,
+    0 8px 20px -6px rgba(198, 241, 53, 0.45);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 /* Shine sweep riding the pill */
 .nav-pill::after {
   content: "";
@@ -714,6 +729,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   transition:
     transform 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.06s,
     width 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.06s,
+    height 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.06s,
     opacity 0.5s ease 0.06s;
 }
 
@@ -807,6 +823,62 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
     animation-delay: 0.37s;
   }
 }
+
+/* ─── Scroll-reveal for artist-facing content ─── */
+
+.reveal .reveal-target {
+  opacity: 0;
+  transform: translateY(26px) scale(0.985);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--rd, 0ms),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--rd, 0ms),
+    border-color 0.3s ease 0ms,
+    box-shadow 0.3s ease 0ms,
+    background-color 0.3s ease 0ms;
+}
+
+.reveal.in .reveal-target {
+  opacity: 1;
+  transform: none;
+}
+
+/* ─── Chat box motion ─── */
+
+@keyframes chat-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.9);
+  }
+}
+
+@keyframes msg-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+.chat-panel {
+  transform-origin: bottom right;
+  animation: chat-pop 0.45s cubic-bezier(0.34, 1.45, 0.64, 1) backwards;
+}
+
+.chat-msg {
+  animation: msg-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* ─── Plays-per-beat bars on the admin dashboard ─── */
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.play-bar {
+  transform-origin: left;
+  animation: bar-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
 } /* @layer components */
 
 @media (prefers-reduced-motion: reduce) {
@@ -817,7 +889,10 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   .nav-pill,
   .nav-pill::after,
   .nav-pill-ghost,
-  .mobile-menu.open .m-item {
+  .mobile-menu.open .m-item,
+  .chat-panel,
+  .chat-msg,
+  .play-bar {
     animation: none !important;
   }
   .nav-pill,
@@ -825,6 +900,11 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   .mobile-menu,
   .mobile-menu.open {
     transition: none !important;
+  }
+  .reveal .reveal-target {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 

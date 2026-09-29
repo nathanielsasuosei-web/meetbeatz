@@ -99,7 +99,7 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
       </button>
 
       {open && (
-        <div className="glass-strong fixed bottom-44 right-4 z-50 flex h-[26rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl">
+        <div className="chat-panel glass-strong fixed bottom-44 right-4 z-50 flex h-[26rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl">
           <div className="border-b border-white/10 bg-white/5 px-4 py-3">
             <p className="text-sm font-bold">Chat with Meetbeatz</p>
             <p className="text-[11px] text-muted">{customer ? `Hi ${customer.name.split(" ")[0]} — ask us anything` : "Sign in to start chatting"}</p>
@@ -129,13 +129,13 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
                 )}
                 {messages.map((m) =>
                   m.fromRole === "system" ? (
-                    <p key={m.id} className="mx-auto max-w-[85%] rounded-xl bg-white/5 px-3 py-2 text-center text-[11px] text-muted">
+                    <p key={m.id} className="chat-msg mx-auto max-w-[85%] rounded-xl bg-white/5 px-3 py-2 text-center text-[11px] text-muted">
                       {m.body}
                     </p>
                   ) : (
                     <div key={m.id} className={`flex ${m.fromRole === "customer" ? "justify-end" : "justify-start"}`}>
                       <div
-                        className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
+                        className={`chat-msg max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
                           m.fromRole === "customer"
                             ? "rounded-br-md bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset]"
                             : "rounded-bl-md border border-white/10 bg-white/10 text-cream backdrop-blur-md"

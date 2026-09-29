@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { BeatGrid } from "@/components/beat-card";
+import { Reveal } from "@/components/reveal";
 import { listBeats, listGenres } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
 
@@ -47,9 +48,9 @@ export default async function BeatsPage({ searchParams }: { searchParams: Promis
         ))}
       </div>
 
-      <div className="mt-10">
+      <Reveal className="mt-10" target=".card" stagger={90}>
         <BeatGrid beats={beats} currency={settings.currency} />
-      </div>
+      </Reveal>
     </div>
   );
 }
