@@ -107,11 +107,15 @@ body::after {
   color: var(--color-ink);
 }
 
-.display {
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 0.95;
-}
+/* Component classes live in Tailwind's components layer so utilities on the
+   same element (position: fixed/absolute/sticky, tracking, spacing, …) always
+   win — unlayered rules would otherwise silently override them. */
+@layer components {
+  .display {
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+  }
 
 .eyebrow {
   @apply text-[11px] font-bold uppercase tracking-[0.22em] text-acid;
@@ -803,6 +807,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
     animation-delay: 0.37s;
   }
 }
+} /* @layer components */
 
 @media (prefers-reduced-motion: reduce) {
   .liquid-orbs span,
