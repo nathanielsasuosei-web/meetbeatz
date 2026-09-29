@@ -35,10 +35,14 @@ export function MessagesPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/messages?customerId=${customerId}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (Array.isArray(data.messages)) setMessages(data.messages);
+    try {
+      const res = await fetch(`/api/admin/messages?customerId=${customerId}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.messages)) setMessages(data.messages);
+    } catch {
+      // Leave the current conversation usable if a poll fails.
+    }
   }, [customerId]);
 
   useEffect(() => {

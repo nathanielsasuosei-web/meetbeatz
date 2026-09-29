@@ -7,7 +7,6 @@ import { db } from "@/db";
 import { beats, bookings, licenseTypes, orders, services, studioHours } from "@/db/schema";
 import { changeAdminPassword, destroyAdminSession, getAdminSession, verifyPassword } from "@/lib/auth";
 import { admins } from "@/db/schema";
-import { deleteUpload } from "@/lib/files";
 import { slugify } from "@/lib/format";
 import { sendEmail } from "@/lib/email";
 import { emailLayout } from "@/lib/email-templates";
@@ -75,9 +74,8 @@ export async function deleteBeat(id: number) {
   const [beat] = await db.select().from(beats).where(eq(beats.id, id)).limit(1);
   if (beat) {
     await db.delete(beats).where(eq(beats.id, id));
-    for (const p of [beat.coverPath, beat.previewPath, beat.videoPath, beat.mp3Path, beat.wavPath, beat.stemsPath]) {
-      if (p && !p.startsWith("/") && !p.startsWith("previews/demo-")) await deleteUpload(p);
-    }
+    // A file can be shared by other uploaded beats. The storage cleanup only
+    // removes it later if no remaining beat references it.
   }
   done("/admin/beats", "Beat deleted.");
 }

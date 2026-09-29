@@ -28,11 +28,13 @@ export function BookingForm({
   initialServiceId,
   feePercent,
   currency,
+  account,
 }: {
   services: ServiceOption[];
   initialServiceId: number | null;
   feePercent: number;
   currency: string;
+  account?: { name: string; email: string } | null;
 }) {
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [serviceId, setServiceId] = useState<number>(initialServiceId ?? services[0]?.id ?? 0);
@@ -193,6 +195,7 @@ export function BookingForm({
           <p className="label">5 · Your details</p>
           <CheckoutForm
             endpoint="/api/checkout/booking"
+            account={account}
             payload={{ serviceId: service.id, date, startTime, hours, notes }}
             buttonLabel={`Pay deposit ${money(totalNow, currency)}`}
             disabled={!startTime}

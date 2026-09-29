@@ -9,15 +9,17 @@ export function CheckoutForm({
   buttonLabel,
   disabled = false,
   disabledReason,
+  account,
 }: {
   endpoint: string;
   payload: Record<string, unknown>;
   buttonLabel: string;
   disabled?: boolean;
   disabledReason?: string;
+  account?: { name: string; email: string } | null;
 }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(account?.name ?? "");
+  const [email, setEmail] = useState(account?.email ?? "");
   const [phone, setPhone] = useState("");
   const [network, setNetwork] = useState<string>("mtn");
   const [loading, setLoading] = useState(false);
@@ -54,8 +56,10 @@ export function CheckoutForm({
       </div>
       <div>
         <label className="label" htmlFor="co-email">Email address</label>
-        <input id="co-email" type="email" className="field" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
-        <p className="mt-1.5 text-xs text-muted">Your files, license and receipt are delivered to this address.</p>
+        <input id="co-email" type="email" className="field" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" readOnly={!!account} required />
+        <p className="mt-1.5 text-xs text-muted">
+          {account ? "This is your account email — your purchases appear in Your account." : "Your files, license and receipt are delivered to this address. Use your account email to see purchases there."}
+        </p>
       </div>
       <div>
         <span className="label">Pay with</span>

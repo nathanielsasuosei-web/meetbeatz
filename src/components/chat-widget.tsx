@@ -32,12 +32,16 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
 
   const load = useCallback(async () => {
     if (!customer) return;
-    const res = await fetch("/api/messages");
-    if (!res.ok) return;
-    const data = (await res.json()) as { messages?: ChatMessage[]; unread?: number };
-    setMessages(data.messages ?? []);
-    setUnread(data.unread ?? 0); // the GET marks replies as read server-side
-  }, [customer]);
+    try {
+      const res = await fetch(open ? "/api/messages?read=1" : "/api/messages", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as { messages?: ChatMessage[]; unread?: number };
+      setMessages(data.messages ?? []);
+      setUnread(data.unread ?? 0);
+    } catch {
+      // A missed poll must not prevent the artist from using the chat.
+    }
+  }, [customer, open]);
 
   useEffect(() => {
     if (!customer) return;

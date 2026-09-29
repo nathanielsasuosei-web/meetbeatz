@@ -284,16 +284,6 @@ export async function abortUpload(id: number): Promise<void> {
   }
 }
 
-/** Removes a stored file. Used when a beat's file is replaced or the beat is deleted. */
-export async function deleteUpload(relative: string | null | undefined): Promise<void> {
-  if (!relative || relative.startsWith("/") || relative.startsWith("http")) return;
-  try {
-    await db.delete(storedFiles).where(eq(storedFiles.path, relative));
-  } catch {
-    // ignore — the row may already be gone
-  }
-}
-
 /**
  * Stores a whole buffer in one go (no chunked request). Used by the seed for
  * generated demo previews and by the on-disk import.
