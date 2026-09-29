@@ -31,7 +31,6 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
             <li><Link href="/studio" className="hover:text-acid">Studio bookings</Link></li>
             <li><Link href="/#licenses" className="hover:text-acid">License options</Link></li>
             <li><Link href="/#how" className="hover:text-acid">How it works</Link></li>
-            <li><Link href="/admin" className="hover:text-acid">Producer login</Link></li>
           </ul>
         </div>
         <div>
@@ -52,9 +51,16 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
         </div>
       </div>
       <div className="border-t border-line/60">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>© {new Date().getFullYear()} {settings.siteName}. All beats are original works.</p>
-          <p>Secure payments powered by Paystack · Files delivered instantly by email.</p>
+        <div className="mx-auto max-w-7xl px-4 py-5 text-xs text-muted sm:px-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p>© {new Date().getFullYear()} {settings.siteName}. All beats are original works.</p>
+            <p>Secure payments powered by Paystack · Files delivered instantly by email.</p>
+          </div>
+          <div className="mt-4 border-t border-line/40 pt-4 text-center">
+            <Link href="/admin" className="font-semibold text-muted transition hover:text-acid">
+              Producer login
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
