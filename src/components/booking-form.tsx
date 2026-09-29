@@ -94,7 +94,7 @@ export function BookingForm({
                 key={s.id}
                 type="button"
                 onClick={() => setServiceId(s.id)}
-                className={`rounded-xl border p-3 text-left transition ${s.id === serviceId ? "border-acid bg-acid/10" : "border-line bg-ink-2 hover:border-line-2"}`}
+                className={`rounded-xl p-3 text-left transition ${s.id === serviceId ? "glass-acid" : "glass-subtle hover:border-white/20"}`}
               >
                 <p className="text-sm font-bold">{s.name}</p>
                 <p className="text-xs text-muted">{money(s.pricePerHour, currency)}/hr</p>
@@ -143,7 +143,11 @@ export function BookingForm({
                     key={s}
                     type="button"
                     onClick={() => setStartTime(s)}
-                    className={`rounded-lg border px-2 py-2 text-sm font-semibold transition ${startTime === s ? "border-acid bg-acid text-ink" : "border-line bg-ink-2 hover:border-line-2"}`}
+                    className={`rounded-lg px-2 py-2 text-sm font-semibold transition ${
+                      startTime === s
+                        ? "border border-acid/50 bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.35)_inset,0_4px_14px_-4px_rgba(198,241,53,0.45)]"
+                        : "glass-subtle hover:border-white/20"
+                    }`}
                   >
                     {formatTime12(s)}
                   </button>
@@ -166,7 +170,7 @@ export function BookingForm({
           <p className="text-sm text-muted">
             {date || "Pick a date"} · {startTime ? `${formatTime12(startTime)} start` : "Pick a start time"} · {hours} hr{hours > 1 ? "s" : ""}
           </p>
-          <dl className="mt-4 space-y-2 border-t border-line pt-4 text-sm">
+          <dl className="mt-4 space-y-2 border-t border-white/10 pt-4 text-sm">
             <div className="flex justify-between text-cream/80">
               <dt>Session ({hours} × {money(service.pricePerHour, currency)})</dt>
               <dd>{money(sessionPrice, currency)}</dd>
@@ -179,7 +183,7 @@ export function BookingForm({
               <dt>Service fee ({feePercent}%)</dt>
               <dd>{money(fee, currency)}</dd>
             </div>
-            <div className="flex justify-between border-t border-line pt-2 text-base font-black">
+            <div className="flex justify-between border-t border-white/10 pt-2 text-base font-black">
               <dt>Pay now</dt>
               <dd className="text-acid">{money(totalNow, currency)}</dd>
             </div>
