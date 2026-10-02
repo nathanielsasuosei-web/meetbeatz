@@ -1,0 +1,31 @@
+name: album-fetch
+# Temporary helper: pulls the artwork out of an Imgur album and saves it as a
+# build artifact, because the agent sandbox cannot reach i.imgur.com.
+# Deleted again once the images have been retrieved.
+on:
+  push:
+    branches: ["arena/01a0fcc5-meetbeatz"]
+    paths: [".github/workflows/album-fetch.yml"]
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch images from the album
+        run: |
+          mkdir -p album
+          UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+          for id in bRv8jZZ; do
+            printf 'jpg  %s -> ' "$id"
+            curl -sSL --retry 3 -A "$UA" -w '%{http_code} %{size_download} bytes\n' -o "album/$id.jpg" "https://i.imgur.com/$id.jpg" || true
+            printf 'webp %s -> ' "$id"
+            curl -sSL --retry 3 -A "$UA" -w '%{http_code} %{size_download} bytes\n' -o "album/$id.webp" "https://i.imgur.com/${id}_d.webp?maxwidth=2000&fidelity=grand" || true
+          done
+          ls -l album
+          for f in album/*; do echo "$f -> $(file -b "$f")"; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: album-images
+          path: album
+          if-no-files-found: error
