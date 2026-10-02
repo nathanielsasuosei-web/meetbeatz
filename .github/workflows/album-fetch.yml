@@ -19,11 +19,18 @@ jobs:
         run: |
           mkdir -p .asset-drop
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
-          for id in bRv8jZZ; do
-            printf 'jpg  %s -> ' "$id"
-            curl -sSL --retry 3 -A "$UA" -w '%{http_code} %{size_download} bytes\n' -o ".asset-drop/$id.jpg" "https://i.imgur.com/$id.jpg" || true
-            printf 'webp %s -> ' "$id"
-            curl -sSL --retry 3 -A "$UA" -w '%{http_code} %{size_download} bytes\n' -o ".asset-drop/$id.webp" "https://i.imgur.com/${id}_d.webp?maxwidth=2000&fidelity=grand" || true
+          # The .jpg and _d.webp conversions both flattened the transparent
+          # background to a checkerboard, so also try the format-preserving
+          # URLs, which keep the alpha channel if the upload was a PNG.
+          for url in \
+            "https://i.imgur.com/bRv8jZZ.png" \
+            "https://i.imgur.com/bRv8jZZ_d.png?maxwidth=2000&fidelity=grand" \
+            "https://i.imgur.com/bRv8jZZ_d.webp?maxwidth=2000&fidelity=grand" \
+            "https://i.imgur.com/bRv8jZZ.jpg" ; do
+            name=$(printf '%s' "$url" | sed -e 's#https://i.imgur.com/##' -e 's#[/?=&#]#_#g')
+            printf '%-60s -> ' "$url"
+            curl -sSL --retry 3 -A "$UA" -w '%{http_code} %{size_download} bytes\n' \
+              -o ".asset-drop/$name" "$url" || true
           done
           ls -l .asset-drop
           for f in .asset-drop/*; do echo "$f -> $(file -b "$f")"; done
@@ -33,5 +40,5 @@ jobs:
           git config user.email "asset-fetch-bot@users.noreply.github.com"
           git add -A .asset-drop
           git diff --cached --quiet && { echo "nothing new"; exit 0; }
-          git commit -m "temp: drop album OUQcO4N images"
+          git commit -m "temp: drop album OUQcO4N png variants"
           git push origin HEAD:arena/01a0fcc5-meetbeatz
