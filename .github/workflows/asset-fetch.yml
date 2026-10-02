@@ -1,0 +1,28 @@
+name: asset-fetch
+on:
+  push:
+    branches: ["arena/01a0fcc5-meetbeatz"]
+    paths: [".github/workflows/asset-fetch.yml"]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch images from the Imgur album
+        run: |
+          mkdir -p .asset-drop
+          for id in BDX4eoG KNYIx2t 6bEWSVg; do
+            curl -sSL -A "Mozilla/5.0" -o ".asset-drop/$id.jpg" "https://i.imgur.com/$id.jpg" || true
+            curl -sSL -A "Mozilla/5.0" -o ".asset-drop/$id.webp" "https://i.imgur.com/${id}_d.webp?maxwidth=2000&fidelity=grand" || true
+          done
+          ls -l .asset-drop
+      - name: Commit
+        run: |
+          git config user.name "asset-fetch-bot"
+          git config user.email "asset-fetch-bot@users.noreply.github.com"
+          git add -A .asset-drop
+          git diff --cached --quiet && { echo "nothing new"; exit 0; }
+          git commit -m "temp: drop fetched album images"
+          git push origin HEAD:arena/01a0fcc5-meetbeatz
