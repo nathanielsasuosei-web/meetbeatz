@@ -247,13 +247,12 @@ export async function sendTestEmailAction(formData: FormData) {
 
 // ---------------- Ads.txt ----------------
 /**
- * Persist the new ads.txt contents to public/ads.txt (what Next.js serves
- * at /ads.txt) and mirror the content to the settings table so the admin
- * UI can show what's currently live.
+ * Save ads.txt contents in PostgreSQL. The dynamic /ads.txt route reads the
+ * same value, so updates work on both regular Node servers and serverless
+ * hosts where public/ is read-only.
  *
- * Validates first so an obviously-malformed file can't be saved. The
- * serverless case (public/ read-only) is reported back to the UI rather
- * than raised, so the admin knows to set up a different strategy.
+ * Validate on the server as well as in the editor so a non-JavaScript submit
+ * cannot bypass the checks.
  */
 export async function saveAdsTxtAction(formData: FormData) {
   await guard();
@@ -265,12 +264,7 @@ export async function saveAdsTxtAction(formData: FormData) {
       `ads.txt not saved — ${issues[0].message}${issues.length > 1 ? ` (and ${issues.length - 1} more)` : ""}`,
     );
   }
-  const result = await saveAdsTxt(contents);
-  if (!result.wroteFile) {
-    fail(
-      "/admin/settings",
-      `Saved to the database, but public/ads.txt could not be written: ${result.fileError}. On serverless hosts (Vercel) public/ is read-only at runtime — you will need a dynamic route to serve ads.txt.`,
-    );
-  }
+  await saveAdsTxt(contents);
+  revalidatePath("/ads.txt");
   done("/admin/settings", "ads.txt saved and live at /ads.txt.");
 }

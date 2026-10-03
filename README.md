@@ -85,8 +85,21 @@ git push -u origin main
 | `EMAIL_FROM` | Sender, e.g. `Meetbeatz <no-reply@meetbeatz.com>` |
 | `SESSION_SECRET` | Secret for admin session cookies |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial admin account (first run only) |
+| `NEXT_PUBLIC_ADSENSE_PUBLISHER_ID` | Optional override for the configured Google AdSense publisher ID |
+| `NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL` | Optional override for the beat-detail display-ad slot |
+| `NEXT_PUBLIC_ADSENSE_AUTO_ADS` | Set to `1` to enable AdSense Auto Ads; off by default |
 
 Paystack webhook URL: `https://<your-domain>/api/paystack/webhook` (event `charge.success`).
+
+## Google AdSense
+
+The publisher and beat-detail slot IDs from the supplied AdSense snippet are configured in `src/lib/adsense-config.ts`. The responsive manual ad appears below the license picker on beat detail pages. These IDs are public (not secrets); `NEXT_PUBLIC_ADSENSE_PUBLISHER_ID` and `NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL` can override them if you switch accounts or ad units.
+
+1. Add your production domain in AdSense and complete Google's site review. Ads may take time to appear while Google reviews the site or finds eligible inventory.
+2. In **Admin → Settings → Ads & ads.txt**, paste the exact seller record shown by AdSense. It is served dynamically at `https://<your-domain>/ads.txt` from PostgreSQL, so edits work on Vercel as well as self-hosted servers.
+3. Optionally set `NEXT_PUBLIC_ADSENSE_AUTO_ADS=1` to let Google place additional ads on public pages. Auto Ads remain off by default.
+
+Environment-variable overrides are embedded into the browser bundle at build time, so redeploy after changing them.
 
 ## Features
 

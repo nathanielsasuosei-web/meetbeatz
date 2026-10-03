@@ -5,6 +5,7 @@ import { AdsTxtEditor } from "@/components/admin/ads-txt-editor";
 import { isPaystackConfigured } from "@/lib/paystack";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
 import { getAdsTxt } from "@/lib/ads-txt";
+import { configuredAdSensePublisherId, configuredAdSenseSlotId } from "@/lib/adsense-config";
 import { getBaseUrl } from "@/lib/url";
 import { changePasswordAction, saveSettingsAction, sendTestEmailAction } from "../actions";
 
@@ -14,9 +15,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
   const paystack = isPaystackConfigured();
   const mode = getPaymentMode();
   const email = emailProvider();
-  const publisherId = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID ?? "";
-  const publisherConfigured = /^ca-pub-[0-9a-z]+$/.test(publisherId) && publisherId !== "ca-pub-0000000000000000";
-  const beatDetailSlotConfigured = /^\d+$/.test(process.env.NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL ?? "");
+  const publisherConfigured = Boolean(configuredAdSensePublisherId(process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID));
+  const beatDetailSlotConfigured = Boolean(configuredAdSenseSlotId(process.env.NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL));
   const autoAdsEnabled = process.env.NEXT_PUBLIC_ADSENSE_AUTO_ADS === "1";
 
   return (
@@ -144,8 +144,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 ["EMAIL_FROM", `"Meetbeatz <no-reply@yourdomain.com>"`],
                 ["SESSION_SECRET", "long random string for admin sessions"],
                 ["ADMIN_EMAIL / ADMIN_PASSWORD", "initial login (first run only)"],
-                ["NEXT_PUBLIC_ADSENSE_PUBLISHER_ID", "ca-pub-… from AdSense → Account"],
-                ["NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL", "numeric slot ID for the manual beat-detail unit"],
+                ["NEXT_PUBLIC_ADSENSE_PUBLISHER_ID", "optional override; configured publisher ID is used by default"],
+                ["NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL", "optional override for the manual beat-detail unit"],
                 ["NEXT_PUBLIC_ADSENSE_AUTO_ADS", "set to 1 to let AdSense place its own ads"],
               ].map(([k, v]) => (
                 <div key={k}>
