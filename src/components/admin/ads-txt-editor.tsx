@@ -18,10 +18,10 @@ type Props = {
 };
 
 /**
- * Admin editor for public/ads.txt. Saves through a server action that
- * writes to the file on disk (and mirrors to the database for audit).
- * Performs live client-side validation against the IAB ads.txt spec so
- * admins don't ship a malformed file.
+ * Admin editor for ads.txt. Saves through a server action to PostgreSQL;
+ * the dynamic /ads.txt route serves the latest contents, including on
+ * serverless hosts where public/ is read-only. Performs live client-side
+ * validation so admins don't publish an obviously malformed file.
  *
  * Submitting the form follows the same `?msg=&err=` flash pattern as
  * the rest of the admin settings — the server action redirects on
@@ -44,8 +44,8 @@ export function AdsTxtEditor({
         <div>
           <h2 className="font-bold">Ads &amp; ads.txt</h2>
           <p className="mt-1 text-xs text-muted">
-            Google requires <code className="font-mono">ads.txt</code> at the root of your domain or it will mark every impression as
-            &ldquo;Unauthorized&rdquo; (no payout). Edit the file below — it is served live at{" "}
+            Google recommends <code className="font-mono">ads.txt</code> at your domain root so ad buyers can verify authorized sellers.
+            Paste the exact snippet from AdSense below — it is served live at{" "}
             <a href={liveUrl} target="_blank" rel="noreferrer" className="font-mono text-acid underline-offset-2 hover:underline">
               {liveUrl.replace(/^https?:\/\//, "")}
             </a>
@@ -124,7 +124,7 @@ export function AdsTxtEditor({
             Reset
           </button>
           <span className="text-[11px] text-muted">
-            Saved to <code className="font-mono">public/ads.txt</code> and mirrored to the database.
+            Saved in the database and served live at <code className="font-mono">/ads.txt</code>. Configured Meetbeatz seller records are kept in the live file automatically.
           </span>
         </div>
 

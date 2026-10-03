@@ -35,11 +35,11 @@ export function validateAdsTxt(contents: string): AdsTxtIssue[] {
     if (relation !== "DIRECT" && relation !== "RESELLER") {
       issues.push({ line: i + 1, message: `Third record must be DIRECT or RESELLER, got "${relation}"` });
     }
-    // AdSense account IDs are "pub-XXXXXXXXXXXXXXXX" (16 hex digits).
-    if (domain === "google.com" && !/^pub-[0-9a-f]{16}$/i.test(account)) {
+    // AdSense account IDs are "pub-XXXXXXXXXXXXXXXX" (16 decimal digits).
+    if (domain === "google.com" && !/^pub-\d{16}$/.test(account)) {
       issues.push({
         line: i + 1,
-        message: `For google.com the second record must be a pub-XXXXXXXXXXXXXXXX publisher ID, got "${account}"`,
+        message: `For google.com the second record must be a pub- followed by 16 digits, got "${account}"`,
       });
     }
   }
