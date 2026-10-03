@@ -27,13 +27,37 @@ google.com, pub-6344164153032042, DIRECT, f08c47fec0942fa0
 google.com, pub-2621708947375319, DIRECT, f08c47fec0942fa0
 `;
 
+const DEFAULT_SELLER_RECORDS = DEFAULT_ADS_TXT.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#"));
+
+function includeConfiguredSellerRecords(contents: string): string {
+  const lines = (contents.trim() || DEFAULT_ADS_TXT.trim()).split(/\r?\n/);
+  const sellers = new Set(
+    lines
+      .filter((line) => line.trim() && !line.trim().startsWith("#"))
+      .map((line) => line.split(",").slice(0, 2).map((field) => field.trim().toLowerCase()).join(",")),
+  );
+
+  for (const record of DEFAULT_SELLER_RECORDS) {
+    const sellerKey = record.split(",").slice(0, 2).map((field) => field.trim().toLowerCase()).join(",");
+    if (!sellers.has(sellerKey)) {
+      lines.push(record);
+      sellers.add(sellerKey);
+    }
+  }
+
+  return `${lines.join("\n").trim()}\n`;
+}
+
 export async function getAdsTxt(): Promise<string> {
   const [row] = await db
     .select({ value: settings.value })
     .from(settings)
     .where(eq(settings.key, SETTINGS_KEY))
     .limit(1);
-  return row?.value ?? DEFAULT_ADS_TXT;
+  // Preserve any previously saved custom entries, while ensuring the site's
+  // configured publisher records remain present even if an older ads.txt
+  // value was already stored in the database.
+  return includeConfiguredSellerRecords(row?.value ?? DEFAULT_ADS_TXT);
 }
 
 /** Save ads.txt in the database; `/ads.txt` reads this value on each request. */

@@ -124,7 +124,7 @@ export function AdsTxtEditor({
             Reset
           </button>
           <span className="text-[11px] text-muted">
-            Saved in the database and served live at <code className="font-mono">/ads.txt</code>.
+            Saved in the database and served live at <code className="font-mono">/ads.txt</code>. Configured Meetbeatz seller records are kept in the live file automatically.
           </span>
         </div>
 

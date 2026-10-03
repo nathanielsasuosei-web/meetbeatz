@@ -134,7 +134,7 @@ git push -u origin main
 - [ ] Check `/admin/settings` for warnings
 - [ ] If using AdSense, confirm `https://your-domain.com/ads.txt` shows the exact seller record from your AdSense account
 
-The supplied AdSense publisher ID and beat-detail slot are already configured in the app. Paste Google's exact ads.txt seller record under **Admin → Settings → Ads & ads.txt**. The `/ads.txt` endpoint reads from PostgreSQL, so it remains editable on Vercel despite its read-only deployment filesystem. Google may take time to approve the site and start showing ads.
+The supplied AdSense publisher ID and beat-detail slot are configured in the app, and both publisher seller records are included at `/ads.txt` by default. Use **Admin → Settings → Ads & ads.txt** to add other seller records; the endpoint reads from PostgreSQL, so it works on Vercel despite its read-only deployment filesystem. Google may take time to approve the site and start showing ads.
 
 If an upload ever reports that `stored_files` does not exist, that deployment's build ran without a
 database connection, so the schema sync was skipped — run `npm run db:push` against the same
