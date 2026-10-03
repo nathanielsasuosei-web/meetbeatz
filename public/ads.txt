@@ -1,0 +1,18 @@
+# ads.txt — Google AdSense seller authorization
+# https://adsense.google.com/start/resources/ads-txt
+#
+# IMPORTANT: this file MUST contain the exact line Google shows in
+#   AdSense → Settings → Account → Account information → "Get the code for your ads.txt snippet"
+# or earnings will show as "Unauthorized" and impressions won't count
+# toward payout. The format is:
+#
+#   google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, ffffffffffffffff
+#
+# Replace the line below with the one Google gives you. Once AdSense is
+# fully approved, this file should look something like:
+#
+#   google.com, pub-6344164153032042, DIRECT, f08c47fec0942fa0
+#
+# (Use the EXACT second value — your real seller certification ID —
+# not the example above. If you don't have it yet, ask AdSense to
+# generate the snippet for you.)

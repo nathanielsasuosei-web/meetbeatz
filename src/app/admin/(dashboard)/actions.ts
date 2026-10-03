@@ -14,6 +14,8 @@ import { sendOrderEmails } from "@/lib/payments";
 import { isPaystackConfigured, isValidSplitCode, subaccountIsUsable } from "@/lib/paystack";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
+import { saveAdsTxt } from "@/lib/ads-txt";
+import { validateAdsTxt } from "@/lib/ads-txt-format";
 
 async function guard() {
   const session = await getAdminSession();
@@ -241,4 +243,34 @@ export async function sendTestEmailAction(formData: FormData) {
   });
   if (result.status === "sent") done("/admin/settings", `Test email sent to ${to}.`);
   fail("/admin/settings", `Test email failed: ${result.error ?? "unknown error"}`);
+}
+
+// ---------------- Ads.txt ----------------
+/**
+ * Persist the new ads.txt contents to public/ads.txt (what Next.js serves
+ * at /ads.txt) and mirror the content to the settings table so the admin
+ * UI can show what's currently live.
+ *
+ * Validates first so an obviously-malformed file can't be saved. The
+ * serverless case (public/ read-only) is reported back to the UI rather
+ * than raised, so the admin knows to set up a different strategy.
+ */
+export async function saveAdsTxtAction(formData: FormData) {
+  await guard();
+  const contents = str(formData, "contents");
+  const issues = validateAdsTxt(contents);
+  if (issues.length > 0) {
+    fail(
+      "/admin/settings",
+      `ads.txt not saved — ${issues[0].message}${issues.length > 1 ? ` (and ${issues.length - 1} more)` : ""}`,
+    );
+  }
+  const result = await saveAdsTxt(contents);
+  if (!result.wroteFile) {
+    fail(
+      "/admin/settings",
+      `Saved to the database, but public/ads.txt could not be written: ${result.fileError}. On serverless hosts (Vercel) public/ is read-only at runtime — you will need a dynamic route to serve ads.txt.`,
+    );
+  }
+  done("/admin/settings", "ads.txt saved and live at /ads.txt.");
 }

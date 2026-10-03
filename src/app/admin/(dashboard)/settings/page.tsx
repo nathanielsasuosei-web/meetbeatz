@@ -1,17 +1,23 @@
 import { Flash, PageHeader } from "@/components/admin/flash";
 import { SubaccountCreator } from "@/components/admin/subaccount-creator";
 import { UploadMemory } from "@/components/admin/upload-memory";
+import { AdsTxtEditor } from "@/components/admin/ads-txt-editor";
 import { isPaystackConfigured } from "@/lib/paystack";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
+import { getAdsTxt } from "@/lib/ads-txt";
 import { getBaseUrl } from "@/lib/url";
 import { changePasswordAction, saveSettingsAction, sendTestEmailAction } from "../actions";
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   const { msg, err } = await searchParams;
-  const [settings, baseUrl] = await Promise.all([getSettings(), getBaseUrl()]);
+  const [settings, baseUrl, adsTxt] = await Promise.all([getSettings(), getBaseUrl(), getAdsTxt()]);
   const paystack = isPaystackConfigured();
   const mode = getPaymentMode();
   const email = emailProvider();
+  const publisherId = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID ?? "";
+  const publisherConfigured = /^ca-pub-[0-9a-z]+$/.test(publisherId) && publisherId !== "ca-pub-0000000000000000";
+  const beatDetailSlotConfigured = /^\d+$/.test(process.env.NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL ?? "");
+  const autoAdsEnabled = process.env.NEXT_PUBLIC_ADSENSE_AUTO_ADS === "1";
 
   return (
     <>
@@ -112,6 +118,14 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
         </form>
 
         <div className="space-y-6">
+          <AdsTxtEditor
+            initialContents={adsTxt}
+            publisherConfigured={publisherConfigured}
+            autoAdsEnabled={autoAdsEnabled}
+            beatDetailSlotConfigured={beatDetailSlotConfigured}
+            liveUrl={`${baseUrl}/ads.txt`}
+          />
+
           <section className="card p-5">
             <h2 className="font-bold">Create payout subaccount</h2>
             <p className="mb-4 mt-1 text-xs text-muted">Registers Meetbeatz&apos;s bank account or MoMo wallet with Paystack and saves the code automatically.</p>
@@ -130,6 +144,9 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 ["EMAIL_FROM", `"Meetbeatz <no-reply@yourdomain.com>"`],
                 ["SESSION_SECRET", "long random string for admin sessions"],
                 ["ADMIN_EMAIL / ADMIN_PASSWORD", "initial login (first run only)"],
+                ["NEXT_PUBLIC_ADSENSE_PUBLISHER_ID", "ca-pub-… from AdSense → Account"],
+                ["NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL", "numeric slot ID for the manual beat-detail unit"],
+                ["NEXT_PUBLIC_ADSENSE_AUTO_ADS", "set to 1 to let AdSense place its own ads"],
               ].map(([k, v]) => (
                 <div key={k}>
                   <dt className="text-acid">{k}</dt>
