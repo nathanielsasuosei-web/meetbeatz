@@ -20,8 +20,11 @@ const SETTINGS_KEY = "adsTxt";
 export const DEFAULT_ADS_TXT = `# ads.txt — Google AdSense seller authorization
 # https://adsense.google.com/start/resources/ads-txt
 #
-# Add the exact record shown in AdSense → Settings → Account information.
+# Current publisher and the additional seller record supplied for Meetbeatz.
 # Manage this file in Admin → Settings → Ads & ads.txt.
+
+google.com, pub-6344164153032042, DIRECT, f08c47fec0942fa0
+google.com, pub-2621708947375319, DIRECT, f08c47fec0942fa0
 `;
 
 export async function getAdsTxt(): Promise<string> {
