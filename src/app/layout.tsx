@@ -7,13 +7,14 @@ import "./globals.css";
 //   src/app/favicon.ico     → browser tab, bookmarks (16/32/48 px in one file)
 //   src/app/icon.png        → higher-resolution tab icon, Android home screen
 //   src/app/apple-icon.png  → iOS home screen
-// The icons use a tighter crop of the mark than public/images/logo.png does:
-// the full lockup with the MEETBEATZ wordmark turns to mush at 16-32 px, so the
-// tab icon is the MB monogram plus the neon arc and EQ bars.
-// Every file keeps a transparent background: the artwork is black with a red
-// edge, so it needs the site's dark backdrop behind it. (The upload's alpha was
-// flattened to a checkerboard by Imgur, so the stored files were keyed back out
-// from that pattern.)
+// The icons crop in tighter than public/images/logo.png does: at 16-32 px the
+// MEETBEATZ wordmark under the mark is an unreadable smear, so the tab icon is
+// the MB monogram plus the neon arc and EQ bars.
+// These files have no transparency — the artwork is a flat render, so each one
+// is the monogram on its own dark textured square. That suits the site: every
+// call site sits on the ink background and rounds the tile (rounded-lg / -xl /
+// -2xl, see site-header, site-footer, the hero, and the admin pages), so it
+// reads as a deliberate tile rather than a pasted rectangle.
 // They are listed explicitly because Next 14 serves those routes but does not
 // add the matching <link> tags on its own — without this block the site keeps a
 // blank/default tab icon even though /favicon.ico answers 200.
