@@ -10,6 +10,10 @@ import "./globals.css";
 // The icons use a tighter crop of the mark than public/images/logo.png does:
 // the full lockup with the MEETBEATZ wordmark turns to mush at 16-32 px, so the
 // tab icon is the MB monogram plus the neon arc and EQ bars.
+// Every file keeps a transparent background: the artwork is black with a red
+// edge, so it needs the site's dark backdrop behind it. (The upload's alpha was
+// flattened to a checkerboard by Imgur, so the stored files were keyed back out
+// from that pattern.)
 // They are listed explicitly because Next 14 serves those routes but does not
 // add the matching <link> tags on its own — without this block the site keeps a
 // blank/default tab icon even though /favicon.ico answers 200.
