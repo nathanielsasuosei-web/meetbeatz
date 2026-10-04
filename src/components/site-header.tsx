@@ -30,7 +30,7 @@ export function Logo({ siteName }: { siteName: string }) {
       />
       <span className="display text-xl tracking-[0.18em]">
         {a}
-        <span className="text-acid">{b}</span>
+        <span className="text-deep-red">{b}</span>
       </span>
     </Link>
   );

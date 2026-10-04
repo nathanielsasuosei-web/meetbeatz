@@ -27,7 +27,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           <Link href="/admin" className="flex items-center gap-2.5">
             <Image src="/images/logo.png" alt={`${settings.siteName} logo`} width={36} height={36} priority className="h-9 w-9 rounded-lg" />
             <span className="display text-lg tracking-[0.18em]">
-              MEET<span className="text-acid">BEATZ</span>
+              MEET<span className="text-deep-red">BEATZ</span>
             </span>
           </Link>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted lg:mt-1">Producer dashboard</p>
