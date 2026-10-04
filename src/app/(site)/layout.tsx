@@ -4,6 +4,7 @@ import { PlayerBar } from "@/components/player/player-bar";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ChatWidget } from "@/components/chat-widget";
+import { AdSenseScript } from "@/components/adsense";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { ensureSeeded } from "@/lib/seed";
 import { getSettings } from "@/lib/settings";
@@ -20,6 +21,12 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       <SiteFooter settings={settings} />
       <PlayerBar />
       <ChatWidget customer={customer ? { name: customer.name } : null} />
+      {/*
+        AdSense loader. Renders nothing unless NEXT_PUBLIC_ADSENSE_PUBLISHER_ID
+        is set in .env to a real ca-pub-... ID, so the site is unaffected
+        until you opt in.
+      */}
+      <AdSenseScript />
     </PlayerProvider>
   );
 }

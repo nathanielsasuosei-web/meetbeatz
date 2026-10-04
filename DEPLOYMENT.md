@@ -57,6 +57,8 @@ RESEND_API_KEY=re_your_resend_api_key
 EMAIL_FROM=Meetbeatz <onboarding@resend.dev>
 ```
 
+**Google AdSense:** the publisher ID and beat-detail slot from the supplied AdSense snippet are already configured in the app. No Vercel variables are needed unless you want to override them. To enable Auto Ads, set `NEXT_PUBLIC_ADSENSE_AUTO_ADS=1` (off by default). Any `NEXT_PUBLIC_*` overrides are public and embedded at build time, so redeploy after changing them. Google must approve your site before ads appear.
+
 ## Deployment Steps
 
 ### 1. Push to GitHub
@@ -130,6 +132,9 @@ git push -u origin main
 - [ ] Test a payment (test mode)
 - [ ] Verify email sends
 - [ ] Check `/admin/settings` for warnings
+- [ ] If using AdSense, confirm `https://your-domain.com/ads.txt` shows the exact seller record from your AdSense account
+
+The supplied AdSense publisher ID and beat-detail slot are configured in the app, and both publisher seller records are included at `/ads.txt` by default. Use **Admin → Settings → Ads & ads.txt** to add other seller records; the endpoint reads from PostgreSQL, so it works on Vercel despite its read-only deployment filesystem. Google may take time to approve the site and start showing ads.
 
 If an upload ever reports that `stored_files` does not exist, that deployment's build ran without a
 database connection, so the schema sync was skipped — run `npm run db:push` against the same

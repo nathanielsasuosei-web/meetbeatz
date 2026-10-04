@@ -14,6 +14,8 @@ import { sendOrderEmails } from "@/lib/payments";
 import { isPaystackConfigured, isValidSplitCode, subaccountIsUsable } from "@/lib/paystack";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
+import { saveAdsTxt } from "@/lib/ads-txt";
+import { validateAdsTxt } from "@/lib/ads-txt-format";
 
 async function guard() {
   const session = await getAdminSession();
@@ -241,4 +243,28 @@ export async function sendTestEmailAction(formData: FormData) {
   });
   if (result.status === "sent") done("/admin/settings", `Test email sent to ${to}.`);
   fail("/admin/settings", `Test email failed: ${result.error ?? "unknown error"}`);
+}
+
+// ---------------- Ads.txt ----------------
+/**
+ * Save ads.txt contents in PostgreSQL. The dynamic /ads.txt route reads the
+ * same value, so updates work on both regular Node servers and serverless
+ * hosts where public/ is read-only.
+ *
+ * Validate on the server as well as in the editor so a non-JavaScript submit
+ * cannot bypass the checks.
+ */
+export async function saveAdsTxtAction(formData: FormData) {
+  await guard();
+  const contents = str(formData, "contents");
+  const issues = validateAdsTxt(contents);
+  if (issues.length > 0) {
+    fail(
+      "/admin/settings",
+      `ads.txt not saved — ${issues[0].message}${issues.length > 1 ? ` (and ${issues.length - 1} more)` : ""}`,
+    );
+  }
+  await saveAdsTxt(contents);
+  revalidatePath("/ads.txt");
+  done("/admin/settings", "ads.txt saved and live at /ads.txt.");
 }

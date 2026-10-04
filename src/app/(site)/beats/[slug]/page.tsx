@@ -5,6 +5,7 @@ import { BeatGrid, CoverArt } from "@/components/beat-card";
 import { BeatVideo } from "@/components/beat-video";
 import { LicensePicker } from "@/components/license-picker";
 import { PlayButton } from "@/components/play-button";
+import { AdSense } from "@/components/adsense";
 import { getBeatBySlug, listBeats, toCard } from "@/lib/catalog";
 import { num } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
@@ -108,6 +109,24 @@ export default async function BeatDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {/*
+        AdSense slot. Renders nothing until NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL
+        is set to a real numeric ad-slot ID. Sized to a responsive in-article
+        rectangle (matches the card width) and labelled "Sponsored" so it is
+        clearly distinguishable from editorial content.
+      */}
+      <aside
+        aria-label="Sponsored"
+        className="mt-16 flex flex-col items-center rounded-2xl border border-white/10 bg-panel-2/40 p-4 sm:p-6"
+      >
+        <span className="mb-3 self-start text-[10px] uppercase tracking-widest text-muted">Sponsored</span>
+        <AdSense
+          slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL}
+          className="mx-auto w-full max-w-[728px]"
+          style={{ display: "block", minHeight: 90, width: "100%" }}
+        />
+      </aside>
 
       {related.length > 0 && (
         <section className="mt-20">
