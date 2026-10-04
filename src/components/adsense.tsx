@@ -116,3 +116,29 @@ function AutoAdsBoot({ publisherId }: { publisherId: string }) {
 
   return null;
 }
+
+/**
+ * The AMP Auto Ads component loader, exactly as supplied.
+ *
+ * This is the AMP-only form of the auto-ads snippet: it registers the
+ * <amp-auto-ads> element with the AMP runtime (https://cdn.ampproject.org/v0.js)
+ * and expects a matching <amp-auto-ads> tag in the body of an AMP document.
+ * This site is a Next.js app — there are no AMP pages, no AMP runtime and no
+ * <amp-auto-ads> element — so the script loads and has nothing to act on. It is
+ * mounted because it was explicitly requested.
+ *
+ * The snippet that actually serves ads here is <AdSenseScript /> above, whose
+ * page-level (Auto Ads) mode is switched on with NEXT_PUBLIC_ADSENSE_AUTO_ADS=1.
+ */
+export function AmpAutoAdsScript() {
+  // A plain <script> rather than next/script: `custom-element` is an AMP
+  // convention, and this keeps the tag in the server HTML exactly as supplied
+  // instead of being injected after hydration.
+  return (
+    <script
+      async
+      src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"
+      {...{ "custom-element": "amp-auto-ads" }}
+    />
+  );
+}
