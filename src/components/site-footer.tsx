@@ -19,7 +19,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
                 className="h-10 w-10 rounded-lg shadow-[0_0_0_1px_rgba(255,255,255,0.15),0_4px_12px_-2px_rgba(0,0,0,0.4)]"
               />
               <p className="display text-2xl tracking-[0.18em]">
-                MEET<span className="text-acid">BEATZ</span>
+                MEET<span className="text-deep-red">BEATZ</span>
               </p>
             </div>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">{settings.tagline}</p>

@@ -8,6 +8,7 @@ import { LiquidPill, useLiquidPill } from "../liquid-pill";
 const LINKS = [
   { href: "/admin", label: "Dashboard", icon: "▦" },
   { href: "/admin/beats", label: "Beats", icon: "♫" },
+  { href: "/admin/sound-kits", label: "Sound Kits", icon: "♬" },
   { href: "/admin/orders", label: "Orders", icon: "◎" },
   { href: "/admin/bookings", label: "Bookings", icon: "◷" },
   { href: "/admin/messages", label: "Messages", icon: "✉" },

@@ -35,7 +35,7 @@ export default async function LicensePage({ params }: { params: Promise<{ key: s
         <header className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-ink pb-6">
           <div>
             <p className="display text-2xl tracking-[0.18em]">
-              MEET<span className="text-acid-2">BEATZ</span>
+              MEET<span className="text-deep-red">BEATZ</span>
             </p>
             <p className="mt-1 text-xs uppercase tracking-[0.22em] text-ink/60">Beat license certificate</p>
           </div>

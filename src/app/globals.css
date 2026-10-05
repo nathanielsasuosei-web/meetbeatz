@@ -9,6 +9,12 @@
   --color-line-2: #3a3a48;
   --color-acid: #c6f135;
   --color-acid-2: #a9d41f;
+  /* The "BEATZ" half of the wordmark, to match the logo's red neon.
+     Sampled between the artwork's deep red (#a21313) and its neon edge
+     (#e32c2f): the deep red alone only reaches 2.5:1 against the ink
+     background, which is below the 3:1 large-text floor, so this is the
+     deepest red that stays legible. 5.1:1 on the cream license card. */
+  --color-deep-red: #c81e22;
   --color-cream: #f4f1ea;
   --color-muted: #8b8b95;
   --color-danger: #ff5c5c;

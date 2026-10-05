@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { beats, bookings, licenseTypes, orders, services, studioHours } from "@/db/schema";
+import { beats, bookings, licenseTypes, orders, services, soundKits, storedFiles, studioHours } from "@/db/schema";
 import { changeAdminPassword, destroyAdminSession, getAdminSession, verifyPassword } from "@/lib/auth";
 import { admins } from "@/db/schema";
 import { slugify } from "@/lib/format";
@@ -80,6 +80,18 @@ export async function deleteBeat(id: number) {
     // removes it later if no remaining beat references it.
   }
   done("/admin/beats", "Beat deleted.");
+}
+
+// ---------------- Sound kits ----------------
+export async function deleteSoundKit(id: number) {
+  await guard();
+  const [kit] = await db.select().from(soundKits).where(eq(soundKits.id, id)).limit(1);
+  if (kit) {
+    await db.delete(soundKits).where(eq(soundKits.id, id));
+    // Sound kits own their archive, so remove the stored file and its chunks too.
+    await db.delete(storedFiles).where(eq(storedFiles.path, kit.filePath));
+  }
+  done("/admin/sound-kits", "Sound kit deleted.");
 }
 
 // ---------------- Orders & bookings ----------------

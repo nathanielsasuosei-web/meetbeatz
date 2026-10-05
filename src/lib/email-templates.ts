@@ -37,7 +37,7 @@ export function emailLayout(opts: {
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0a0a0b"><tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%">
 <tr><td style="padding:0 0 20px 0">
-  <a href="${baseUrl}" style="text-decoration:none;color:#f4f1ea;font-size:22px;font-weight:900;letter-spacing:0.18em">MEET<span style="color:#c6f135">BEATZ</span></a>
+  <a href="${baseUrl}" style="text-decoration:none;color:#f4f1ea;font-size:22px;font-weight:900;letter-spacing:0.18em">MEET<span style="color:#c81e22">BEATZ</span></a>
 </td></tr>
 <tr><td style="background:#141417;border:1px solid #26262c;border-radius:20px;padding:32px">
 ${body}

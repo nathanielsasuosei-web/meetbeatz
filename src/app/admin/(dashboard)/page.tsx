@@ -54,9 +54,14 @@ export default async function AdminDashboard() {
   return (
     <>
       <PageHeader eyebrow="Overview" title="Dashboard">
-        <Link href="/admin/beats/new" className="btn-primary">
-          + Upload beat
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/beats/new" className="btn-primary">
+            + Upload beat
+          </Link>
+          <Link href="/admin/sound-kits" className="btn-ghost">
+            + Sound kit
+          </Link>
+        </div>
       </PageHeader>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
