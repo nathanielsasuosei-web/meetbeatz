@@ -18,7 +18,7 @@ import {
 import { UploadError } from "./upload-error";
 
 /**
- * Beat files (covers, previews, masters, stems) are stored **in PostgreSQL**.
+ * Beat files (covers, previews, masters, stems) and sound kits are stored **in PostgreSQL**.
  *
  * Why: the app is deployed to Vercel, where the code lives on a read-only
  * filesystem — `mkdir(process.cwd() + "/uploads")` fails with
@@ -331,6 +331,10 @@ async function collectGarbage(): Promise<void> {
              OR b.mp3_path = f.path
              OR b.wav_path = f.path
              OR b.stems_path = f.path
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM sound_kits k
+          WHERE k.file_path = f.path
         )
     `);
   } catch (err) {

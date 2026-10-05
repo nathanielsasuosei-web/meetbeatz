@@ -260,7 +260,7 @@ export const storedFiles = pgTable("stored_files", {
   id: serial("id").primaryKey(),
   /** Relative path used everywhere else in the app, e.g. `mp3/lq3k-9f2.mp3`. */
   path: text("path").notNull().unique(),
-  /** covers | previews | videos | mp3 | wav | stems */
+  /** covers | previews | videos | mp3 | wav | stems | sound-kits */
   kind: text("kind").notNull(),
   contentType: text("content_type").notNull(),
   /** Byte length of the whole file, as declared by the client. */
@@ -287,6 +287,20 @@ export const storedFileChunks = pgTable(
   (t) => [uniqueIndex("stored_file_chunks_file_idx").on(t.fileId, t.idx)],
 );
 
+// ---------------------------------------------------------------------------
+// Sound kits (admin-managed downloadable kit archives)
+// ---------------------------------------------------------------------------
+export const soundKits = pgTable("sound_kits", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").default("").notNull(),
+  filePath: text("file_path").notNull().unique(),
+  fileName: text("file_name").notNull(),
+  fileSize: integer("file_size").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type Beat = typeof beats.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type CustomerMessage = typeof customerMessages.$inferSelect;
@@ -301,3 +315,4 @@ export type Booking = typeof bookings.$inferSelect;
 export type EmailLog = typeof emailLogs.$inferSelect;
 export type StoredFile = typeof storedFiles.$inferSelect;
 export type StoredFileChunk = typeof storedFileChunks.$inferSelect;
+export type SoundKit = typeof soundKits.$inferSelect;
