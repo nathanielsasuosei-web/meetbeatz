@@ -80,7 +80,12 @@ export default async function BeatDetailPage({ params }: Props) {
           </div>
           <h1 className="display mt-4 text-5xl md:text-6xl">{beat.title}</h1>
           <p className="mt-2 text-sm text-muted">Prod. by {settings.siteName}</p>
-          {beat.description && <p className="mt-6 max-w-2xl text-base leading-relaxed text-cream/80">{beat.description}</p>}
+          {beat.description && (
+            <div className="mt-6 max-w-2xl">
+              <p className="eyebrow">About this beat</p>
+              <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-cream/80">{beat.description}</p>
+            </div>
+          )}
           {tags.length > 0 && (
             <div className="mt-5 flex flex-wrap gap-1.5">
               {tags.map((t) => (
@@ -106,6 +111,12 @@ export default async function BeatDetailPage({ params }: Props) {
                 <LicensePicker beatSlug={beat.slug} licenses={licenses} feePercent={num(settings.feePercent)} currency={settings.currency} />
               )}
             </div>
+            <p className="mt-4 text-xs text-muted">
+              Not sure which tier fits your release?{" "}
+              <Link href="/licensing" className="font-semibold text-acid hover:underline">
+                Read the licensing guide →
+              </Link>
+            </p>
           </div>
         </div>
       </div>

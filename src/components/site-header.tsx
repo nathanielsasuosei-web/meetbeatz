@@ -7,14 +7,28 @@ import { useRef, useState } from "react";
 import { CloseIcon, MenuIcon } from "./icons";
 import { LiquidPill, useLiquidPill } from "./liquid-pill";
 
+/**
+ * Desktop navigation, shown from 1024px up. Five links is what fits next to
+ * the logo and the account buttons before it starts to crowd; Contact and the
+ * legal pages live in the drawer below that and in the footer everywhere.
+ */
 const NAV = [
   { href: "/beats", label: "Beats" },
   { href: "/sound-kits", label: "Sound Kits" },
   { href: "/studio", label: "Studio" },
-  { href: "/#licenses", label: "Licensing" },
+  { href: "/licensing", label: "Licensing" },
+  { href: "/about", label: "About" },
 ];
 
 type NavItem = (typeof NAV)[number];
+
+/** Extra rows shown in the mobile menu under the main links. */
+const MOBILE_MORE = [
+  { href: "/contact", label: "Contact" },
+  { href: "/terms", label: "Terms & Conditions" },
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/refunds", label: "Refund Policy" },
+];
 
 export function Logo({ siteName }: { siteName: string }) {
   const [a, b] = siteName.toLowerCase().startsWith("meet") ? ["MEET", siteName.slice(4).toUpperCase()] : [siteName.toUpperCase(), ""];
@@ -45,8 +59,12 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
 
   const isActive = (item: NavItem) =>
     pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !item.href.includes("#"));
+
   const activeIndex = NAV.findIndex(isActive);
-  const focusIndex = hover ?? activeIndex;
+  // On a page outside the main nav (contact, legal pages, account) the pill
+  // rests on the first item instead of vanishing.
+  const restIndex = activeIndex >= 0 ? activeIndex : 0;
+  const focusIndex = hover ?? restIndex;
 
   // Track the hovered/active link so the liquid pill can glide to it
   const { pill, pillOn } = useLiquidPill(navRef, itemRefs, focusIndex);
@@ -59,7 +77,7 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
           <nav
             ref={navRef}
             aria-label="Primary"
-            className="relative hidden items-center gap-1 md:flex"
+            className="relative hidden items-center gap-1 lg:flex"
             onMouseLeave={() => setHover(null)}
           >
             <LiquidPill pill={pill} on={pillOn} glow={activeIndex >= 0 && focusIndex === activeIndex ? "is-acid" : ""} />
@@ -76,7 +94,7 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
                   onFocus={() => setHover(i)}
                   onBlur={() => setHover((h) => (h === i ? null : h))}
                   style={{ animationDelay: `${100 + i * 70}ms` }}
-                  className={`nav-item relative z-10 rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid/60 ${
+                  className={`nav-item relative z-10 rounded-full px-3 py-2 text-sm font-semibold xl:px-4 xl:text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid/60 ${
                     active ? "text-cream" : "text-muted hover:text-cream"
                   }`}
                 >
@@ -85,7 +103,7 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
               );
             })}
           </nav>
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="hidden items-center gap-3 lg:flex">
             {customer ? (
               <Link href="/account" className="btn-ghost">
                 My account
@@ -101,7 +119,7 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
           </div>
           <button
             type="button"
-            className={`rounded-xl p-2 text-cream transition active:scale-90 md:hidden ${open ? "bg-white/10" : "hover:bg-white/5"}`}
+            className={`rounded-xl p-2 text-cream transition active:scale-90 lg:hidden ${open ? "bg-white/10" : "hover:bg-white/5"}`}
             onClick={() => setOpen((o) => !o)}
             aria-label="Toggle menu"
             aria-expanded={open}
@@ -115,27 +133,45 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
         </div>
         <div id="mobile-menu" className={`mobile-menu${open ? " open" : ""}`}>
           <div className="mobile-menu-inner">
-            <div className="flex flex-col gap-1 border-t border-white/10 px-4 pb-6 pt-3">
-              {NAV.map((item) => (
+            {/* Scrolls on its own if the drawer is taller than the phone screen */}
+            <div className="max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-white/10 px-4 pb-6 pt-3">
+              <div className="flex flex-col gap-1">
+                {NAV.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="m-item rounded-xl px-3 py-3 text-base font-semibold text-cream transition hover:bg-white/10 hover:translate-x-1"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  href={customer ? "/account" : "/account/login"}
                   onClick={() => setOpen(false)}
-                  className="m-item rounded-xl px-3 py-3 text-base font-semibold text-cream transition hover:bg-white/10 hover:translate-x-1"
+                  className="m-item rounded-xl px-3 py-3 text-sm font-semibold text-muted transition hover:bg-white/10 hover:translate-x-1"
                 >
-                  {item.label}
+                  {customer ? "My account" : "Sign in"}
                 </Link>
-              ))}
-              <Link
-                href={customer ? "/account" : "/account/login"}
-                onClick={() => setOpen(false)}
-                className="m-item rounded-xl px-3 py-3 text-sm font-semibold text-muted transition hover:bg-white/10 hover:translate-x-1"
-              >
-                {customer ? "My account" : "Sign in"}
-              </Link>
-              <Link href="/studio" onClick={() => setOpen(false)} className="btn-primary m-item mt-2 justify-center">
-                Book a session
-              </Link>
+                <Link href="/studio" onClick={() => setOpen(false)} className="btn-primary m-item mt-2 justify-center">
+                  Book a session
+                </Link>
+              </div>
+
+              {/* Legal + contact links, so nothing is only reachable by scrolling the footer */}
+              <p className="eyebrow mt-5 px-3">More</p>
+              <div className="mt-1 grid grid-cols-2 gap-1">
+                {MOBILE_MORE.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="m-item rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-white/10 hover:text-cream"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>

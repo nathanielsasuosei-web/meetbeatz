@@ -632,6 +632,64 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   @apply border-b border-line/70 px-3 py-3 align-top text-cream/90;
 }
 
+/* ─── Long-form policy copy (privacy, terms, refunds, licensing) ───
+   Sized for phones first: comfortable measure, generous line height and no
+   horizontal overflow from long emails, URLs or order references. */
+.legal-prose {
+  overflow-wrap: anywhere;
+}
+
+.legal-prose p,
+.legal-prose li {
+  @apply text-[15px] leading-[1.75] text-cream/75 sm:text-base;
+}
+
+.legal-prose strong {
+  @apply font-bold text-cream/95;
+}
+
+.legal-prose a {
+  @apply font-semibold text-acid underline decoration-acid/40 underline-offset-4 hover:decoration-acid;
+}
+
+.legal-prose ul,
+.legal-prose ol {
+  @apply mt-1 space-y-2 pl-5;
+}
+
+.legal-prose ul > li {
+  @apply list-disc marker:text-acid/70;
+}
+
+.legal-prose ol > li {
+  @apply list-decimal marker:text-acid/70;
+}
+
+.legal-prose h3 {
+  @apply mt-5 text-base font-bold text-cream;
+}
+
+.legal-prose code {
+  @apply rounded bg-white/10 px-1.5 py-0.5 font-mono text-[13px] text-cream;
+}
+
+/* Wide comparison tables scroll sideways instead of squeezing the page */
+.legal-scroll {
+  @apply -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0;
+}
+
+.legal-prose table {
+  @apply w-full min-w-[34rem] text-left text-sm;
+}
+
+.legal-prose th {
+  @apply border-b border-line px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted;
+}
+
+.legal-prose td {
+  @apply border-b border-line/70 px-3 py-3 align-top text-cream/80;
+}
+
 .hero-grid {
   background-image:
     linear-gradient(to right, rgba(255, 140, 130, 0.08) 1px, transparent 1px),
@@ -692,6 +750,11 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 
 .range-acid {
   accent-color: var(--color-acid);
+}
+
+/* Keeps the fixed player bar clear of the iPhone home-indicator area. */
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
 /* Glass section dividers */
@@ -907,7 +970,9 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   display: none;
 }
 
-@media (max-width: 767.98px) {
+/* The header switches to the drawer below `lg` (1024px) — five nav links plus
+   the logo and the account/book buttons need the extra room. */
+@media (max-width: 1023.98px) {
   .mobile-menu {
     display: grid;
     grid-template-rows: 0fr;
@@ -951,6 +1016,18 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   }
   .mobile-menu.open .m-item:nth-child(6) {
     animation-delay: 0.37s;
+  }
+  .mobile-menu.open .m-item:nth-child(7) {
+    animation-delay: 0.43s;
+  }
+  .mobile-menu.open .m-item:nth-child(8) {
+    animation-delay: 0.49s;
+  }
+  .mobile-menu.open .m-item:nth-child(9) {
+    animation-delay: 0.55s;
+  }
+  .mobile-menu.open .m-item:nth-child(10) {
+    animation-delay: 0.61s;
   }
 }
 

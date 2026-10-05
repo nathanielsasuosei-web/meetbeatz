@@ -69,6 +69,23 @@ export function ChatIcon(props: P) {
   );
 }
 
+export function MailIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="m4 7.5 7.3 5.2a1.2 1.2 0 0 0 1.4 0L20 7.5" />
+    </svg>
+  );
+}
+
+export function PhoneIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M5 4h3.2l1.6 4-2 1.3a11.5 11.5 0 0 0 5 5l1.3-2 4 1.6V17a2 2 0 0 1-2.2 2A14.5 14.5 0 0 1 3 6.2 2 2 0 0 1 5 4Z" />
+    </svg>
+  );
+}
+
 export function Equalizer({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex h-4 items-end gap-[3px] ${className}`} aria-hidden>

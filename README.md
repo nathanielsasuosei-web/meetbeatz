@@ -101,13 +101,52 @@ The publisher and beat-detail slot IDs from the supplied AdSense snippet are con
 
 Environment-variable overrides are embedded into the browser bundle at build time, so redeploy after changing them.
 
+## Public pages & navigation
+
+| Page | What it is |
+| --- | --- |
+| `/` | Hero, featured beats, sound kits, how it works, producer & studio, license overview |
+| `/beats`, `/beats/[slug]` | Store with search + genre filters; beat page with full preview, “About this beat”, license picker |
+| `/sound-kits` | Free downloadable kits |
+| `/studio` | Services, live slot availability and booking |
+| `/licensing` | Beat licensing guide: tier cards, comparison table, the exact clauses per tier |
+| `/about` | The studio and the producer, session rates, how the studio works |
+| `/contact` | Direct lines, opening hours, FAQ and the enquiry form |
+| `/privacy`, `/terms`, `/refunds` | Policy pages (readable long-form layout, TOC, FAQ) |
+| `/account`, `/orders/[reference]`, `/license/[key]` | Customer account, order receipt, license certificate |
+
+The header shows **Beats · Sound Kits · Studio · Licensing · About** on screens ≥1024px, and a
+drawer with the same links plus Contact and the legal pages below that. The footer repeats the
+public pages, the legal pages and the contact details on every page, and a branded 404 offers the
+main destinations. `robots.txt` and `sitemap.xml` (public pages + published beats) are generated
+by `src/app/robots.ts` and `src/app/sitemap.ts`; set `NEXT_PUBLIC_APP_URL` to the production
+domain so the sitemap lists the right host, otherwise `https://meetbeatz.com` is used.
+
+### The contact form
+
+`/contact` posts to `/api/contact`, which validates the input, stores it in `contact_messages`
+and emails a copy to the *notify* address from Admin → Settings (falling back to the contact
+address). Every enquiry is listed in **Admin → Enquiries**, where it can be marked answered
+(unanswered count shows next to the nav item) or deleted. A simple in-memory throttle (5 per
+minute per IP) plus a hidden honeypot field keep the inbox clear of spam; the form works even
+with no email provider configured, because the database copy is always written first.
+
+### Beat descriptions
+
+Write the description for each beat in Admin → Beats → *Description*: it appears on the beat page
+under “About this beat”, is used in search, and is worth 3–4 sentences (arrangement, instruments,
+mood, tempo, the kind of song it suits). The three demo beats ship with original write-ups; if a
+database still carries the old one-line blurbs, seeding upgrades them in place — but only while the
+text is untouched, so an admin's own copy is never overwritten.
+
 ## Features
 
 - **Public store**: full-length previews with a global audio player, search & genre filters, per-beat license pricing (Basic / Premium / Unlimited / Exclusive), transparent fee breakdown.
 - **Checkout**: customer name, email, network + MoMo number → Paystack (or simulated prompt in test mode) → verification → licenses issued → email with download links + printable license certificate.
 - **Downloads**: token-protected links tied to the license (MP3 / WAV / stems as included).
 - **Studio bookings**: services, opening hours, live slot availability with conflict prevention, deposit payment, email confirmation, balance due at studio.
-- **Admin dashboard**: revenue split overview, beat upload with real progress (cover, tagged preview, MP3, WAV, stems), license/price management, orders (resend email), bookings (confirm / complete / cancel), services & hours, license types, settings, payout subaccount creator, test email, password change.
+- **Admin dashboard**: revenue split overview, beat upload with real progress (cover, tagged preview, MP3, WAV, stems), license/price management, orders (resend email), bookings (confirm / complete / cancel), support messages, website enquiries, services & hours, license types, settings, payout subaccount creator, test email, password change.
+- **Trust pages**: privacy policy, terms & conditions, refund policy, a full beat licensing guide, an about page and a contact page with a stored enquiry inbox — all mobile-first and linked from the header drawer and footer.
 
 ## Where uploaded files live
 

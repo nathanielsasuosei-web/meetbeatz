@@ -390,7 +390,17 @@ export function BeatForm({ licenseTypes, beat, currency }: { licenseTypes: Licen
           </div>
           <div>
             <label className="label" htmlFor="description">Description</label>
-            <textarea id="description" name="description" className="field min-h-28" defaultValue={beat?.description ?? ""} placeholder="What makes this beat special? Who is it for?" />
+            <textarea
+              id="description"
+              name="description"
+              className="field min-h-32"
+              defaultValue={beat?.description ?? ""}
+              placeholder="Describe the beat in your own words: the arrangement, the instruments, the mood and the kind of song it suits — e.g. “Rolling log drums and warm Rhodes keys over a bassline built for a late-night vocal. Drops to filtered keys in the bridge, then rebuilds for the last chorus. 102 BPM in F# minor — made for melodic, unhurried verses.”"
+            />
+            <p className="mt-1.5 text-xs text-muted">
+              Written for this beat only — it shows on the beat page under “About this beat” and helps artists (and search engines) understand the
+              record before they buy.
+            </p>
           </div>
           <div className="flex flex-wrap gap-6 pt-1 text-sm">
             <label className="flex items-center gap-2">

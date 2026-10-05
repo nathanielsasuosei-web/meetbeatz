@@ -34,7 +34,7 @@ export function PlayerBar() {
               style={{ width: `${progress * 100}%` }}
             />
           </button>
-          <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
+          <div className="pb-safe mx-auto flex max-w-7xl items-center gap-4 px-4 pt-3 sm:px-6">
             <Link href={current.href} className="flex min-w-0 flex-1 items-center gap-3">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-panel-2 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_4px_12px_-2px_rgba(0,0,0,0.4)]">
                 {current.cover ? (
