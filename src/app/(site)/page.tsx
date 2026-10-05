@@ -1,20 +1,22 @@
 import Link from "next/link";
 import Image from "next/image";
-import { count, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { beats, licenses } from "@/db/schema";
+import { beats, licenses, soundKits } from "@/db/schema";
 import { BeatGrid } from "@/components/beat-card";
+import { DownloadIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { listActiveServices, listBeats, listLicenseTypes } from "@/lib/catalog";
-import { DELIVERABLE_LABELS, deliverableList, money, num } from "@/lib/format";
+import { DELIVERABLE_LABELS, deliverableList, formatDate, money, num } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
+import { formatBytes } from "@/lib/upload-rules";
 
 export const dynamic = "force-dynamic";
 
 const MARQUEE = ["MTN Mobile Money", "Telecel Cash", "AirtelTigo Money", "Visa & Mastercard", "Instant email delivery", "Licensed & legal", "Recording · Mixing · Mastering"];
 
 export default async function HomePage() {
-  const [settings, featured, latest, services, licenseTypes, [beatCount], [licenseCount]] = await Promise.all([
+  const [settings, featured, latest, services, licenseTypes, [beatCount], [licenseCount], publicKits] = await Promise.all([
     getSettings(),
     listBeats({ featured: true, limit: 8 }),
     listBeats({ limit: 8 }),
@@ -22,6 +24,7 @@ export default async function HomePage() {
     listLicenseTypes(),
     db.select({ value: count() }).from(beats).where(eq(beats.isPublished, true)),
     db.select({ value: count() }).from(licenses),
+    db.select().from(soundKits).where(eq(soundKits.isPublished, true)).orderBy(desc(soundKits.createdAt)).limit(4),
   ]);
   const showcase = featured.length >= 4 ? featured : latest;
 
@@ -32,7 +35,7 @@ export default async function HomePage() {
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/meetbeatz-producer.jpeg" alt="" className="h-full w-full object-cover object-[center_30%] opacity-50" />
-          <div className="absolute inset-0 bg-linear-to-b from-ink/40 via-ink/75 to-ink" />
+          <div className="red-glass-wash absolute inset-0" />
           <div className="hero-grid absolute inset-0" />
           <div className="liquid-orbs absolute inset-0">
             <span />
@@ -62,6 +65,9 @@ export default async function HomePage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
               Browse beats
+            </Link>
+            <Link href="/sound-kits" className="btn-ghost px-7! py-3.5! text-base">
+              Sound Kits
             </Link>
             <Link href="/studio" className="btn-ghost px-7! py-3.5! text-base">
               Book studio time
@@ -110,6 +116,37 @@ export default async function HomePage() {
           <BeatGrid beats={showcase} currency={settings.currency} />
         </Reveal>
       </section>
+
+      {publicKits.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Free downloads</p>
+              <h2 className="display mt-2 text-4xl md:text-5xl">Sound Kits</h2>
+            </div>
+            <Link href="/sound-kits" className="btn-ghost">
+              View all kits →
+            </Link>
+          </div>
+          <Reveal className="grid gap-4 md:grid-cols-2" target=".card" stagger={90}>
+            {publicKits.map((kit) => (
+              <article key={kit.id} className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <h3 className="truncate text-lg font-bold">{kit.name}</h3>
+                  {kit.description ? <p className="mt-1 line-clamp-2 text-sm text-muted">{kit.description}</p> : null}
+                  <p className="mt-2 text-xs text-muted">
+                    {formatBytes(kit.fileSize)} · {formatDate(kit.createdAt)}
+                  </p>
+                </div>
+                <a href={`/api/sound-kits/${kit.id}`} className="btn-primary shrink-0" download>
+                  <DownloadIcon className="h-4 w-4" />
+                  Download
+                </a>
+              </article>
+            ))}
+          </Reveal>
+        </section>
+      )}
 
       {/* How it works */}
       <section id="how" className="glass-section">

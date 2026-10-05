@@ -83,6 +83,15 @@ export async function deleteBeat(id: number) {
 }
 
 // ---------------- Sound kits ----------------
+export async function toggleSoundKitPublished(id: number) {
+  await guard();
+  const [kit] = await db.select().from(soundKits).where(eq(soundKits.id, id)).limit(1);
+  if (kit) await db.update(soundKits).set({ isPublished: !kit.isPublished, updatedAt: new Date() }).where(eq(soundKits.id, id));
+  revalidatePath("/admin/sound-kits");
+  revalidatePath("/sound-kits");
+  revalidatePath("/");
+}
+
 export async function deleteSoundKit(id: number) {
   await guard();
   const [kit] = await db.select().from(soundKits).where(eq(soundKits.id, id)).limit(1);
@@ -91,6 +100,8 @@ export async function deleteSoundKit(id: number) {
     // Sound kits own their archive, so remove the stored file and its chunks too.
     await db.delete(storedFiles).where(eq(storedFiles.path, kit.filePath));
   }
+  revalidatePath("/sound-kits");
+  revalidatePath("/");
   done("/admin/sound-kits", "Sound kit deleted.");
 }
 

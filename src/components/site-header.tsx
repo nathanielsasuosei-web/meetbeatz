@@ -9,9 +9,9 @@ import { LiquidPill, useLiquidPill } from "./liquid-pill";
 
 const NAV = [
   { href: "/beats", label: "Beats" },
+  { href: "/sound-kits", label: "Sound Kits" },
   { href: "/studio", label: "Studio" },
   { href: "/#licenses", label: "Licensing" },
-  { href: "/#how", label: "How it works" },
 ];
 
 type NavItem = (typeof NAV)[number];

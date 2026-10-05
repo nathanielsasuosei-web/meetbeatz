@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #06060a;
-  --color-ink-2: #0b0b10;
-  --color-panel: #12121a;
-  --color-panel-2: #1a1a24;
-  --color-line: #2a2a36;
-  --color-line-2: #3a3a48;
+  --color-ink: #120206;
+  --color-ink-2: #1c060c;
+  --color-panel: #2a0c14;
+  --color-panel-2: #3a1220;
+  --color-line: #4a2430;
+  --color-line-2: #5e3040;
   --color-acid: #c6f135;
   --color-acid-2: #a9d41f;
   /* The "BEATZ" half of the wordmark, to match the logo's red neon.
@@ -70,6 +70,41 @@
   }
 }
 
+@keyframes liquid-drift {
+  0%,
+  100% {
+    background-position: 0% 0%, 100% 10%, 30% 100%, 80% 70%, 0 0;
+  }
+  50% {
+    background-position: 12% 18%, 78% 28%, 48% 72%, 62% 46%, 0 0;
+  }
+}
+
+@keyframes liquid-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  33% {
+    transform: translate3d(6%, -8%, 0) scale(1.1) rotate(8deg);
+  }
+  66% {
+    transform: translate3d(-7%, 5%, 0) scale(0.92) rotate(-6deg);
+  }
+}
+
+@keyframes glass-sheen {
+  0%,
+  100% {
+    transform: translateX(-8%) translateY(-4%);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateX(8%) translateY(6%);
+    opacity: 0.85;
+  }
+}
+
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
@@ -81,19 +116,100 @@ body {
   isolation: isolate;
 }
 
-/* Ambient liquid backdrop — soft color washes behind the glass */
+/* Red liquid-glass backdrop. The center stays dark so cream type stays readable;
+   the color lives in the drifting washes and the glass blobs in the layout. */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -12%;
   z-index: -2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 15% 10%, rgba(198, 241, 53, 0.14), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 85% 20%, rgba(120, 90, 255, 0.16), transparent 50%),
-    radial-gradient(ellipse 60% 50% at 50% 90%, rgba(56, 189, 248, 0.1), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 70% 70%, rgba(244, 114, 182, 0.08), transparent 50%),
-    linear-gradient(180deg, #06060a 0%, #0a0a12 50%, #06060a 100%);
+    radial-gradient(ellipse 72% 56% at 12% 8%, rgba(255, 36, 48, 0.58), transparent 60%),
+    radial-gradient(ellipse 58% 46% at 92% 16%, rgba(220, 18, 36, 0.52), transparent 58%),
+    radial-gradient(ellipse 78% 52% at 48% 108%, rgba(150, 12, 30, 0.7), transparent 62%),
+    radial-gradient(ellipse 48% 42% at 58% 46%, rgba(190, 16, 34, 0.32), transparent 68%),
+    linear-gradient(160deg, #3a0a14 0%, #4c1020 42%, #24060e 100%);
+  background-size: 140% 140%, 130% 130%, 150% 150%, 120% 120%, 100% 100%;
+  animation: liquid-drift 26s ease-in-out infinite;
+}
+
+/* Floating red liquid droplets — rendered from the root layout */
+.liquid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.liquid-bg span {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(18px);
+  opacity: 0.8;
+  animation: liquid-float 22s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 236, 226, 0.55), transparent 22%),
+    radial-gradient(circle at 58% 62%, rgba(255, 46, 54, 0.62), rgba(92, 8, 18, 0.18) 62%, transparent 74%);
+  border: 1px solid rgba(255, 190, 180, 0.2);
+  box-shadow:
+    inset 0 0 36px rgba(255, 220, 210, 0.16),
+    0 0 70px rgba(180, 16, 28, 0.28);
+}
+
+.liquid-bg span:nth-child(1) {
+  width: min(46vw, 34rem);
+  height: min(46vw, 34rem);
+  left: -10%;
+  top: -14%;
+}
+
+.liquid-bg span:nth-child(2) {
+  width: min(34vw, 26rem);
+  height: min(34vw, 26rem);
+  right: -12%;
+  top: 6%;
+  animation-delay: -7s;
+  background:
+    radial-gradient(circle at 38% 30%, rgba(255, 214, 204, 0.42), transparent 24%),
+    radial-gradient(circle at 50% 55%, rgba(200, 20, 32, 0.7), rgba(60, 4, 12, 0.12) 68%, transparent 76%);
+}
+
+.liquid-bg span:nth-child(3) {
+  width: min(52vw, 40rem);
+  height: min(38vw, 28rem);
+  left: 18%;
+  bottom: -20%;
+  border-radius: 46% 54% 48% 52%;
+  animation-delay: -13s;
+}
+
+.liquid-bg span:nth-child(4) {
+  width: min(24vw, 18rem);
+  height: min(24vw, 18rem);
+  right: 16%;
+  bottom: 8%;
+  opacity: 0.62;
+  animation-delay: -4s;
+}
+
+.liquid-bg::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(
+    115deg,
+    transparent 34%,
+    rgba(255, 220, 210, 0.07) 46%,
+    rgba(255, 255, 255, 0.16) 50%,
+    rgba(255, 70, 60, 0.1) 55%,
+    transparent 66%
+  );
+  mix-blend-mode: screen;
+  animation: glass-sheen 16s ease-in-out infinite;
+  pointer-events: none;
 }
 
 body::after {
@@ -138,14 +254,14 @@ body::after {
       rgba(255, 255, 255, 0.04) 40%,
       rgba(255, 255, 255, 0.02) 100%
     );
-  background-color: rgba(18, 18, 26, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background-color: rgba(72, 10, 18, 0.46);
+  border: 1px solid rgba(255, 168, 156, 0.24);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-    0 1px 0 0 rgba(255, 255, 255, 0.12) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.2) inset,
-    0 12px 40px -12px rgba(0, 0, 0, 0.55),
-    0 4px 16px -4px rgba(0, 0, 0, 0.35);
+    0 0 0 1px rgba(255, 180, 170, 0.06) inset,
+    0 1px 0 0 rgba(255, 255, 255, 0.16) inset,
+    0 -1px 0 0 rgba(80, 0, 10, 0.28) inset,
+    0 12px 40px -12px rgba(60, 0, 8, 0.55),
+    0 0 48px -18px rgba(200, 30, 34, 0.28);
   backdrop-filter: blur(28px) saturate(1.6);
   -webkit-backdrop-filter: blur(28px) saturate(1.6);
 }
@@ -158,8 +274,8 @@ body::after {
   pointer-events: none;
   background: linear-gradient(
     125deg,
-    rgba(255, 255, 255, 0.22) 0%,
-    rgba(255, 255, 255, 0.06) 18%,
+    rgba(255, 236, 226, 0.28) 0%,
+    rgba(255, 80, 70, 0.1) 18%,
     transparent 42%,
     transparent 100%
   );
@@ -195,14 +311,14 @@ body::after {
       rgba(255, 255, 255, 0.05) 35%,
       rgba(255, 255, 255, 0.02) 100%
     );
-  background-color: rgba(20, 20, 30, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background-color: rgba(64, 8, 16, 0.64);
+  border: 1px solid rgba(255, 176, 164, 0.26);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-    0 1px 0 0 rgba(255, 255, 255, 0.18) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.25) inset,
-    0 20px 50px -16px rgba(0, 0, 0, 0.65),
-    0 8px 24px -8px rgba(0, 0, 0, 0.4);
+    0 0 0 1px rgba(255, 180, 170, 0.07) inset,
+    0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
+    0 -1px 0 0 rgba(80, 0, 12, 0.3) inset,
+    0 20px 50px -16px rgba(50, 0, 8, 0.65),
+    0 0 56px -16px rgba(200, 30, 34, 0.32);
   backdrop-filter: blur(40px) saturate(1.8);
   -webkit-backdrop-filter: blur(40px) saturate(1.8);
 }
@@ -215,8 +331,8 @@ body::after {
   pointer-events: none;
   background: linear-gradient(
     130deg,
-    rgba(255, 255, 255, 0.28) 0%,
-    rgba(255, 255, 255, 0.08) 20%,
+    rgba(255, 236, 226, 0.32) 0%,
+    rgba(255, 80, 70, 0.1) 20%,
     transparent 45%
   );
 }
@@ -321,13 +437,13 @@ body::after {
       rgba(255, 255, 255, 0.035) 40%,
       rgba(255, 255, 255, 0.015) 100%
     );
-  background-color: rgba(18, 18, 26, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: rgba(68, 8, 16, 0.52);
+  border: 1px solid rgba(255, 160, 148, 0.2);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.15) inset,
-    0 10px 32px -12px rgba(0, 0, 0, 0.5);
+    0 0 0 1px rgba(255, 180, 170, 0.05) inset,
+    0 1px 0 0 rgba(255, 255, 255, 0.12) inset,
+    0 -1px 0 0 rgba(80, 0, 10, 0.22) inset,
+    0 10px 32px -12px rgba(40, 0, 8, 0.5);
   backdrop-filter: blur(24px) saturate(1.5);
   -webkit-backdrop-filter: blur(24px) saturate(1.5);
   transition:
@@ -345,8 +461,8 @@ body::after {
   pointer-events: none;
   background: linear-gradient(
     130deg,
-    rgba(255, 255, 255, 0.18) 0%,
-    rgba(255, 255, 255, 0.04) 22%,
+    rgba(255, 230, 220, 0.22) 0%,
+    rgba(255, 70, 60, 0.08) 22%,
     transparent 48%
   );
   opacity: 0.65;
@@ -454,8 +570,8 @@ body::after {
 
 .field {
   @apply w-full rounded-xl px-3.5 py-2.5 text-sm text-cream outline-none transition placeholder:text-muted/60 disabled:opacity-50;
-  background: rgba(8, 8, 14, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(28, 4, 8, 0.62);
+  border: 1px solid rgba(255, 150, 140, 0.16);
   box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -518,8 +634,8 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 
 .hero-grid {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255, 140, 130, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 140, 130, 0.08) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
 }
@@ -545,7 +661,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   height: 42%;
   top: -10%;
   left: -8%;
-  background: rgba(198, 241, 53, 0.22);
+  background: rgba(255, 48, 56, 0.34);
 }
 
 .liquid-orbs span:nth-child(2) {
@@ -553,7 +669,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   height: 36%;
   top: 10%;
   right: -6%;
-  background: rgba(120, 90, 255, 0.28);
+  background: rgba(180, 16, 32, 0.42);
   animation-delay: -6s;
 }
 
@@ -562,8 +678,16 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   height: 30%;
   bottom: 5%;
   left: 30%;
-  background: rgba(56, 189, 248, 0.18);
+  background: rgba(255, 120, 90, 0.22);
   animation-delay: -12s;
+}
+
+/* Photo heroes: red glass wash so the image sits in the same liquid field */
+.red-glass-wash {
+  background:
+    radial-gradient(ellipse 80% 55% at 12% 0%, rgba(255, 48, 56, 0.4), transparent 58%),
+    radial-gradient(ellipse 50% 40% at 90% 20%, rgba(160, 12, 28, 0.35), transparent 55%),
+    linear-gradient(180deg, rgba(74, 8, 16, 0.42) 0%, rgba(18, 2, 6, 0.82) 68%, #120206 100%);
 }
 
 .range-acid {
@@ -573,9 +697,9 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 /* Glass section dividers */
 .glass-section {
   position: relative;
-  background: rgba(255, 255, 255, 0.02);
-  border-block: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
+  background: rgba(90, 10, 20, 0.28);
+  border-block: 1px solid rgba(255, 150, 140, 0.16);
+  box-shadow: 0 1px 0 0 rgba(255, 200, 190, 0.06) inset;
   backdrop-filter: blur(20px) saturate(1.3);
   -webkit-backdrop-filter: blur(20px) saturate(1.3);
 }
@@ -888,6 +1012,9 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 } /* @layer components */
 
 @media (prefers-reduced-motion: reduce) {
+  body::before,
+  .liquid-bg span,
+  .liquid-bg::after,
   .liquid-orbs span,
   .animate-marquee,
   .animate-eq,
@@ -923,7 +1050,8 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
     color: #111;
   }
   body::before,
-  body::after {
+  body::after,
+  .liquid-bg {
     display: none;
   }
 }
