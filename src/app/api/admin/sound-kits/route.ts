@@ -26,6 +26,7 @@ export async function POST(req: Request) {
     const description = field(formData, "description", 500);
     const filePath = field(formData, "filePath", 220);
     const fileName = safeFileName(field(formData, "fileName", 220));
+    const isPublished = formData.get("isPublished") === "on" || formData.get("isPublished") === "true";
 
     if (!name) return Response.json({ error: "Sound kit name is required." }, { status: 400 });
     if (!filePath) return Response.json({ error: "Upload a sound kit file first." }, { status: 400 });
@@ -37,10 +38,12 @@ export async function POST(req: Request) {
 
     const [kit] = await db
       .insert(soundKits)
-      .values({ name, description, filePath: file.path, fileName, fileSize: file.size })
+      .values({ name, description, filePath: file.path, fileName, fileSize: file.size, isPublished })
       .returning({ id: soundKits.id });
 
     revalidatePath("/admin/sound-kits");
+    revalidatePath("/sound-kits");
+    revalidatePath("/");
     return Response.json({ id: kit.id });
   } catch (error) {
     console.error("[admin/sound-kits POST]", error);

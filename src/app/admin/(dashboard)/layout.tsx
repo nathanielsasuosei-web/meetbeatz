@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
-      <aside className="border-b border-line bg-ink-2 px-4 py-4 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:px-4 lg:py-6">
+      <aside className="border-b border-white/10 bg-ink-2/70 px-4 py-4 backdrop-blur-2xl lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-4 lg:py-6">
         <div className="mb-4 flex items-center justify-between lg:mb-8 lg:block">
           <Link href="/admin" className="flex items-center gap-2.5">
             <Image src="/images/logo.png" alt={`${settings.siteName} logo`} width={36} height={36} priority className="h-9 w-9 rounded-lg" />

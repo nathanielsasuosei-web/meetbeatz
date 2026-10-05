@@ -6,7 +6,7 @@ import { LoginForm } from "@/components/admin/login-form";
 import { getAdminSession } from "@/lib/auth";
 import { DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, ensureSeeded } from "@/lib/seed";
 
-export const metadata: Metadata = { title: "Producer login" };
+export const metadata: Metadata = { title: { absolute: "MEETBEATZ" } };
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {

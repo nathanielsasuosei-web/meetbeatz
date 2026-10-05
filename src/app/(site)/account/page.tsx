@@ -41,6 +41,21 @@ export default async function AccountPage() {
         </form>
       </div>
 
+      <section className="mt-8">
+        <div className="card flex flex-wrap items-center justify-between gap-4 p-6">
+          <div>
+            <p className="eyebrow">Library</p>
+            <h2 className="mt-2 text-2xl font-bold">Sound Kits</h2>
+            <p className="mt-1 max-w-md text-sm text-muted">
+              The same public kits on the store — open the library and download any pack, no extra login step.
+            </p>
+          </div>
+          <Link href="/sound-kits" className="btn-primary">
+            Sound Kits
+          </Link>
+        </div>
+      </section>
+
       <section className="mt-12">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

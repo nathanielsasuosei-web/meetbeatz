@@ -297,6 +297,8 @@ export const soundKits = pgTable("sound_kits", {
   filePath: text("file_path").notNull().unique(),
   fileName: text("file_name").notNull(),
   fileSize: integer("file_size").notNull(),
+  /** Visible on the public store and downloadable without an account. */
+  isPublished: boolean("is_published").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

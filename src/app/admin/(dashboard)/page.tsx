@@ -59,7 +59,7 @@ export default async function AdminDashboard() {
             + Upload beat
           </Link>
           <Link href="/admin/sound-kits" className="btn-ghost">
-            + Sound kit
+            Sound Kits
           </Link>
         </div>
       </PageHeader>

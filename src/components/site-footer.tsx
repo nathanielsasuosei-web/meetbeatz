@@ -35,9 +35,9 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
             <p className="eyebrow">Explore</p>
             <ul className="mt-4 space-y-2 text-sm text-cream/80">
               <li><Link href="/beats" className="hover:text-acid">Beat store</Link></li>
+              <li><Link href="/sound-kits" className="hover:text-acid">Sound Kits</Link></li>
               <li><Link href="/studio" className="hover:text-acid">Studio bookings</Link></li>
               <li><Link href="/#licenses" className="hover:text-acid">License options</Link></li>
-              <li><Link href="/#how" className="hover:text-acid">How it works</Link></li>
             </ul>
           </div>
           <div>
@@ -64,8 +64,8 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
               <p>Secure payments powered by Paystack · Files delivered instantly by email.</p>
             </div>
             <div className="mt-4 border-t border-white/5 pt-4 text-center">
-              <Link href="/admin" className="font-semibold text-muted transition hover:text-acid">
-                Producer login
+              <Link href="/admin" className="display text-sm tracking-[0.22em] text-cream transition hover:opacity-80">
+                MEET<span className="text-deep-red">BEATZ</span>
               </Link>
             </div>
           </div>

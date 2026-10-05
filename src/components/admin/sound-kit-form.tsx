@@ -66,7 +66,7 @@ export function SoundKitForm() {
       <div>
         <p className="eyebrow">New upload</p>
         <h2 className="mt-1 text-xl font-bold">Upload a sound kit</h2>
-        <p className="mt-1 text-sm text-muted">Add a kit archive and give it the name customers or your team will recognise.</p>
+        <p className="mt-1 text-sm text-muted">Published kits show on the public Sound Kits page and can be downloaded by anyone.</p>
       </div>
 
       <div>
@@ -84,6 +84,11 @@ export function SoundKitForm() {
           placeholder="What is inside this kit?"
         />
       </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="isPublished" defaultChecked className="h-4 w-4 accent-acid" />
+        Published (public on the site)
+      </label>
 
       <div>
         <label className="label" htmlFor="sound-kit-file">Sound kit file</label>

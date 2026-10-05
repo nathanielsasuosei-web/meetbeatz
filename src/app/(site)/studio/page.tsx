@@ -38,7 +38,7 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/studio.jpg" alt="" className="h-full w-full object-cover opacity-40" />
-          <div className="absolute inset-0 bg-linear-to-b from-ink/40 to-ink" />
+          <div className="red-glass-wash absolute inset-0" />
           <div className="liquid-orbs absolute inset-0">
             <span />
             <span />
