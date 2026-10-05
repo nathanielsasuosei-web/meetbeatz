@@ -211,6 +211,9 @@ export default async function HomePage() {
               <Link href="/studio" className="btn-ghost px-7! py-3.5! text-base">
                 Book studio time
               </Link>
+              <Link href="/about" className="btn-ghost px-7! py-3.5! text-base">
+                Read the full story
+              </Link>
             </div>
           </div>
         </div>
@@ -286,6 +289,14 @@ export default async function HomePage() {
               </div>
             ))}
           </Reveal>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link href="/licensing" className="btn-ghost">
+              Compare every license →
+            </Link>
+            <Link href="/contact" className="text-sm font-semibold text-muted hover:text-acid">
+              Ask a licensing question
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { beats, bookings, licenseTypes, orders, services, soundKits, storedFiles, studioHours } from "@/db/schema";
+import { beats, bookings, contactMessages, licenseTypes, orders, services, soundKits, storedFiles, studioHours } from "@/db/schema";
 import { changeAdminPassword, destroyAdminSession, getAdminSession, verifyPassword } from "@/lib/auth";
 import { admins } from "@/db/schema";
 import { slugify } from "@/lib/format";
@@ -16,6 +16,7 @@ import { getSettings, saveSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
 import { saveAdsTxt } from "@/lib/ads-txt";
 import { validateAdsTxt } from "@/lib/ads-txt-format";
+import { setContactHandled } from "@/lib/contact";
 
 async function guard() {
   const session = await getAdminSession();
@@ -51,6 +52,20 @@ function fail(path: string, message: string): never {
 export async function logoutAction() {
   await destroyAdminSession();
   redirect("/admin/login");
+}
+
+// ---------------- Website enquiries ----------------
+export async function toggleContactHandled(id: number, handled: boolean) {
+  await guard();
+  await setContactHandled(id, handled);
+  revalidatePath("/admin/enquiries");
+  done("/admin/enquiries", handled ? "Enquiry marked as answered." : "Enquiry moved back to the open list.");
+}
+
+export async function deleteContactMessage(id: number) {
+  await guard();
+  await db.delete(contactMessages).where(eq(contactMessages.id, id));
+  done("/admin/enquiries", "Enquiry deleted.");
 }
 
 // ---------------- Beats ----------------

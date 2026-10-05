@@ -12,12 +12,13 @@ const LINKS = [
   { href: "/admin/orders", label: "Orders", icon: "◎" },
   { href: "/admin/bookings", label: "Bookings", icon: "◷" },
   { href: "/admin/messages", label: "Messages", icon: "✉" },
+  { href: "/admin/enquiries", label: "Enquiries", icon: "▤" },
   { href: "/admin/studio", label: "Studio & hours", icon: "◍" },
   { href: "/admin/licenses", label: "Licenses", icon: "✎" },
   { href: "/admin/settings", label: "Settings", icon: "⚙" },
 ];
 
-export function AdminNav() {
+export function AdminNav({ openEnquiries = 0 }: { openEnquiries?: number }) {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement | null>(null);
   const itemRefs = useRef<Array<HTMLElement | null>>([]);
@@ -57,6 +58,11 @@ export function AdminNav() {
           >
             <span className="w-4 text-center text-base leading-none">{l.icon}</span>
             {l.label}
+            {l.href === "/admin/enquiries" && openEnquiries > 0 && (
+              <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-bold ${lit ? "bg-ink/20 text-ink" : "bg-acid text-ink"}`}>
+                {openEnquiries > 99 ? "99+" : openEnquiries}
+              </span>
+            )}
           </Link>
         );
       })}

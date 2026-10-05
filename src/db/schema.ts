@@ -303,6 +303,30 @@ export const soundKits = pgTable("sound_kits", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ---------------------------------------------------------------------------
+// Website enquiries (the public contact page form)
+// ---------------------------------------------------------------------------
+/**
+ * The public contact form. Unlike `customerMessages` (a signed-in artist's chat
+ * thread) this is open to anyone, so it stores the sender's own details and an
+ * optional order reference instead of a customer id.
+ */
+export const contactMessages = pgTable("contact_messages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").default("").notNull(),
+  /** Buying a beat | Licensing | Studio booking | Refund | Something else */
+  topic: text("topic").default("general").notNull(),
+  orderReference: text("order_reference").default("").notNull(),
+  body: text("body").notNull(),
+  /** Which page the enquiry came from, e.g. `contact` or `licensing`. */
+  source: text("source").default("contact").notNull(),
+  /** Null until an admin marks the enquiry as answered. */
+  handledAt: timestamp("handled_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type Beat = typeof beats.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type CustomerMessage = typeof customerMessages.$inferSelect;
@@ -318,3 +342,4 @@ export type EmailLog = typeof emailLogs.$inferSelect;
 export type StoredFile = typeof storedFiles.$inferSelect;
 export type StoredFileChunk = typeof storedFileChunks.$inferSelect;
 export type SoundKit = typeof soundKits.$inferSelect;
+export type ContactMessage = typeof contactMessages.$inferSelect;

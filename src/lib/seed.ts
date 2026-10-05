@@ -1,4 +1,5 @@
 import fs from "fs";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { admins, beatLicenses, beats, licenseTypes, services, studioHours } from "@/db/schema";
 import { hashPassword } from "./auth";
@@ -92,6 +93,14 @@ const SERVICES = [
   },
 ];
 
+/**
+ * The starter catalogue. Every description below is written for this store —
+ * they describe the arrangement, the mood and the kind of record the beat suits,
+ * so artists know what they are buying before they hear a note.
+ *
+ * `previousDescription` keeps the original one-line blurb for each demo beat so
+ * an existing database can be upgraded in place (see upgradeDemoDescriptions).
+ */
 const DEMO_BEATS = [
   {
     title: "Midnight in Osu",
@@ -100,8 +109,10 @@ const DEMO_BEATS = [
     mood: "Smooth",
     bpm: 102,
     musicalKey: "F# minor",
-    tags: "afrobeats, wizkid type beat, burna boy, smooth",
-    description: "Late-night Afrobeats groove with rolling log drums, warm keys and a bassline that sits deep in the pocket.",
+    tags: "afrobeats, wizkid type beat, burna boy, smooth, log drum, late night",
+    description:
+      "A slow-burn Afrobeats groove for the drive home after the club. Rolling log drums and a soft shaker pattern carry the rhythm while warm Rhodes chords sit wide over a bassline that stays deep in the pocket, leaving the whole midsection open for a vocal. The bridge drops to filtered keys and a single hand drum, then rebuilds for the final chorus. Built at 102 BPM in F# minor for melodic, unhurried writing — the kind of beat that suits late-night, lovestruck or reflective verses.",
+    previousDescription: "Late-night Afrobeats groove with rolling log drums, warm keys and a bassline that sits deep in the pocket.",
     synth: { bpm: 102, rootHz: 92.5, minor: true, seed: 11, style: "afro" as const },
     cover: "/images/covers/demo-1.jpg",
     featured: true,
@@ -113,8 +124,10 @@ const DEMO_BEATS = [
     mood: "Dark",
     bpm: 142,
     musicalKey: "C minor",
-    tags: "asakaa, drill, kumerica, dark, sliding 808",
-    description: "Hard-hitting Asakaa drill with sliding 808s, eerie bells and skipping hi-hats built for the streets of Kumasi.",
+    tags: "asakaa, drill, kumerica, dark, sliding 808, gunshot, street",
+    description:
+      "Asakaa energy straight out of Kumasi: mournful bell melody, sparse minor-key stabs and a sliding 808 that answers every bar. The hi-hats skip and double up without crowding the pocket, and the drum pattern opens into a half-time breakdown that hands the beat to the artist for the hook. At 142 BPM in C minor it is built for confident, multi-syllable flows, hard ad-libs and a chorus that lands like a headline — drill for a Ghanaian ear, not a copy of anyone else's.",
+    previousDescription: "Hard-hitting Asakaa drill with sliding 808s, eerie bells and skipping hi-hats built for the streets of Kumasi.",
     synth: { bpm: 142, rootHz: 65.4, minor: true, seed: 23, style: "drill" as const },
     cover: "/images/covers/demo-2.jpg",
     featured: true,
@@ -126,8 +139,10 @@ const DEMO_BEATS = [
     mood: "Uplifting",
     bpm: 118,
     musicalKey: "G major",
-    tags: "highlife, guitar, uplifting, kuami eugene type beat",
-    description: "Feel-good highlife with palm-wine guitars, bright horns and a bounce made for weddings and Sunday afternoons.",
+    tags: "highlife, guitar, uplifting, kuami eugene type beat, celebration, palmwine",
+    description:
+      "Palm-wine highlife played like the party is already in the room: clean guitar lines trade off with bright horn shots over a bouncing bass and a live-feel percussion bed. The arrangement keeps a call-and-response shape — a sparse verse, a horn lift into the hook and a percussion-only breakdown for a chant — so it works for dancing records, birthday and wedding songs, and feel-good storytelling alike. 118 BPM in G major, tuned warm and wide.",
+    previousDescription: "Feel-good highlife with palm-wine guitars, bright horns and a bounce made for weddings and Sunday afternoons.",
     synth: { bpm: 118, rootHz: 98, minor: false, seed: 37, style: "highlife" as const },
     cover: "/images/covers/demo-3.jpg",
     featured: true,
@@ -226,7 +241,24 @@ async function runSeed() {
     }
   }
 
+  await upgradeDemoDescriptions();
   await importDiskUploads();
+}
+
+/**
+ * The demo beats shipped with a one-line description that said very little
+ * about the music. A deployment that already seeded them keeps that text (the
+ * insert above only runs against an empty table), so this refreshes the store
+ * copy in place — but only when the row still carries the original blurb.
+ * Once an admin writes their own description it is left alone forever.
+ */
+async function upgradeDemoDescriptions() {
+  for (const demo of DEMO_BEATS) {
+    await db
+      .update(beats)
+      .set({ description: demo.description, tags: demo.tags, updatedAt: new Date() })
+      .where(and(eq(beats.slug, demo.slug), eq(beats.description, demo.previousDescription)));
+  }
 }
 
 /**

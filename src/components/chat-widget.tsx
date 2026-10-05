@@ -87,7 +87,8 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-24 right-4 z-50 grid h-14 w-14 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_10px_32px_-4px_rgba(198,241,53,0.5),0_8px_24px_-6px_rgba(0,0,0,0.5)] transition hover:scale-105"
+        style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
+        className="fixed right-4 z-50 grid h-14 w-14 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_10px_32px_-4px_rgba(198,241,53,0.5),0_8px_24px_-6px_rgba(0,0,0,0.5)] transition hover:scale-105"
         aria-label={open ? "Close chat" : "Chat with us"}
       >
         {open ? <CloseIcon className="h-6 w-6" /> : <ChatIcon className="h-6 w-6" />}
@@ -99,7 +100,10 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
       </button>
 
       {open && (
-        <div className="chat-panel glass-strong fixed bottom-44 right-4 z-50 flex h-[26rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl">
+        <div
+          style={{ bottom: "calc(11rem + env(safe-area-inset-bottom))" }}
+          className="chat-panel glass-strong fixed right-4 z-50 flex h-[26rem] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl"
+        >
           <div className="border-b border-white/10 bg-white/5 px-4 py-3">
             <p className="text-sm font-bold">Chat with Meetbeatz</p>
             <p className="text-[11px] text-muted">{customer ? `Hi ${customer.name.split(" ")[0]} — ask us anything` : "Sign in to start chatting"}</p>
@@ -118,6 +122,13 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
               <Link href="/account/register" className="text-xs font-semibold text-acid hover:underline">
                 Create an account
               </Link>
+              <p className="text-xs text-muted">
+                Not signed up yet?{" "}
+                <Link href="/contact" className="font-semibold text-acid hover:underline">
+                  Use the contact form
+                </Link>{" "}
+                — it goes to the same place.
+              </p>
             </div>
           ) : (
             <>
