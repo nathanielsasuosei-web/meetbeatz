@@ -18,13 +18,13 @@ export default async function LoginPage() {
   return (
     <div className="grid min-h-screen place-items-center px-4 py-12">
       <div className="w-full max-w-md">
-        <Link href="/" className="flex items-center justify-center gap-3">
+        <Link href="/" className="auth-in flex items-center justify-center gap-3">
           <Image src="/images/logo.png" alt="Meetbeatz logo" width={44} height={44} priority className="h-11 w-11 rounded-xl" />
           <span className="display text-2xl tracking-[0.18em]">
             MEET<span className="text-deep-red">BEATZ</span>
           </span>
         </Link>
-        <div className="card mt-8 p-8">
+        <div className="card auth-in mt-8 p-8" style={{ animationDelay: "140ms" }}>
           <p className="eyebrow">Producer area</p>
           <h1 className="mt-2 text-2xl font-bold">Sign in to upload beats</h1>
           <p className="mt-1 text-sm text-muted">Only Meetbeatz can access this dashboard.</p>
@@ -33,13 +33,13 @@ export default async function LoginPage() {
           </div>
         </div>
         {usingDefaults && (
-          <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs leading-relaxed text-amber-200">
+          <div className="auth-in mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs leading-relaxed text-amber-200" style={{ animationDelay: "300ms" }}>
             <strong>First login:</strong> use <code className="font-mono">{DEFAULT_ADMIN_EMAIL}</code> / <code className="font-mono">{DEFAULT_ADMIN_PASSWORD}</code>, then change your
             password under Settings. You can also set <code className="font-mono">ADMIN_EMAIL</code> and <code className="font-mono">ADMIN_PASSWORD</code> as environment variables
             before first run.
           </div>
         )}
-        <p className="mt-6 text-center text-xs text-muted">
+        <p className="auth-in mt-6 text-center text-xs text-muted" style={{ animationDelay: "380ms" }}>
           <Link href="/" className="hover:text-cream">← Back to the store</Link>
         </p>
       </div>

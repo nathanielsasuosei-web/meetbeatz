@@ -7,7 +7,7 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <button type="submit" className="btn-primary w-full py-3!" disabled={pending}>
+    <button type="submit" className={`btn-primary w-full py-3!${pending ? " is-busy" : ""}`} disabled={pending}>
       {pending ? "Signing in…" : "Sign in"}
     </button>
   );
@@ -25,7 +25,11 @@ export function LoginForm() {
         <label className="label" htmlFor="password">Password</label>
         <input id="password" name="password" type="password" className="field" autoComplete="current-password" required />
       </div>
-      {state?.error && <p className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">{state.error}</p>}
+      {state?.error && (
+        <p role="alert" className="auth-error rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {state.error}
+        </p>
+      )}
       <SubmitButton />
     </form>
   );

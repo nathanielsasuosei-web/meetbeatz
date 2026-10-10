@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CloseIcon, MenuIcon } from "./icons";
 import { LiquidPill, useLiquidPill } from "./liquid-pill";
+import { useSpotlight } from "./spotlight";
 
 /**
  * Desktop navigation, shown from 1024px up. Five links is what fits next to
@@ -57,6 +58,36 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const [hover, setHover] = useState<number | null>(null);
 
+  // Dynamic glass: the bar condenses and deepens as the page scrolls, an
+  // acid line traces reading progress, and a specular highlight follows the
+  // cursor. Progress is painted via a CSS var (no re-render); only the
+  // scrolled flag re-renders, and only when it flips.
+  const headerRef = useRef<HTMLElement | null>(null);
+  const shellRef = useSpotlight<HTMLDivElement>();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const y = window.scrollY;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      headerRef.current?.style.setProperty("--progress", max > 0 ? Math.min(1, y / max).toFixed(4) : "0");
+      setScrolled(y > 14);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   const isActive = (item: NavItem) =>
     pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !item.href.includes("#"));
 
@@ -70,10 +101,12 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
   const { pill, pillOn } = useLiquidPill(navRef, itemRefs, focusIndex);
 
   return (
-    <header className="sticky top-0 z-40">
-      <div className="glass-strong !rounded-none !border-x-0 !border-t-0 !border-b-white/10">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <Logo siteName={siteName} />
+    <header ref={headerRef} className={`glass-header sticky top-0 z-40${scrolled ? " is-scrolled" : ""}`}>
+      <div ref={shellRef} className="nav-shell glass-strong !rounded-none !border-x-0 !border-t-0 !border-b-white/10">
+        <div className="nav-row mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
+          <div className="nav-logo">
+            <Logo siteName={siteName} />
+          </div>
           <nav
             ref={navRef}
             aria-label="Primary"
@@ -131,6 +164,8 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
             </span>
           </button>
         </div>
+        <span aria-hidden className="glass-glow" />
+        <span aria-hidden className="nav-progress" />
         <div id="mobile-menu" className={`mobile-menu${open ? " open" : ""}`}>
           <div className="mobile-menu-inner">
             {/* Scrolls on its own if the drawer is taller than the phone screen */}
