@@ -7,7 +7,7 @@ import { loginAction, registerAction, type AuthState } from "@/app/(site)/accoun
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" className="btn-primary w-full py-3!" disabled={pending}>
+    <button type="submit" className={`btn-primary w-full py-3!${pending ? " is-busy" : ""}`} disabled={pending}>
       {pending ? "One moment…" : label}
     </button>
   );
@@ -15,7 +15,11 @@ function SubmitButton({ label }: { label: string }) {
 
 function ErrorBox({ state }: { state: AuthState }) {
   if (!state?.error) return null;
-  return <p className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">{state.error}</p>;
+  return (
+    <p role="alert" className="auth-error rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+      {state.error}
+    </p>
+  );
 }
 
 export function CustomerLoginForm() {
