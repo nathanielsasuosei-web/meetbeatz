@@ -5,6 +5,36 @@ import { NETWORKS } from "@/lib/format";
 
 export type PaymentMethod = "ghana" | "global";
 
+function MtnApprovalGuide({ paymentUrl }: { paymentUrl: string }) {
+  return (
+    <div className="glass-strong max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 md:p-8">
+      <p className="eyebrow">Payment request started</p>
+      <h2 id="mtn-approval-help-title" className="mt-2 text-2xl font-bold">No MTN prompt? Open My Approvals.</h2>
+      <p className="mt-3 text-sm leading-relaxed text-muted">Your payment request is ready. Listen to the guide, then continue to secure payment. If the prompt does not appear on your phone, use these menu numbers:</p>
+      <ol className="mt-5 grid gap-2 text-sm text-cream/85 sm:grid-cols-2">
+        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">1</span>Dial <code>*170#</code></li>
+        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">2</span>Press <strong>6</strong> for My Wallet</li>
+        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">3</span>Press <strong>3</strong> for My Approvals</li>
+        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">4</span>Press <strong>1</strong> to select My Approvals</li>
+        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">5</span>Enter your MoMo PIN</li>
+        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">6</span>Select the pending payment and choose Approve</li>
+      </ol>
+      <div className="mt-6 rounded-2xl border border-acid/25 bg-acid/[0.06] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-bold text-cream">Audio guide</p>
+          <span className="rounded-full border border-acid/30 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-acid">MTN MoMo</span>
+        </div>
+        <audio className="mt-3 h-10 w-full" controls preload="metadata" aria-label="How to approve a missing MTN Mobile Money payment prompt">
+          <source src="/audio/mtn-momo-approval-help.mp3" type="audio/mpeg" />
+          Your browser does not support audio. Dial star one seven zero hash, press six for My Wallet, press three for My Approvals, press one to select My Approvals, select the pending payment, and choose Approve.
+        </audio>
+      </div>
+      <p className="mt-4 text-xs text-muted">Never share your MoMo PIN with anyone.</p>
+      <a href={paymentUrl} className="btn-primary mt-6 w-full !py-3.5 text-base">Continue to secure payment <span aria-hidden>→</span></a>
+    </div>
+  );
+}
+
 export function CheckoutForm({
   endpoint,
   payload,
@@ -38,6 +68,7 @@ export function CheckoutForm({
   const [network, setNetwork] = useState<string>("mtn");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
@@ -62,6 +93,11 @@ export function CheckoutForm({
         return;
       }
       onSuccess?.();
+      if (showMtnApprovalHelp && network === "mtn") {
+        setLoading(false);
+        setPaymentUrl(json.url);
+        return;
+      }
       window.location.assign(json.url);
     } catch {
       setError("Network error. Please check your connection and try again.");
@@ -70,7 +106,8 @@ export function CheckoutForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <>
+      <form onSubmit={onSubmit} className="space-y-5">
       <div>
         <label className="label" htmlFor="co-name">Full name</label>
         <input id="co-name" className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Kwame Mensah" required minLength={2} />
@@ -104,31 +141,6 @@ export function CheckoutForm({
           <p className="mt-1.5 text-xs text-muted">You will receive a payment prompt on this number. Approve it with your PIN.</p>
         </div>
       )}
-      {showMtnApprovalHelp && network === "mtn" && (
-        <aside className="rounded-2xl border border-acid/25 bg-acid/[0.06] p-4" aria-labelledby="mtn-approval-help-title">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="eyebrow">MTN approval help</p>
-              <h3 id="mtn-approval-help-title" className="mt-1 text-sm font-bold">No payment prompt? Open My Approvals.</h3>
-              <p className="mt-1 text-xs leading-relaxed text-muted">Use these menu numbers if the prompt does not appear:</p>
-              <ol className="mt-2 grid gap-1 text-xs text-cream/80 sm:grid-cols-2">
-                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">1</span>Dial <code>*170#</code></li>
-                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">2</span>Press <strong>6</strong> for My Wallet</li>
-                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">3</span>Press <strong>3</strong> for My Approvals</li>
-                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">4</span>Press <strong>1</strong> to select My Approvals</li>
-                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">5</span>Enter your MoMo PIN</li>
-                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">6</span>Select the pending payment and choose Approve</li>
-              </ol>
-            </div>
-            <span className="rounded-full border border-acid/30 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-acid">Audio guide</span>
-          </div>
-          <audio className="mt-4 h-10 w-full" controls preload="metadata" aria-label="How to approve a missing MTN Mobile Money payment prompt">
-            <source src="/audio/mtn-momo-approval-help.mp3" type="audio/mpeg" />
-            Your browser does not support audio. Dial star one seven zero hash, press six for My Wallet, press three for My Approvals, press one to select My Approvals, select the pending payment, and choose Approve.
-          </audio>
-          <p className="mt-2 text-[11px] text-muted">Never share your MoMo PIN with anyone.</p>
-        </aside>
-      )}
       {requireAgreement && (
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
           <label className="flex items-start gap-3 text-xs leading-relaxed text-cream/80">
@@ -148,7 +160,13 @@ export function CheckoutForm({
       <button type="submit" className="btn-primary w-full !py-3.5 text-base" disabled={loading || disabled || (requireAgreement && !agreed)}>
         {loading ? "Redirecting to secure payment…" : buttonLabel}
       </button>
-      <p className="text-center text-[11px] text-muted">Secured by Paystack. We never see your PIN or card details.</p>
-    </form>
+        <p className="text-center text-[11px] text-muted">Secured by Paystack. We never see your PIN or card details.</p>
+      </form>
+      {paymentUrl && showMtnApprovalHelp && network === "mtn" && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/80 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="mtn-approval-help-title">
+          <MtnApprovalGuide paymentUrl={paymentUrl} />
+        </div>
+      )}
+    </>
   );
 }
