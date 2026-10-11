@@ -152,10 +152,10 @@ export default async function HomePage() {
 
       {/* How it works */}
       <section id="how" className="glass-section">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
           <p className="eyebrow">How it works</p>
-          <h2 className="display mt-2 max-w-2xl text-4xl md:text-5xl">From preview to your inbox in three taps.</h2>
-          <Reveal className="mt-12 grid gap-6 md:grid-cols-3">
+          <h2 className="display mt-2 max-w-xl text-2xl sm:text-3xl md:text-4xl">From preview to your inbox in three taps.</h2>
+          <Reveal className="mt-8 grid gap-4 md:grid-cols-3">
             {[
               {
                 n: "01",
@@ -173,10 +173,10 @@ export default async function HomePage() {
                 text: "Your download links, license key and a signed license certificate are emailed to you instantly. Keep it as proof of purchase.",
               },
             ].map((step) => (
-              <div key={step.n} className="card p-7">
-                <p className="display text-5xl text-acid drop-shadow-[0_0_20px_rgba(198,241,53,0.35)]">{step.n}</p>
-                <h3 className="mt-5 text-xl font-bold">{step.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted">{step.text}</p>
+              <div key={step.n} className="card p-5">
+                <p className="display text-3xl text-acid drop-shadow-[0_0_16px_rgba(198,241,53,0.35)]">{step.n}</p>
+                <h3 className="mt-3 text-base font-bold md:text-lg">{step.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-muted">{step.text}</p>
               </div>
             ))}
           </Reveal>
