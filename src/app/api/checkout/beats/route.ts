@@ -12,6 +12,8 @@ export async function POST(req: Request) {
       licenseTypeId?: number | string;
       items?: Array<{ beatSlug?: string; licenseTypeId?: number | string }>;
       paymentMethod?: "ghana" | "global";
+      promoCode?: string;
+      agreedToTerms?: boolean;
       customer?: Record<string, string>;
     };
     const items = Array.isArray(body.items) && body.items.length > 0
@@ -25,6 +27,8 @@ export async function POST(req: Request) {
     const result = await createBeatCartOrder({
       items,
       paymentMethod: body.paymentMethod,
+      promoCode: body.promoCode,
+      agreedToTerms: body.agreedToTerms,
       customer: body.customer ?? {},
       customerId: session?.id ?? null,
     });

@@ -93,6 +93,9 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
               account={account}
               payload={{ beatSlug: data.beat.slug, licenseTypeId: selected.id }}
               buttonLabel={`Pay ${money(totals.total, settings.currency)}`}
+              requireAgreement
+              agreementLabel="I have reviewed and agree to the selected license terms for this beat and license."
+              agreementTerms={selected.terms}
             />
           </div>
         </section>

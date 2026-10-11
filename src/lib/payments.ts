@@ -23,7 +23,7 @@ import { adminNewOrderHtml, bookingEmailHtml, purchaseEmailHtml } from "./email-
 import { minutesToTime, num, round2, timeToMinutes, toMinor } from "./format";
 import { makeLicenseKey, makeReference, randomToken } from "./ids";
 import { initializeTransaction, isValidSplitCode, isValidSubaccountCode, verifyTransaction, type VerifyResult } from "./paystack";
-import { getPaymentMode, getSettings, type SiteSettings } from "./settings";
+import { getPaymentMode, getPromoConfig, getSettings, type SiteSettings } from "./settings";
 import { isSlotAvailable, isValidDateString, todayString } from "./slots";
 import { notifyBooking } from "./notifications";
 import { getBaseUrl } from "./url";
@@ -47,6 +47,19 @@ export function computeTotals(subtotal: number, feePercent: number) {
   const sub = round2(subtotal);
   const fee = round2((sub * feePercent) / 100);
   return { subtotal: sub, fee, total: round2(sub + fee) };
+}
+
+export function computePromoTotals(subtotal: number, feePercent: number, promoPercent: number) {
+  const originalSubtotal = round2(subtotal);
+  const discount = round2((originalSubtotal * promoPercent) / 100);
+  const discountedSubtotal = round2(originalSubtotal - discount);
+  const fee = round2((discountedSubtotal * feePercent) / 100);
+  return {
+    subtotal: originalSubtotal,
+    discount,
+    fee,
+    total: round2(discountedSubtotal + fee),
+  };
 }
 
 function cleanCustomer(raw: Partial<CustomerInput>): CustomerInput {
@@ -162,12 +175,16 @@ export async function createBeatOrder(input: {
   /** Signed-in artist — puts the order straight onto their account. */
   customerId?: number | null;
   paymentMethod?: "ghana" | "global";
+  promoCode?: string;
+  agreedToTerms?: boolean;
 }): Promise<{ url: string; reference: string }> {
   return createBeatCartOrder({
     items: [{ beatSlug: input.beatSlug, licenseTypeId: input.licenseTypeId }],
     customer: input.customer,
     customerId: input.customerId,
     paymentMethod: input.paymentMethod,
+    promoCode: input.promoCode,
+    agreedToTerms: input.agreedToTerms,
   });
 }
 
@@ -181,9 +198,14 @@ export async function createBeatCartOrder(input: {
   customer: Partial<CustomerInput>;
   customerId?: number | null;
   paymentMethod?: "ghana" | "global";
+  promoCode?: string;
+  agreedToTerms?: boolean;
 }): Promise<{ url: string; reference: string }> {
   if (input.paymentMethod === "global") {
     throw new CheckoutError("Global Payment Worldwide is not connected yet. Choose Mobile Money Ghana.", 503);
+  }
+  if (input.agreedToTerms !== true) {
+    throw new CheckoutError("Please review and agree to the selected license terms before paying.");
   }
   if (!Array.isArray(input.items) || input.items.length === 0) {
     throw new CheckoutError("Your cart is empty.");
@@ -231,7 +253,13 @@ export async function createBeatCartOrder(input: {
 
   const settings = await getSettings();
   const subtotal = round2(selected.reduce((sum, item) => sum + num(item.bl.price), 0));
-  const totals = computeTotals(subtotal, num(settings.feePercent));
+  const configuredPromo = getPromoConfig(settings);
+  const requestedPromo = String(input.promoCode ?? "").trim().toUpperCase();
+  if (requestedPromo && (!configuredPromo || requestedPromo !== configuredPromo.code)) {
+    throw new CheckoutError("That promo code is not valid.");
+  }
+  const appliedPromo = requestedPromo && configuredPromo ? configuredPromo : null;
+  const totals = computePromoTotals(subtotal, num(settings.feePercent), appliedPromo?.percent ?? 0);
   const reference = makeReference("MB");
 
   const [order] = await db
@@ -245,6 +273,8 @@ export async function createBeatCartOrder(input: {
       customerPhone: customer.phone,
       network: customer.network,
       subtotal: totals.subtotal.toFixed(2),
+      discount: totals.discount.toFixed(2),
+      promoCode: appliedPromo?.code ?? "",
       feePercent: num(settings.feePercent).toFixed(2),
       fee: totals.fee.toFixed(2),
       total: totals.total.toFixed(2),
@@ -271,6 +301,8 @@ export async function createBeatCartOrder(input: {
     kind: "beat",
     beats: selected.map(({ beat, lt }) => ({ beat: beat.title, license: lt.name })),
     payment_method: input.paymentMethod ?? "ghana",
+    promo_code: appliedPromo?.code ?? null,
+    discount: totals.discount,
   });
   return { url, reference };
 }

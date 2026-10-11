@@ -162,6 +162,9 @@ export const orders = pgTable("orders", {
   customerPhone: text("customer_phone").default("").notNull(),
   network: text("network").default("").notNull(), // mtn | vodafone | airteltigo | card
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
+  /** Discount is recorded separately so receipts can show the original price and promo savings. */
+  discount: numeric("discount", { precision: 10, scale: 2 }).default("0").notNull(),
+  promoCode: text("promo_code").default("").notNull(),
   feePercent: numeric("fee_percent", { precision: 5, scale: 2 }).notNull(),
   fee: numeric("fee", { precision: 10, scale: 2 }).notNull(),
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),

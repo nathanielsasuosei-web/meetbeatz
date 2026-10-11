@@ -9,6 +9,9 @@ export type SiteSettings = {
   accentColor: string;
   currency: string;
   feePercent: string;
+  /** One optional site-wide promo code configured by the producer. */
+  promoCode: string;
+  promoPercent: string;
   paystackSubaccount: string;
   feeBearer: "account" | "subaccount";
   contactEmail: string;
@@ -28,6 +31,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   accentColor: "#c6f135",
   currency: "GHS",
   feePercent: "10",
+  promoCode: "",
+  promoPercent: "0",
   paystackSubaccount: "SPL_u2dhKWTU3y",
   feeBearer: "account",
   contactEmail: "hello@meetbeatz.com",
@@ -46,6 +51,13 @@ export async function getSettings(): Promise<SiteSettings> {
   const merged: Record<string, string> = { ...DEFAULT_SETTINGS };
   for (const row of rows) merged[row.key] = row.value;
   return merged as unknown as SiteSettings;
+}
+
+export function getPromoConfig(siteSettings: SiteSettings): { code: string; percent: number } | null {
+  const code = siteSettings.promoCode.trim().toUpperCase();
+  const rawPercent = Number.parseFloat(siteSettings.promoPercent);
+  const percent = Number.isFinite(rawPercent) ? Math.min(100, Math.max(0, rawPercent)) : 0;
+  return code && percent > 0 ? { code, percent } : null;
 }
 
 export async function saveSettings(partial: Partial<Record<keyof SiteSettings, string>>) {

@@ -9,6 +9,7 @@ export type CartItem = {
   currency: string;
   cover: string | null;
   deliverables: string;
+  terms?: string;
 };
 
 export function cartItemKey(beatSlug: string, licenseTypeId: number): string {

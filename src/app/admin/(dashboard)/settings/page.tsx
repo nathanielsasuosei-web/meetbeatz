@@ -72,6 +72,21 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
           </section>
 
           <section className="card p-5">
+            <h2 className="font-bold">Promo Code</h2>
+            <p className="mt-1 text-xs text-muted">Create one optional site-wide discount. Leave the code blank to keep promotions off.</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="label" htmlFor="promoCode">Promo code</label>
+                <input id="promoCode" name="promoCode" className="field font-mono uppercase" defaultValue={settings.promoCode} placeholder="WELCOME10" />
+              </div>
+              <div>
+                <label className="label" htmlFor="promoPercent">Discount %</label>
+                <input id="promoPercent" name="promoPercent" type="number" min={0} max={100} step="1" className="field" defaultValue={settings.promoPercent} />
+              </div>
+            </div>
+          </section>
+
+          <section className="card p-5">
             <h2 className="font-bold">Brand & contact</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>

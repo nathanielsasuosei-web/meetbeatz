@@ -191,6 +191,12 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
                     <td className="py-2 text-right">{money(order.subtotal, order.currency)}</td>
                   </tr>
                 )}
+                {num(order.discount) > 0 && (
+                  <tr>
+                    <td className="py-2 text-ok">Promo discount{order.promoCode ? ` (${order.promoCode})` : ""}</td>
+                    <td className="py-2 text-right text-ok">−{money(order.discount, order.currency)}</td>
+                  </tr>
+                )}
                 <tr>
                   <td className="py-2 text-muted">Service fee ({num(order.feePercent)}%)</td>
                   <td className="py-2 text-right text-muted">{money(order.fee, order.currency)}</td>

@@ -246,6 +246,8 @@ export async function saveSettingsAction(formData: FormData) {
     accentColor,
     currency: (str(formData, "currency") || "GHS").toUpperCase().slice(0, 3),
     feePercent: (Number.isFinite(feePercent) ? Math.min(50, Math.max(0, feePercent)) : 10).toString(),
+    promoCode: str(formData, "promoCode").toUpperCase(),
+    promoPercent: (Number.isFinite(parseFloat(str(formData, "promoPercent"))) ? Math.min(100, Math.max(0, parseFloat(str(formData, "promoPercent")))) : 0).toString(),
     paystackSubaccount: subaccount,
     feeBearer: str(formData, "feeBearer") === "subaccount" ? "subaccount" : "account",
     contactEmail: str(formData, "contactEmail"),

@@ -49,6 +49,7 @@ export function LicensePicker({
       currency,
       cover,
       deliverables: selected.deliverables,
+      terms: selected.terms,
     };
     addItem(item);
     router.push("/cart");
