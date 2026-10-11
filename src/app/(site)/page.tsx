@@ -60,10 +60,6 @@ export default async function HomePage() {
             />
             <span className="sr-only">{settings.siteName}</span>
           </h1>
-          <p className="hero-intro mt-6 max-w-xl text-lg leading-relaxed">
-            Original Afrobeats, Asakaa drill, Highlife and more — produced by {settings.siteName}. Pay with any mobile money network and your
-            files plus license certificate land in your inbox in seconds.
-          </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
               Browse beats

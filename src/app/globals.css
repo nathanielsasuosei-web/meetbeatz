@@ -695,12 +695,6 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   text-shadow: 0 2px 22px rgb(18 2 6 / 0.62);
 }
 
-.hero-copy .hero-intro {
-  color: var(--color-cream);
-  color: color-mix(in srgb, var(--color-cream) 84%, var(--color-acid) 16%);
-  text-shadow: 0 2px 24px rgb(var(--accent-rgb, 198 241 53) / 0.18), 0 2px 18px rgb(18 2 6 / 0.72);
-}
-
 .hero-copy .hero-stats dt {
   color: var(--color-muted);
   color: color-mix(in srgb, var(--color-muted) 72%, var(--color-acid) 28%);
