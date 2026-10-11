@@ -6,11 +6,13 @@ import { NETWORKS } from "@/lib/format";
 export type PaymentMethod = "ghana" | "global";
 
 function MtnApprovalGuide({ paymentUrl }: { paymentUrl: string }) {
+  const [paymentOpened, setPaymentOpened] = useState(false);
+
   return (
     <div className="glass-strong max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 md:p-8">
       <p className="eyebrow">Payment request started</p>
       <h2 id="mtn-approval-help-title" className="mt-2 text-2xl font-bold">No MTN prompt? Open My Approvals.</h2>
-      <p className="mt-3 text-sm leading-relaxed text-muted">Your payment request is ready. Listen to the guide, then continue to secure payment. If the prompt does not appear on your phone, use these menu numbers:</p>
+      <p className="mt-3 text-sm leading-relaxed text-muted">Your payment request is ready. Continue to secure payment first. Paystack will open in a new tab; return here afterward for the audio guide if the MTN prompt does not appear.</p>
       <ol className="mt-5 grid gap-2 text-sm text-cream/85 sm:grid-cols-2">
         <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">1</span>Dial <code>*170#</code></li>
         <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">2</span>Press <strong>6</strong> for My Wallet</li>
@@ -19,18 +21,29 @@ function MtnApprovalGuide({ paymentUrl }: { paymentUrl: string }) {
         <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">5</span>Enter your MoMo PIN</li>
         <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">6</span>Select the pending payment and choose Approve</li>
       </ol>
-      <div className="mt-6 rounded-2xl border border-acid/25 bg-acid/[0.06] p-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-bold text-cream">Audio guide</p>
-          <span className="rounded-full border border-acid/30 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-acid">MTN MoMo</span>
+      {paymentOpened && (
+        <div className="mt-6 rounded-2xl border border-acid/25 bg-acid/[0.06] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-bold text-cream">Audio guide</p>
+            <span className="rounded-full border border-acid/30 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-acid">MTN MoMo</span>
+          </div>
+          <p className="mt-2 text-xs text-muted">Paystack is open in another tab. Play this guide if the prompt still does not appear.</p>
+          <audio className="mt-3 h-10 w-full" controls preload="metadata" aria-label="How to approve a missing MTN Mobile Money payment prompt">
+            <source src="/audio/mtn-momo-approval-help.mp3" type="audio/mpeg" />
+            Your browser does not support audio. Dial star one seven zero hash, press six for My Wallet, press three for My Approvals, press one to select My Approvals, select the pending payment, and choose Approve.
+          </audio>
         </div>
-        <audio className="mt-3 h-10 w-full" controls preload="metadata" aria-label="How to approve a missing MTN Mobile Money payment prompt">
-          <source src="/audio/mtn-momo-approval-help.mp3" type="audio/mpeg" />
-          Your browser does not support audio. Dial star one seven zero hash, press six for My Wallet, press three for My Approvals, press one to select My Approvals, select the pending payment, and choose Approve.
-        </audio>
-      </div>
+      )}
       <p className="mt-4 text-xs text-muted">Never share your MoMo PIN with anyone.</p>
-      <a href={paymentUrl} className="btn-primary mt-6 w-full !py-3.5 text-base">Continue to secure payment <span aria-hidden>→</span></a>
+      <a
+        href={paymentUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => setPaymentOpened(true)}
+        className="btn-primary mt-6 w-full !py-3.5 text-base"
+      >
+        {paymentOpened ? "Open Paystack checkout again" : "Continue to secure payment"} <span aria-hidden>→</span>
+      </a>
     </div>
   );
 }
