@@ -27,7 +27,7 @@ function MtnApprovalGuide({ paymentUrl }: { paymentUrl: string }) {
             <p className="text-sm font-bold text-cream">Audio guide</p>
             <span className="rounded-full border border-acid/30 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-acid">MTN MoMo</span>
           </div>
-          <p className="mt-2 text-xs text-muted">Paystack is open in another tab. Play this guide if the prompt still does not appear.</p>
+          <p className="mt-2 text-xs text-muted">Paystack has opened in a new tab. Return here and play this guide if the MTN prompt still does not appear.</p>
           <audio className="mt-3 h-10 w-full" controls preload="metadata" aria-label="How to approve a missing MTN Mobile Money payment prompt">
             <source src="/audio/mtn-momo-approval-help.mp3" type="audio/mpeg" />
             Your browser does not support audio. Dial star one seven zero hash, press six for My Wallet, press three for My Approvals, press one to select My Approvals, select the pending payment, and choose Approve.
