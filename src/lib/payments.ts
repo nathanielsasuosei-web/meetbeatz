@@ -10,8 +10,11 @@ import {
   orderItems,
   orders,
   services,
+  type Beat,
+  type BeatLicense,
   type Booking,
   type License,
+  type LicenseType,
   type Order,
   type OrderItem,
 } from "@/db/schema";
@@ -147,40 +150,88 @@ async function startPayment(order: Order, settings: SiteSettings, baseUrl: strin
 // ---------------------------------------------------------------------------
 // Beat purchase
 // ---------------------------------------------------------------------------
+export type BeatCartItemInput = {
+  beatSlug: string;
+  licenseTypeId: number;
+};
+
 export async function createBeatOrder(input: {
   beatSlug: string;
   licenseTypeId: number;
   customer: Partial<CustomerInput>;
   /** Signed-in artist — puts the order straight onto their account. */
   customerId?: number | null;
+  paymentMethod?: "ghana" | "global";
 }): Promise<{ url: string; reference: string }> {
-  const customer = cleanCustomer(input.customer);
-  const [beat] = await db
-    .select()
-    .from(beats)
-    .where(and(eq(beats.slug, input.beatSlug), eq(beats.isPublished, true)))
-    .limit(1);
-  if (!beat) throw new CheckoutError("This beat is no longer available.", 404);
-  if (!beat.mp3Path && !beat.wavPath) throw new CheckoutError("This beat has no downloadable files yet.");
+  return createBeatCartOrder({
+    items: [{ beatSlug: input.beatSlug, licenseTypeId: input.licenseTypeId }],
+    customer: input.customer,
+    customerId: input.customerId,
+    paymentMethod: input.paymentMethod,
+  });
+}
 
-  const [row] = await db
-    .select({ bl: beatLicenses, lt: licenseTypes })
-    .from(beatLicenses)
-    .innerJoin(licenseTypes, eq(beatLicenses.licenseTypeId, licenseTypes.id))
-    .where(
-      and(
-        eq(beatLicenses.beatId, beat.id),
-        eq(beatLicenses.licenseTypeId, input.licenseTypeId),
-        eq(beatLicenses.isEnabled, true),
-        eq(licenseTypes.isActive, true),
-      ),
-    )
-    .limit(1);
-  if (!row) throw new CheckoutError("That license is not available for this beat.");
-  if (row.lt.isExclusive && beat.exclusiveSold) throw new CheckoutError("Exclusive rights for this beat have already been sold.");
+/**
+ * Creates one pending order for every beat/license in the cart. Prices and
+ * license availability are always re-read here; the browser cart is only a
+ * convenience and is never trusted for payment totals.
+ */
+export async function createBeatCartOrder(input: {
+  items: BeatCartItemInput[];
+  customer: Partial<CustomerInput>;
+  customerId?: number | null;
+  paymentMethod?: "ghana" | "global";
+}): Promise<{ url: string; reference: string }> {
+  if (input.paymentMethod === "global") {
+    throw new CheckoutError("Global Payment Worldwide is not connected yet. Choose Mobile Money Ghana.", 503);
+  }
+  if (!Array.isArray(input.items) || input.items.length === 0) {
+    throw new CheckoutError("Your cart is empty.");
+  }
+  if (input.items.length > 25) throw new CheckoutError("Your cart has too many items.");
+
+  const customer = cleanCustomer(input.customer);
+  const seen = new Set<string>();
+  const selected: Array<{ beat: Beat; bl: BeatLicense; lt: LicenseType }> = [];
+
+  for (const item of input.items) {
+    const slug = String(item.beatSlug ?? "").trim();
+    const licenseTypeId = Number(item.licenseTypeId);
+    const key = `${slug}:${licenseTypeId}`;
+    if (!slug || !Number.isSafeInteger(licenseTypeId) || licenseTypeId <= 0 || seen.has(key)) {
+      throw new CheckoutError("One of the items in your cart is invalid.");
+    }
+    seen.add(key);
+
+    const [beat] = await db
+      .select()
+      .from(beats)
+      .where(and(eq(beats.slug, slug), eq(beats.isPublished, true)))
+      .limit(1);
+    if (!beat) throw new CheckoutError("One of the beats in your cart is no longer available.", 404);
+    if (!beat.mp3Path && !beat.wavPath) throw new CheckoutError(`${beat.title} has no downloadable files yet.`);
+
+    const [row] = await db
+      .select({ bl: beatLicenses, lt: licenseTypes })
+      .from(beatLicenses)
+      .innerJoin(licenseTypes, eq(beatLicenses.licenseTypeId, licenseTypes.id))
+      .where(
+        and(
+          eq(beatLicenses.beatId, beat.id),
+          eq(beatLicenses.licenseTypeId, licenseTypeId),
+          eq(beatLicenses.isEnabled, true),
+          eq(licenseTypes.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (!row) throw new CheckoutError(`The selected license for ${beat.title} is no longer available.`);
+    if (row.lt.isExclusive && beat.exclusiveSold) throw new CheckoutError(`Exclusive rights for ${beat.title} have already been sold.`);
+    selected.push({ beat, bl: row.bl, lt: row.lt });
+  }
 
   const settings = await getSettings();
-  const totals = computeTotals(num(row.bl.price), num(settings.feePercent));
+  const subtotal = round2(selected.reduce((sum, item) => sum + num(item.bl.price), 0));
+  const totals = computeTotals(subtotal, num(settings.feePercent));
   const reference = makeReference("MB");
 
   const [order] = await db
@@ -204,20 +255,22 @@ export async function createBeatOrder(input: {
     })
     .returning();
 
-  await db.insert(orderItems).values({
-    orderId: order.id,
-    beatId: beat.id,
-    licenseTypeId: row.lt.id,
-    beatTitle: beat.title,
-    licenseName: row.lt.name,
-    price: totals.subtotal.toFixed(2),
-  });
+  await db.insert(orderItems).values(
+    selected.map(({ beat, lt, bl }) => ({
+      orderId: order.id,
+      beatId: beat.id,
+      licenseTypeId: lt.id,
+      beatTitle: beat.title,
+      licenseName: lt.name,
+      price: num(bl.price).toFixed(2),
+    })),
+  );
 
   const baseUrl = await getBaseUrl();
   const url = await startPayment(order, settings, baseUrl, {
     kind: "beat",
-    beat: beat.title,
-    license: row.lt.name,
+    beats: selected.map(({ beat, lt }) => ({ beat: beat.title, license: lt.name })),
+    payment_method: input.paymentMethod ?? "ghana",
   });
   return { url, reference };
 }

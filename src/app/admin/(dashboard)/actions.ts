@@ -17,6 +17,7 @@ import { getBaseUrl } from "@/lib/url";
 import { saveAdsTxt } from "@/lib/ads-txt";
 import { validateAdsTxt } from "@/lib/ads-txt-format";
 import { setContactHandled } from "@/lib/contact";
+import { sendWhatsAppAlert } from "@/lib/whatsapp";
 
 async function guard() {
   const session = await getAdminSession();
@@ -37,6 +38,11 @@ function int(fd: FormData, key: string, fallback: number): number {
 function dec(fd: FormData, key: string, fallback = 0): string {
   const n = parseFloat(str(fd, key));
   return (Number.isFinite(n) ? Math.max(0, n) : fallback).toFixed(2);
+}
+
+function hexColor(fd: FormData, key: string, fallback: string): string {
+  const value = str(fd, key).toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(value) ? value : fallback;
 }
 
 function done(path: string, message: string): never {
@@ -223,6 +229,7 @@ export async function saveLicenseType(formData: FormData) {
 export async function saveSettingsAction(formData: FormData) {
   await guard();
   const feePercent = parseFloat(str(formData, "feePercent", "10"));
+  const accentColor = hexColor(formData, "accentColor", "#c6f135");
   const subaccount = str(formData, "paystackSubaccount").trim();
   // Only validate subaccount codes (ACCT_xxx) against Paystack. Split codes
   // (SPL_xxx) are pre-configured in the Paystack dashboard and don't need
@@ -236,6 +243,7 @@ export async function saveSettingsAction(formData: FormData) {
   await saveSettings({
     siteName: str(formData, "siteName") || "Meetbeatz",
     tagline: str(formData, "tagline"),
+    accentColor,
     currency: (str(formData, "currency") || "GHS").toUpperCase().slice(0, 3),
     feePercent: (Number.isFinite(feePercent) ? Math.min(50, Math.max(0, feePercent)) : 10).toString(),
     paystackSubaccount: subaccount,
@@ -282,6 +290,22 @@ export async function sendTestEmailAction(formData: FormData) {
   });
   if (result.status === "sent") done("/admin/settings", `Test email sent to ${to}.`);
   fail("/admin/settings", `Test email failed: ${result.error ?? "unknown error"}`);
+}
+
+export async function sendTestWhatsAppAction(formData: FormData) {
+  await guard();
+  const settings = await getSettings();
+  // Prefer the value in the submitted form so the producer can test a newly
+  // entered number before saving the rest of the settings form.
+  const to = str(formData, "whatsappAlerts") || settings.whatsappAlerts;
+  if (!to) fail("/admin/settings", "Enter your WhatsApp alert number first.");
+
+  const result = await sendWhatsAppAlert(
+    to,
+    `Meetbeatz test alert ✅\nThis is where new studio booking requests and payment confirmations will arrive.`,
+  );
+  if (result.status === "sent") done("/admin/settings", `WhatsApp test sent to ${to}.`);
+  fail("/admin/settings", `WhatsApp test failed: ${result.detail}`);
 }
 
 // ---------------- Ads.txt ----------------

@@ -1,4 +1,4 @@
-import { CheckoutError, createBeatOrder } from "@/lib/payments";
+import { CheckoutError, createBeatCartOrder } from "@/lib/payments";
 import { getCustomerSession, normalizeEmail } from "@/lib/customer-auth";
 import { ensureSeeded } from "@/lib/seed";
 
@@ -10,16 +10,21 @@ export async function POST(req: Request) {
     const body = (await req.json().catch(() => ({}))) as {
       beatSlug?: string;
       licenseTypeId?: number | string;
+      items?: Array<{ beatSlug?: string; licenseTypeId?: number | string }>;
+      paymentMethod?: "ghana" | "global";
       customer?: Record<string, string>;
     };
+    const items = Array.isArray(body.items) && body.items.length > 0
+      ? body.items.map((item) => ({ beatSlug: String(item.beatSlug ?? ""), licenseTypeId: Number(item.licenseTypeId) }))
+      : [{ beatSlug: String(body.beatSlug ?? ""), licenseTypeId: Number(body.licenseTypeId) }];
     // A signed-in artist's purchase lands on their account page automatically.
     const session = await getCustomerSession();
     if (session && normalizeEmail(body.customer?.email ?? "") !== session.email) {
       throw new CheckoutError("Use your account email at checkout so this beat appears in your purchases.");
     }
-    const result = await createBeatOrder({
-      beatSlug: String(body.beatSlug ?? ""),
-      licenseTypeId: Number(body.licenseTypeId),
+    const result = await createBeatCartOrder({
+      items,
+      paymentMethod: body.paymentMethod,
       customer: body.customer ?? {},
       customerId: session?.id ?? null,
     });

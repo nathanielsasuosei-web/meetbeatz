@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { NotificationWatcher } from "@/components/admin/notification-watcher";
 import { requireAdmin } from "@/lib/auth";
 import { unhandledContactCount } from "@/lib/contact";
 import { countUnreadNotifications } from "@/lib/notifications";
@@ -74,6 +75,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </div>
         )}
         <main className="px-4 py-8 sm:px-8">{children}</main>
+        <NotificationWatcher initialUnread={unreadNotifications} />
       </div>
     </div>
   );

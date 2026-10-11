@@ -7,7 +7,9 @@ export function toTrack(beat: BeatCardData): Track {
     title: beat.title,
     subtitle: [beat.genre, beat.bpm ? `${beat.bpm} BPM` : null, beat.musicalKey].filter(Boolean).join(" · "),
     cover: beat.cover,
-    src: beat.previewUrl,
+    // Cards without a tagged preview remain listed, but the UI does not offer
+    // play. The empty fallback keeps Track's browser-audio type strict.
+    src: beat.previewUrl ?? "",
     href: `/beats/${beat.slug}`,
   };
 }

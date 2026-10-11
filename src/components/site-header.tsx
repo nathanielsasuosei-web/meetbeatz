@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { CloseIcon, MenuIcon } from "./icons";
 import { LiquidPill, useLiquidPill } from "./liquid-pill";
 import { useSpotlight } from "./spotlight";
+import { useCart } from "./cart/cart-provider";
 
 /**
  * Desktop navigation, shown from 1024px up. Five links is what fits next to
@@ -53,6 +54,7 @@ export function Logo({ siteName }: { siteName: string }) {
 
 export function SiteHeader({ siteName, customer }: { siteName: string; customer: { name: string } | null }) {
   const [open, setOpen] = useState(false);
+  const { count: cartCount } = useCart();
   const pathname = usePathname();
   const navRef = useRef<HTMLElement | null>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
@@ -137,6 +139,10 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
             })}
           </nav>
           <div className="hidden items-center gap-3 lg:flex">
+            <Link href="/cart" className="relative text-xs font-semibold text-muted transition hover:text-cream">
+              Cart
+              {cartCount > 0 && <span className="ml-1.5 rounded-full bg-acid px-1.5 py-0.5 text-[10px] font-black text-ink">{cartCount}</span>}
+            </Link>
             {customer ? (
               <Link href="/account" className="btn-ghost">
                 My account
@@ -181,6 +187,14 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
                     {item.label}
                   </Link>
                 ))}
+                <Link
+                  href="/cart"
+                  onClick={() => setOpen(false)}
+                  className="m-item flex items-center justify-between rounded-xl px-3 py-3 text-base font-semibold text-cream transition hover:bg-white/10 hover:translate-x-1"
+                >
+                  <span>Cart</span>
+                  {cartCount > 0 && <span className="rounded-full bg-acid px-2 py-0.5 text-xs font-black text-ink">{cartCount}</span>}
+                </Link>
                 <Link
                   href={customer ? "/account" : "/account/login"}
                   onClick={() => setOpen(false)}

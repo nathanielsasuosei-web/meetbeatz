@@ -13,7 +13,7 @@ export type BeatCardData = {
   musicalKey: string;
   tags: string;
   cover: string | null;
-  previewUrl: string;
+  previewUrl: string | null;
   /** Video preview URL when the admin uploaded one, else null. */
   videoUrl: string | null;
   priceFrom: number | null;
@@ -36,7 +36,7 @@ export function toCard(beat: Beat, priceFrom: string | number | null): BeatCardD
     musicalKey: beat.musicalKey,
     tags: beat.tags,
     cover: coverUrl(beat.coverPath),
-    previewUrl: `/api/beats/${beat.id}/preview`,
+    previewUrl: beat.previewPath ? `/api/beats/${beat.id}/preview` : null,
     videoUrl: beat.videoPath ? `/api/beats/${beat.id}/video` : null,
     priceFrom: priceFrom === null ? null : num(priceFrom),
     isDemo: beat.isDemo,

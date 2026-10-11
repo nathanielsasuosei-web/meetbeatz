@@ -10,6 +10,7 @@ import { listActiveServices, listBeats, listLicenseTypes } from "@/lib/catalog";
 import { DELIVERABLE_LABELS, deliverableList, formatDate, money, num } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { formatBytes } from "@/lib/upload-rules";
+import { HeroWave } from "@/components/hero-wave";
 
 export const dynamic = "force-dynamic";
 
@@ -42,8 +43,9 @@ export default async function HomePage() {
             <span />
             <span />
           </div>
+          <HeroWave />
         </div>
-        <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
           <div className="glass inline-flex rounded-full px-4 py-1.5">
             <p className="eyebrow !tracking-[0.18em]">Beat store · Recording studio · {settings.location}</p>
           </div>

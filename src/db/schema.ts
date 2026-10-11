@@ -237,16 +237,20 @@ export const bookings = pgTable("bookings", {
 
 // Producer inbox: on-site notification messages (booking requests, confirmations).
 // The same alerts are also pushed to the producer's WhatsApp when configured.
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  kind: text("kind").notNull(), // booking_request | booking_confirmed
-  title: text("title").notNull(),
-  body: text("body").notNull(),
-  reference: text("reference").default("").notNull(),
-  link: text("link").default("").notNull(),
-  readAt: timestamp("read_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: serial("id").primaryKey(),
+    kind: text("kind").notNull(), // booking_request | booking_confirmed
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    reference: text("reference").default("").notNull(),
+    link: text("link").default("").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("notifications_kind_reference_idx").on(t.kind, t.reference)],
+);
 
 export const emailLogs = pgTable("email_logs", {
   id: serial("id").primaryKey(),

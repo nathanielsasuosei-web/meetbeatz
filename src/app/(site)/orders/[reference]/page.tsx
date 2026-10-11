@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DownloadIcon } from "@/components/icons";
+import { CartCleanup } from "@/components/cart/cart-cleanup";
 import {
   DELIVERABLE_LABELS,
   deliverableList,
@@ -70,6 +71,7 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
 
       {order.status === "paid" && (
         <>
+          {order.kind === "beat" && <CartCleanup />}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="eyebrow">Payment successful</p>

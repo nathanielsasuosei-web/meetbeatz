@@ -371,16 +371,16 @@ body::after {
   background:
     linear-gradient(
       155deg,
-      rgba(198, 241, 53, 0.22) 0%,
-      rgba(198, 241, 53, 0.06) 50%,
+      rgb(var(--accent-rgb, 198 241 53) / 0.22) 0%,
+      rgb(var(--accent-rgb, 198 241 53) / 0.06) 50%,
       rgba(255, 255, 255, 0.03) 100%
     );
-  background-color: rgba(198, 241, 53, 0.08);
-  border: 1px solid rgba(198, 241, 53, 0.35);
+  background-color: rgb(var(--accent-rgb, 198 241 53) / 0.08);
+  border: 1px solid rgb(var(--accent-rgb, 198 241 53) / 0.35);
   box-shadow:
-    0 0 0 1px rgba(198, 241, 53, 0.08) inset,
+    0 0 0 1px rgb(var(--accent-rgb, 198 241 53) / 0.08) inset,
     0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
-    0 12px 36px -10px rgba(198, 241, 53, 0.2),
+    0 12px 36px -10px rgb(var(--accent-rgb, 198 241 53) / 0.2),
     0 8px 24px -8px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(28px) saturate(1.6);
   -webkit-backdrop-filter: blur(28px) saturate(1.6);
@@ -395,7 +395,7 @@ body::after {
   background: linear-gradient(
     125deg,
     rgba(255, 255, 255, 0.25) 0%,
-    rgba(198, 241, 53, 0.1) 25%,
+    rgb(var(--accent-rgb, 198 241 53) / 0.1) 25%,
     transparent 50%
   );
 }
@@ -411,9 +411,9 @@ body::after {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(198, 241, 53, 0.7) 40%,
+    rgb(var(--accent-rgb, 198 241 53) / 0.7) 40%,
     rgba(255, 255, 255, 0.8) 50%,
-    rgba(198, 241, 53, 0.7) 60%,
+    rgb(var(--accent-rgb, 198 241 53) / 0.7) 60%,
     transparent
   );
 }
@@ -499,7 +499,7 @@ body::after {
     0 0 0 1px rgba(255, 255, 255, 0.06) inset,
     0 1px 0 0 rgba(255, 255, 255, 0.16) inset,
     0 16px 40px -12px rgba(0, 0, 0, 0.55),
-    0 0 40px -16px rgba(198, 241, 53, 0.12);
+    0 0 40px -16px rgb(var(--accent-rgb, 198 241 53) / 0.12);
 }
 
 .btn-primary,
@@ -519,7 +519,7 @@ body::after {
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.45) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.12) inset,
-    0 8px 24px -6px rgba(198, 241, 53, 0.45),
+    0 8px 24px -6px rgb(var(--accent-rgb, 198 241 53) / 0.45),
     0 2px 8px -2px rgba(0, 0, 0, 0.3);
 }
 
@@ -529,7 +529,7 @@ body::after {
     linear-gradient(180deg, #e0ff6e 0%, #d0f548 40%, var(--color-acid) 100%);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
-    0 10px 28px -6px rgba(198, 241, 53, 0.55),
+    0 10px 28px -6px rgb(var(--accent-rgb, 198 241 53) / 0.55),
     0 2px 8px -2px rgba(0, 0, 0, 0.3);
   transform: translateY(-1px);
 }
@@ -578,11 +578,11 @@ body::after {
 }
 
 .field:focus {
-  border-color: rgba(198, 241, 53, 0.5);
+  border-color: rgb(var(--accent-rgb, 198 241 53) / 0.5);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-    0 0 0 3px rgba(198, 241, 53, 0.15),
-    0 0 24px -6px rgba(198, 241, 53, 0.25);
+    0 0 0 3px rgb(var(--accent-rgb, 198 241 53) / 0.15),
+    0 0 24px -6px rgb(var(--accent-rgb, 198 241 53) / 0.25);
 }
 
 select.field {
@@ -612,12 +612,12 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 }
 
 .badge-acid {
-  background: rgba(198, 241, 53, 0.12);
-  border-color: rgba(198, 241, 53, 0.4);
+  background: rgb(var(--accent-rgb, 198 241 53) / 0.12);
+  border-color: rgb(var(--accent-rgb, 198 241 53) / 0.4);
   color: var(--color-acid);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-    0 0 12px -4px rgba(198, 241, 53, 0.3);
+    0 0 12px -4px rgb(var(--accent-rgb, 198 241 53) / 0.3);
 }
 
 .table-base {
@@ -698,6 +698,25 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
 }
 
+/* Five-depth music stage painted by HeroWave. It sits above the photo and
+   below the copy, so the wave feels dimensional without reducing contrast. */
+.hero-wave-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.82;
+  mix-blend-mode: screen;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+}
+
+.hero-wave-layer canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* Floating liquid orbs for depth behind content */
 .liquid-orbs {
   pointer-events: none;
@@ -771,14 +790,14 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 .glass-marquee {
   position: relative;
   overflow: hidden;
-  border-block: 1px solid rgba(198, 241, 53, 0.35);
+  border-block: 1px solid rgb(var(--accent-rgb, 198 241 53) / 0.35);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 40%),
-    linear-gradient(90deg, rgba(198, 241, 53, 0.92), rgba(212, 248, 90, 0.95), rgba(198, 241, 53, 0.92));
+    linear-gradient(90deg, rgb(var(--accent-rgb, 198 241 53) / 0.92), rgba(212, 248, 90, 0.95), rgb(var(--accent-rgb, 198 241 53) / 0.92));
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.4) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.1) inset,
-    0 8px 32px -8px rgba(198, 241, 53, 0.35);
+    0 8px 32px -8px rgb(var(--accent-rgb, 198 241 53) / 0.35);
   color: var(--color-ink);
 }
 
@@ -880,13 +899,13 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 /* Acid glow while resting on the active link */
 .nav-pill.is-acid {
   background:
-    linear-gradient(160deg, rgba(198, 241, 53, 0.24) 0%, rgba(198, 241, 53, 0.08) 50%, rgba(255, 255, 255, 0.04) 100%),
-    rgba(198, 241, 53, 0.1);
-  border-color: rgba(198, 241, 53, 0.45);
+    linear-gradient(160deg, rgb(var(--accent-rgb, 198 241 53) / 0.24) 0%, rgb(var(--accent-rgb, 198 241 53) / 0.08) 50%, rgba(255, 255, 255, 0.04) 100%),
+    rgb(var(--accent-rgb, 198 241 53) / 0.1);
+  border-color: rgb(var(--accent-rgb, 198 241 53) / 0.45);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.3) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.2) inset,
-    0 0 24px -6px rgba(198, 241, 53, 0.55),
+    0 0 24px -6px rgb(var(--accent-rgb, 198 241 53) / 0.55),
     0 8px 24px -8px rgba(0, 0, 0, 0.5);
 }
 
@@ -899,7 +918,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.45) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.12) inset,
-    0 8px 20px -6px rgba(198, 241, 53, 0.45);
+    0 8px 20px -6px rgb(var(--accent-rgb, 198 241 53) / 0.45);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -917,7 +936,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 /* Soft acid blob trailing behind — the liquid smear */
 .nav-pill-ghost {
   z-index: 0;
-  background: rgba(198, 241, 53, 0.4);
+  background: rgb(var(--accent-rgb, 198 241 53) / 0.4);
   filter: blur(14px);
   transition:
     transform 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.06s,
@@ -1107,6 +1126,83 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   animation: auth-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
+.auth-stage {
+  position: relative;
+  isolation: isolate;
+}
+
+.auth-stage::before,
+.auth-stage::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(42px);
+  opacity: 0.35;
+  animation: auth-orbit 12s ease-in-out infinite;
+}
+
+.auth-stage::before {
+  width: 12rem;
+  height: 12rem;
+  top: 1rem;
+  left: -7rem;
+  background: rgb(var(--accent-rgb, 198 241 53) / 0.24);
+}
+
+.auth-stage::after {
+  width: 10rem;
+  height: 10rem;
+  right: -5rem;
+  bottom: 4rem;
+  background: rgba(255, 48, 56, 0.28);
+  animation-delay: -5s;
+}
+
+@keyframes auth-orbit {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1.2rem, -1rem, 0) scale(1.12);
+  }
+}
+
+.auth-form > * {
+  animation: auth-field-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.auth-form > *:nth-child(1) { animation-delay: 120ms; }
+.auth-form > *:nth-child(2) { animation-delay: 180ms; }
+.auth-form > *:nth-child(3) { animation-delay: 240ms; }
+.auth-form > *:nth-child(4) { animation-delay: 300ms; }
+.auth-form > *:nth-child(5) { animation-delay: 360ms; }
+.auth-form > *:nth-child(6) { animation-delay: 420ms; }
+
+@keyframes auth-field-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px) scale(0.985);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.auth-form .field {
+  transform: translateZ(0);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease;
+}
+
+.auth-form .field:focus {
+  transform: translateY(-2px) scale(1.005);
+}
+
 /* Tiny acid equalizer beside the eyebrow — the page "tunes in" */
 .eq-bars {
   display: inline-flex;
@@ -1122,7 +1218,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   border-radius: 999px;
   background: var(--color-acid);
   transform-origin: bottom;
-  box-shadow: 0 0 10px rgba(198, 241, 53, 0.55);
+  box-shadow: 0 0 10px rgb(var(--accent-rgb, 198 241 53) / 0.55);
   animation: eq 0.9s ease-in-out infinite;
 }
 
@@ -1225,7 +1321,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
     0 1px 0 0 rgba(255, 255, 255, 0.16) inset,
     0 -1px 0 0 rgba(80, 0, 10, 0.22) inset,
     0 18px 48px -14px rgba(40, 0, 8, 0.6),
-    0 0 52px -18px rgba(198, 241, 53, 0.2);
+    0 0 52px -18px rgb(var(--accent-rgb, 198 241 53) / 0.2);
 }
 
 .field:hover:not(:focus):not(:disabled) {
@@ -1302,10 +1398,10 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   transform-origin: left center;
   transform: scaleX(var(--progress, 0));
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(198, 241, 53, 0.45), var(--color-acid) 35%, #e9ffa1);
+  background: linear-gradient(90deg, rgb(var(--accent-rgb, 198 241 53) / 0.45), var(--color-acid) 35%, #e9ffa1);
   box-shadow:
-    0 0 14px rgba(198, 241, 53, 0.65),
-    0 1px 6px rgba(198, 241, 53, 0.4);
+    0 0 14px rgb(var(--accent-rgb, 198 241 53) / 0.65),
+    0 1px 6px rgb(var(--accent-rgb, 198 241 53) / 0.4);
 }
 
 /* Logo condenses with the bar */
@@ -1335,6 +1431,9 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   .play-bar,
   .auth-in,
   .auth-error,
+  .auth-stage::before,
+  .auth-stage::after,
+  .auth-form > *,
   .eq-bars span,
   .btn-primary.is-busy::after {
     animation: none !important;

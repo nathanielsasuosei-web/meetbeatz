@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { NETWORKS } from "@/lib/format";
 
+export type PaymentMethod = "ghana" | "global";
+
 export function CheckoutForm({
   endpoint,
   payload,
@@ -10,6 +12,8 @@ export function CheckoutForm({
   disabled = false,
   disabledReason,
   account,
+  paymentMethod = "ghana",
+  onSuccess,
 }: {
   endpoint: string;
   payload: Record<string, unknown>;
@@ -17,6 +21,8 @@ export function CheckoutForm({
   disabled?: boolean;
   disabledReason?: string;
   account?: { name: string; email: string } | null;
+  paymentMethod?: PaymentMethod;
+  onSuccess?: () => void;
 }) {
   const [name, setName] = useState(account?.name ?? "");
   const [email, setEmail] = useState(account?.email ?? "");
@@ -33,7 +39,7 @@ export function CheckoutForm({
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, customer: { name, email, phone, network } }),
+        body: JSON.stringify({ ...payload, paymentMethod, customer: { name, email, phone, network } }),
       });
       const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
       if (!res.ok || !json.url) {
@@ -41,6 +47,7 @@ export function CheckoutForm({
         setLoading(false);
         return;
       }
+      onSuccess?.();
       window.location.assign(json.url);
     } catch {
       setError("Network error. Please check your connection and try again.");

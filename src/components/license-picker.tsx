@@ -1,22 +1,30 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { BeatLicenseOption } from "@/lib/catalog";
 import { DELIVERABLE_LABELS, deliverableList, money, round2 } from "@/lib/format";
 import { CheckIcon } from "./icons";
+import { useCart } from "./cart/cart-provider";
+import type { CartItem } from "@/lib/cart";
 
 export function LicensePicker({
   beatSlug,
+  beatTitle,
+  cover,
   licenses,
   feePercent,
   currency,
 }: {
   beatSlug: string;
+  beatTitle: string;
+  cover: string | null;
   licenses: BeatLicenseOption[];
   feePercent: number;
   currency: string;
 }) {
+  const router = useRouter();
+  const { addItem, hasItem } = useCart();
   const [selectedId, setSelectedId] = useState<number | null>(licenses[0]?.id ?? null);
   const [showTerms, setShowTerms] = useState(false);
   const selected = useMemo(() => licenses.find((l) => l.id === selectedId) ?? null, [licenses, selectedId]);
@@ -27,6 +35,24 @@ export function LicensePicker({
 
   const fee = selected ? round2((selected.price * feePercent) / 100) : 0;
   const total = selected ? round2(selected.price + fee) : 0;
+  const alreadyInCart = selected ? hasItem(beatSlug, selected.id) : false;
+
+  function addSelectedToCart() {
+    if (!selected) return;
+    const item: CartItem = {
+      key: `${beatSlug}:${selected.id}`,
+      beatSlug,
+      beatTitle,
+      licenseTypeId: selected.id,
+      licenseName: selected.name,
+      price: selected.price,
+      currency,
+      cover,
+      deliverables: selected.deliverables,
+    };
+    addItem(item);
+    router.push("/cart");
+  }
 
   return (
     <div className="space-y-5">
@@ -81,10 +107,10 @@ export function LicensePicker({
               <dd className="text-acid">{money(total, currency)}</dd>
             </div>
           </dl>
-          <Link href={`/checkout?beat=${encodeURIComponent(beatSlug)}&license=${selected.id}`} className="btn-primary mt-5 w-full !py-3.5 text-base">
-            Continue to payment
-          </Link>
-          <p className="mt-3 text-center text-xs text-muted">MTN MoMo · Telecel Cash · AirtelTigo Money · Cards</p>
+          <button type="button" onClick={addSelectedToCart} className="btn-primary mt-5 w-full !py-3.5 text-base">
+            {alreadyInCart ? "Update cart & review" : "Add to cart"}
+          </button>
+          <p className="mt-3 text-center text-xs text-muted">Add the beat to your cart, then choose your payment method.</p>
           <button type="button" onClick={() => setShowTerms((s) => !s)} className="mt-4 text-xs font-semibold text-acid hover:underline">
             {showTerms ? "Hide license terms" : "Read license terms"}
           </button>

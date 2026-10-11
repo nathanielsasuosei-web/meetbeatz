@@ -41,7 +41,7 @@ export default async function BeatDetailPage({ params }: Props) {
           {card.videoUrl ? (
             <>
               <BeatVideo key={beat.id} beatId={beat.id} src={card.videoUrl} poster={card.cover} />
-              {!beat.exclusiveSold && (
+              {!beat.exclusiveSold && card.previewUrl && (
                 <div className="mt-4">
                   <PlayButton track={toTrack(card)} className="px-5 py-3 shadow-xl" label="Play audio preview" />
                 </div>
@@ -51,7 +51,7 @@ export default async function BeatDetailPage({ params }: Props) {
             <div className="relative aspect-square overflow-hidden rounded-3xl border border-white/15 bg-panel-2 shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_20px_60px_-20px_rgba(0,0,0,0.6)]">
               <CoverArt beat={card} />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/12 via-transparent to-transparent" />
-              {!beat.exclusiveSold && (
+              {!beat.exclusiveSold && card.previewUrl && (
                 <div className="absolute bottom-5 left-5">
                   <PlayButton track={toTrack(card)} className="px-5 py-3 shadow-2xl" label="Play preview" />
                 </div>
@@ -108,7 +108,14 @@ export default async function BeatDetailPage({ params }: Props) {
                   </Link>
                 </div>
               ) : (
-                <LicensePicker beatSlug={beat.slug} licenses={licenses} feePercent={num(settings.feePercent)} currency={settings.currency} />
+                <LicensePicker
+                  beatSlug={beat.slug}
+                  beatTitle={beat.title}
+                  cover={card.cover}
+                  licenses={licenses}
+                  feePercent={num(settings.feePercent)}
+                  currency={settings.currency}
+                />
               )}
             </div>
             <p className="mt-4 text-xs text-muted">
