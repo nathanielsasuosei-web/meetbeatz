@@ -7,7 +7,7 @@ import { BeatGrid } from "@/components/beat-card";
 import { DownloadIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { listActiveServices, listBeats, listLicenseTypes } from "@/lib/catalog";
-import { DELIVERABLE_LABELS, deliverableList, formatDate, money, num } from "@/lib/format";
+import { DELIVERABLE_LABELS, deliverableList, formatDate, money } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { formatBytes } from "@/lib/upload-rules";
 import { HeroWave } from "@/components/hero-wave";
@@ -149,39 +149,6 @@ export default async function HomePage() {
           </Reveal>
         </section>
       )}
-
-      {/* How it works */}
-      <section id="how" className="glass-section">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
-          <p className="eyebrow">How it works</p>
-          <h2 className="display mt-2 max-w-xl text-2xl sm:text-3xl md:text-4xl">From preview to your inbox in three taps.</h2>
-          <Reveal className="mt-8 grid gap-4 md:grid-cols-3">
-            {[
-              {
-                n: "01",
-                title: "Pick a beat & license",
-                text: "Preview every beat in full, then choose Basic, Premium, Unlimited or Exclusive rights depending on your release plans.",
-              },
-              {
-                n: "02",
-                title: "Pay with Mobile Money",
-                text: `MTN MoMo, Telecel Cash, AirtelTigo Money or card. A transparent ${num(settings.feePercent)}% service fee is shown before you pay — no hidden charges.`,
-              },
-              {
-                n: "03",
-                title: "Check your email",
-                text: "Your download links, license key and a signed license certificate are emailed to you instantly. Keep it as proof of purchase.",
-              },
-            ].map((step) => (
-              <div key={step.n} className="card p-5">
-                <p className="display text-3xl text-acid drop-shadow-[0_0_16px_rgba(198,241,53,0.35)]">{step.n}</p>
-                <h3 className="mt-3 text-base font-bold md:text-lg">{step.title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted">{step.text}</p>
-              </div>
-            ))}
-          </Reveal>
-        </div>
-      </section>
 
       {/* Meet the producer */}
       <section id="producer" className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
