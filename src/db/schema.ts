@@ -235,6 +235,19 @@ export const bookings = pgTable("bookings", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Producer inbox: on-site notification messages (booking requests, confirmations).
+// The same alerts are also pushed to the producer's WhatsApp when configured.
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  kind: text("kind").notNull(), // booking_request | booking_confirmed
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  reference: text("reference").default("").notNull(),
+  link: text("link").default("").notNull(),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const emailLogs = pgTable("email_logs", {
   id: serial("id").primaryKey(),
   toEmail: text("to_email").notNull(),
@@ -338,6 +351,7 @@ export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type License = typeof licenses.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
 export type EmailLog = typeof emailLogs.$inferSelect;
 export type StoredFile = typeof storedFiles.$inferSelect;
 export type StoredFileChunk = typeof storedFileChunks.$inferSelect;

@@ -15,6 +15,8 @@ export type SiteSettings = {
   location: string;
   instagram: string;
   notifyEmail: string;
+  /** Producer's WhatsApp number that receives booking alerts (Cloud API recipient). */
+  whatsappAlerts: string;
   bookingPolicy: string;
 };
 
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   location: "Accra, Ghana",
   instagram: "@meetbeatz",
   notifyEmail: "",
+  whatsappAlerts: "",
   bookingPolicy:
     "Please arrive 10 minutes before your session. The balance is payable at the studio before the session starts. Reschedule at least 24 hours in advance to keep your deposit.",
 };
