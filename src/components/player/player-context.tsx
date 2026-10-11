@@ -38,6 +38,18 @@ type PlayerContextValue = {
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
 
+/**
+ * The provider's audio element lives outside the React tree (it is built with
+ * `new Audio()`), so anything that wants to *look* at the sound — the home
+ * hero's beat orb taps it for a frequency spectrum — needs this small window
+ * onto it. Null until the provider has mounted.
+ */
+let playerAudio: HTMLAudioElement | null = null;
+
+export function getPlayerAudioElement(): HTMLAudioElement | null {
+  return playerAudio;
+}
+
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const trackIdRef = useRef<number | null>(null);
@@ -53,6 +65,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const audio = new Audio();
     audio.preload = "metadata";
     audioRef.current = audio;
+    playerAudio = audio;
     const onTime = () => {
       setCurrentTime(audio.currentTime);
       setProgress(audio.duration ? audio.currentTime / audio.duration : 0);
@@ -78,6 +91,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audio.addEventListener("pause", onPause);
     audio.addEventListener("ended", onEnded);
     return () => {
+      if (playerAudio === audio) playerAudio = null;
       audio.pause();
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onMeta);

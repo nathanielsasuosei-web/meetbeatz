@@ -4,6 +4,7 @@ import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, licenses, soundKits } from "@/db/schema";
 import { BeatGrid } from "@/components/beat-card";
+import { HeroStage } from "@/components/hero/hero-stage";
 import { DownloadIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { listActiveServices, listBeats, listLicenseTypes } from "@/lib/catalog";
@@ -43,50 +44,67 @@ export default async function HomePage() {
             <span />
           </div>
         </div>
-        <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
-          <div className="glass inline-flex rounded-full px-4 py-1.5">
-            <p className="eyebrow !tracking-[0.18em]">Beat store · Recording studio · {settings.location}</p>
+        <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-16 sm:px-6 md:pb-24 md:pt-24">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.02fr_0.98fr] lg:gap-6">
+            <div>
+              <div className="glass inline-flex rounded-full px-4 py-1.5">
+                <p className="eyebrow !tracking-[0.18em]">Beat store · Recording studio · {settings.location}</p>
+              </div>
+              <h1 className="mt-6">
+                <Image
+                  src="/images/logo.png"
+                  alt={`${settings.siteName} logo`}
+                  width={128}
+                  height={128}
+                  priority
+                  className="h-16 w-16 rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-8px_rgba(0,0,0,0.5),0_0_40px_-10px_rgba(198,241,53,0.3)] sm:h-24 sm:w-24 md:h-32 md:w-32"
+                />
+                <span className="sr-only">{settings.siteName}</span>
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream/80">
+                Original Afrobeats, Asakaa drill, Highlife and more — produced by {settings.siteName}. Pay with any mobile money network and your
+                files plus license certificate land in your inbox in seconds.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
+                  Browse beats
+                </Link>
+                <Link href="/sound-kits" className="btn-ghost px-7! py-3.5! text-base">
+                  Sound Kits
+                </Link>
+                <Link href="/studio" className="btn-ghost px-7! py-3.5! text-base">
+                  Book studio time
+                </Link>
+              </div>
+              <dl className="glass mt-14 grid max-w-2xl grid-cols-3 gap-6 rounded-2xl p-6">
+                <div>
+                  <dt className="text-xs uppercase tracking-wider text-muted">Beats in store</dt>
+                  <dd className="display mt-1 text-3xl md:text-4xl">{beatCount.value}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wider text-muted">Licenses issued</dt>
+                  <dd className="display mt-1 text-3xl md:text-4xl">{licenseCount.value}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wider text-muted">Delivery</dt>
+                  <dd className="display mt-1 text-3xl text-acid md:text-4xl">Instant</dd>
+                </div>
+              </dl>
+            </div>
+
+            {/*
+              Live 3D beat orb. It reads the energy of whatever the player bar is
+              playing (src/components/hero/hero-stage.tsx) and falls back to the
+              placeholder glow on devices without WebGL.
+            */}
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-x-4 top-1/2 h-2/3 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,48,56,0.28),transparent_70%)] blur-2xl" />
+              <HeroStage className="mx-auto max-w-[26rem] sm:max-w-[30rem] lg:max-w-[34rem]" />
+              <p className="mt-2 text-center text-[11px] font-bold uppercase tracking-[0.22em] text-muted">
+                Play a preview — the orb moves with the beat
+              </p>
+            </div>
           </div>
-          <h1 className="mt-6">
-            <Image
-              src="/images/logo.png"
-              alt={`${settings.siteName} logo`}
-              width={128}
-              height={128}
-              priority
-              className="h-16 w-16 rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-8px_rgba(0,0,0,0.5),0_0_40px_-10px_rgba(198,241,53,0.3)] sm:h-24 sm:w-24 md:h-32 md:w-32"
-            />
-            <span className="sr-only">{settings.siteName}</span>
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream/80">
-            Original Afrobeats, Asakaa drill, Highlife and more — produced by {settings.siteName}. Pay with any mobile money network and your
-            files plus license certificate land in your inbox in seconds.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
-              Browse beats
-            </Link>
-            <Link href="/sound-kits" className="btn-ghost px-7! py-3.5! text-base">
-              Sound Kits
-            </Link>
-            <Link href="/studio" className="btn-ghost px-7! py-3.5! text-base">
-              Book studio time
-            </Link>
-          </div>
-          <dl className="glass mt-14 grid max-w-2xl grid-cols-3 gap-6 rounded-2xl p-6">
-            <div>
-              <dt className="text-xs uppercase tracking-wider text-muted">Beats in store</dt>
-              <dd className="display mt-1 text-3xl md:text-4xl">{beatCount.value}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wider text-muted">Licenses issued</dt>
-              <dd className="display mt-1 text-3xl md:text-4xl">{licenseCount.value}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wider text-muted">Delivery</dt>
-              <dd className="display mt-1 text-3xl text-acid md:text-4xl">Instant</dd>
-            </div>
-          </dl>
         </div>
       </section>
 

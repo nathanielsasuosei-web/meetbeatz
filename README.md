@@ -105,7 +105,7 @@ Environment-variable overrides are embedded into the browser bundle at build tim
 
 | Page | What it is |
 | --- | --- |
-| `/` | Hero, featured beats, sound kits, how it works, producer & studio, license overview |
+| `/` | Hero with the 3D beat orb, featured beats, sound kits, how it works, producer & studio, license overview |
 | `/beats`, `/beats/[slug]` | Store with search + genre filters; beat page with full preview, “About this beat”, license picker |
 | `/sound-kits` | Free downloadable kits |
 | `/studio` | Services, live slot availability and booking |
@@ -121,6 +121,31 @@ public pages, the legal pages and the contact details on every page, and a brand
 main destinations. `robots.txt` and `sitemap.xml` (public pages + published beats) are generated
 by `src/app/robots.ts` and `src/app/sitemap.ts`; set `NEXT_PUBLIC_APP_URL` to the production
 domain so the sitemap lists the right host, otherwise `https://meetbeatz.com` is used.
+
+### The 3D hero on `/`
+
+The home page's right-hand column is a live WebGL scene — a sphere of glowing rods ("the beat
+orb") that pulses with whatever the player bar is playing, ringed by two slowly turning hoops.
+
+- `src/components/hero/hero-stage.tsx` — React wrapper: builds the canvas, picks quality, hands
+  the scene an energy feed. three.js is imported dynamically, so the 3D code stays out of every
+  other page's bundle and the hero does not cost anything until it mounts.
+- `src/components/hero/orb-scene.ts` — the scene itself: 900 instanced rods on a Fibonacci
+  sphere (`low` quality drops that to 460 on small screens and few-core devices), an additive
+  fresnel shell, a procedural env map built from the brand palette, dust, halo and a kick
+  shockwave. Rods near the bottom answer the bass, rods near the top answer the hats, and rods
+  run red → amber → acid green as they are driven.
+- `src/lib/beat-energy.ts` — turns sound into the four numbers the orb animates on. It taps the
+  player's `<audio>` element with an `AnalyserNode`, so the orb really does move with the kick
+  and hats. The tap bails out (and the orb falls back to a synthetic ~102 BPM pulse) whenever
+  routing the element through an `AudioContext` could silence it instead of just animate it: a
+  cross-origin clip, a context that will not resume, or any iOS browser. A silent store would be
+  a far worse outcome than a less literal visualiser.
+
+Behaviour worth knowing: the loop stops when the hero scrolls off screen or the tab is hidden, the
+renderer caps its pixel ratio, and `prefers-reduced-motion` draws one still frame instead of
+animating. With no WebGL at all, the stage keeps the placeholder glow (`.hero-orb-glow` in
+`globals.css`) and the rest of the hero is unchanged.
 
 ### The contact form
 
@@ -147,6 +172,7 @@ text is untouched, so an admin's own copy is never overwritten.
 - **Studio bookings**: services, opening hours, live slot availability with conflict prevention, deposit payment, email confirmation, balance due at studio.
 - **Admin dashboard**: revenue split overview, beat upload with real progress (cover, tagged preview, MP3, WAV, stems), license/price management, orders (resend email), bookings (confirm / complete / cancel), support messages, website enquiries, services & hours, license types, settings, payout subaccount creator, test email, password change.
 - **Trust pages**: privacy policy, terms & conditions, refund policy, a full beat licensing guide, an about page and a contact page with a stored enquiry inbox — all mobile-first and linked from the header drawer and footer.
+- **3D hero**: the home page opens with a WebGL beat orb that reacts to the energy of the beat playing in the store's own player (see *The 3D hero on `/`* below).
 
 ## Where uploaded files live
 
