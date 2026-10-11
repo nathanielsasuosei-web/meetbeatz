@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+const MUSIC_BARS = [18, 32, 52, 38, 72, 44, 86, 58, 35, 66, 92, 54, 76, 42, 88, 62, 34, 70, 96, 48, 78, 36, 64, 90, 50, 74, 42, 82, 58, 30, 68, 46, 86, 54, 72, 38];
+
 /**
  * A lightweight, canvas-based music wave for the home hero. Five parallax
  * waveform layers, a perspective floor and floating beat nodes give the
@@ -164,6 +166,11 @@ export function HeroWave() {
   return (
     <div ref={layerRef} className="hero-wave-layer" aria-hidden="true">
       <canvas ref={canvasRef} />
+      <div className="hero-wave-bars">
+        {MUSIC_BARS.map((height, index) => (
+          <span key={index} style={{ height: `${height}%`, animationDelay: `${(index % 9) * -0.13}s` }} />
+        ))}
+      </div>
     </div>
   );
 }

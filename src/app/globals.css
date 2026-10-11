@@ -698,6 +698,18 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
 }
 
+@keyframes hero-music-bar {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scaleY(0.22);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scaleY(1);
+  }
+}
+
 /* Five-depth music stage painted by HeroWave. It sits above the photo and
    below the copy, so the wave feels dimensional without reducing contrast. */
 .hero-wave-layer {
@@ -715,6 +727,38 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.hero-wave-bars {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 7%;
+  z-index: 1;
+  display: flex;
+  height: 28%;
+  align-items: flex-end;
+  gap: clamp(2px, 0.55vw, 8px);
+  opacity: 0.74;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.hero-wave-bars span {
+  min-height: 8%;
+  flex: 1 1 0;
+  transform-origin: bottom;
+  border-radius: 999px 999px 2px 2px;
+  background: linear-gradient(to top, rgb(var(--accent-rgb, 198 241 53) / 0.18), rgb(var(--accent-rgb, 198 241 53) / 0.85));
+  box-shadow: 0 0 14px rgb(var(--accent-rgb, 198 241 53) / 0.45);
+  animation: hero-music-bar 1.35s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-wave-bars span {
+    opacity: 0.55;
+    transform: scaleY(0.48);
+    animation: none;
+  }
 }
 
 /* Floating liquid orbs for depth behind content */
