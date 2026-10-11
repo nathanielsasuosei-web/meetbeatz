@@ -1,29 +1,68 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckoutForm, type PaymentMethod } from "@/components/checkout-form";
+import { PaymentMethodLogo } from "@/components/payment-brands";
 import { CoverArt } from "@/components/beat-card";
 import { useCart } from "@/components/cart/cart-provider";
 import { DELIVERABLE_LABELS, deliverableList, money, round2 } from "@/lib/format";
+
+function PaymentChoice({ method }: { method: PaymentMethod }) {
+  const isGhana = method === "ghana";
+  return (
+    <Link
+      href={`/checkout/payment?method=${method}`}
+      className="group relative block rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-left transition hover:-translate-y-0.5 hover:border-acid/60 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid/70"
+      aria-label={`Continue with ${isGhana ? "Mobile Money Ghana" : "Global Payment Worldwide"}`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <PaymentMethodLogo method={method} compact />
+        <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wider ${isGhana ? "bg-acid text-ink" : "border border-amber-300/40 bg-amber-300/10 text-amber-200"}`}>
+          {isGhana ? "SELECTED" : "Coming soon"}
+        </span>
+      </div>
+      <div className="mt-5">
+        <p className="text-base font-black">
+          {isGhana ? <>Mobile Money <span className="text-acid">Ghana</span></> : <>Global Payment <span className="text-acid">Worldwide</span></>}
+        </p>
+        <p className="mt-1 max-w-lg text-sm text-muted">
+          {isGhana ? "Card, Mobile Money, Bank Transfer, USSD" : "Card, Bank Transfer, Mobile Money and crypto payments across Africa with Bachs."}
+        </p>
+        {!isGhana && <p className="mt-3 text-xs font-semibold text-cream/70">Auto-converted · charged as <span className="text-cream">$30.00 USD</span> at the provider&apos;s live rate.</p>}
+      </div>
+      <span className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-acid transition group-hover:gap-2">
+        {isGhana ? "Continue to customer details" : "View payment option"} <span aria-hidden>→</span>
+      </span>
+    </Link>
+  );
+}
 
 export function CartCheckout({
   feePercent,
   currency,
   account,
+  stage = "method",
+  initialPaymentMethod = "ghana",
 }: {
   feePercent: number;
   currency: string;
   account?: { name: string; email: string } | null;
+  stage?: "method" | "details";
+  initialPaymentMethod?: PaymentMethod;
 }) {
   const { items, ready, removeItem } = useCart();
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("ghana");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialPaymentMethod);
   const [agreed, setAgreed] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [promoInput, setPromoInput] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; percent: number } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
+
+  useEffect(() => {
+    setPaymentMethod(initialPaymentMethod);
+  }, [initialPaymentMethod]);
 
   const totals = useMemo(() => {
     const subtotal = round2(items.reduce((sum, item) => sum + item.price, 0));
@@ -122,120 +161,111 @@ export function CartCheckout({
       </aside>
 
       <section className="space-y-6">
-        <div className="card p-6 md:p-8">
-          <div>
+        {stage === "method" ? (
+          <section className="card p-6 md:p-8">
             <p className="eyebrow">02 · Payment Method</p>
             <h1 className="display mt-2 text-3xl md:text-4xl">Choose how you&apos;d like to pay.</h1>
-          </div>
-          <div className="mt-6 grid gap-3">
-            <button
-              type="button"
-              aria-pressed={paymentMethod === "ghana"}
-              onClick={() => setPaymentMethod("ghana")}
-              className={`relative rounded-2xl border p-4 text-left transition ${paymentMethod === "ghana" ? "glass-acid border-acid/60" : "glass hover:border-white/25"}`}
-            >
-              {paymentMethod === "ghana" && <span className="absolute right-4 top-4 rounded-full bg-acid px-2 py-1 text-[10px] font-black text-ink">SELECTED</span>}
-              <p className="pr-20 text-base font-black">Mobile Money <span className="text-acid">Ghana</span></p>
-              <p className="mt-1 text-sm text-muted">Card, Mobile Money, Bank Transfer, USSD</p>
-              <div className="mt-3 flex flex-wrap gap-1.5 text-[10px] font-black uppercase tracking-wider text-cream/70">
-                <span className="rounded bg-white/10 px-2 py-1">VISA</span>
-                <span className="rounded bg-white/10 px-2 py-1">MTN</span>
-                <span className="rounded bg-white/10 px-2 py-1">Telecel</span>
-                <span className="rounded bg-white/10 px-2 py-1">AT Money</span>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              aria-pressed={paymentMethod === "global"}
-              onClick={() => setPaymentMethod("global")}
-              className={`relative rounded-2xl border p-4 text-left transition ${paymentMethod === "global" ? "glass-acid border-acid/60" : "glass hover:border-white/25"}`}
-            >
-              <span className="absolute right-4 top-4 rounded-full border border-amber-300/40 bg-amber-300/10 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-amber-200">Coming soon</span>
-              <p className="pr-24 text-base font-black">Global Payment <span className="text-acid">Worldwide</span></p>
-              <p className="mt-1 max-w-lg text-sm text-muted">Card, Bank Transfer, Mobile Money and crypto payments across Africa with Bachs.</p>
-              <p className="mt-3 text-xs font-semibold text-cream/70">Auto-converted · charged as <span className="text-cream">$30.00 USD</span> at the provider&apos;s live rate.</p>
-            </button>
-          </div>
-          {paymentMethod === "global" && <p className="mt-4 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-xs leading-relaxed text-amber-100">{globalDisabledReason}</p>}
-        </div>
-
-        <div className="card p-5">
-          <p className="eyebrow">Promo Code</p>
-          <div className="mt-3 flex gap-2">
-            <input
-              value={promoInput}
-              onChange={(event) => setPromoInput(event.target.value.toUpperCase())}
-              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void applyPromo(); } }}
-              className="field font-mono uppercase"
-              placeholder="Enter code"
-              aria-label="Promo code"
-            />
-            <button type="button" onClick={() => void applyPromo()} disabled={promoLoading} className="btn-ghost shrink-0 !px-5">
-              {promoLoading ? "Checking…" : "Apply"}
-            </button>
-          </div>
-          <p className="mt-2 text-xs text-muted">Have a promo code? Enter it above.</p>
-          {appliedPromo && <p className="mt-2 text-xs font-semibold text-ok">{appliedPromo.code} applied — {appliedPromo.percent}% off.</p>}
-          {promoError && <p className="mt-2 text-xs text-danger" role="alert">{promoError}</p>}
-        </div>
-
-        <section className="card p-6 md:p-8">
-          <p className="eyebrow">03 · Your details</p>
-          <h2 className="mt-2 text-xl font-bold">Secure checkout</h2>
-          <p className="mt-1 text-sm text-muted">Your files and license are released only after the payment is confirmed.</p>
-          <div className="mt-5 flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-            <input id="license-agreement" type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-acid" />
-            <label htmlFor="license-agreement" className="text-xs leading-relaxed text-cream/80">
-              I have reviewed and agree to the selected license terms
-              <button type="button" onClick={() => setShowTerms(true)} className="ml-1 font-bold text-acid underline underline-offset-2">(view terms)</button>
-              <span> for every beat and license listed above.</span>
-            </label>
-          </div>
-          {showTerms && (
-            <div className="fixed inset-0 z-50 grid place-items-center bg-ink/80 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="cart-terms-title">
-              <div className="glass-strong max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 md:p-8">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="eyebrow">License terms</p>
-                    <h3 id="cart-terms-title" className="mt-2 text-2xl font-bold">Review every selected license</h3>
-                  </div>
-                  <button type="button" onClick={() => setShowTerms(false)} className="btn-ghost !px-3 !py-1.5" aria-label="Close license terms">×</button>
-                </div>
-                <div className="mt-6 space-y-4">
-                  {items.map((item) => (
-                    <article key={item.key} className="rounded-2xl border border-white/10 bg-ink/30 p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="font-bold">{item.beatTitle}</p>
-                          <p className="text-xs text-acid">{item.licenseName} license</p>
-                        </div>
-                        <Link href={`/beats/${item.beatSlug}`} className="text-xs font-semibold text-muted hover:text-cream">Open beat page →</Link>
-                      </div>
-                      <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-cream/75">{item.terms || "The full terms for this license are available on the beat page."}</p>
-                    </article>
-                  ))}
-                </div>
-                <button type="button" onClick={() => { setAgreed(true); setShowTerms(false); }} className="btn-primary mt-6 w-full">I agree to these terms</button>
-              </div>
+            <p className="mt-3 max-w-xl text-sm text-muted">Select a payment method to continue to the secure customer details page.</p>
+            <div className="mt-6 grid gap-3">
+              <PaymentChoice method="ghana" />
+              <PaymentChoice method="global" />
             </div>
-          )}
-          <div className="mt-6">
-            <CheckoutForm
-              endpoint="/api/checkout/beats"
-              account={account}
-              paymentMethod={paymentMethod}
-              payload={{
-                items: items.map((item) => ({ beatSlug: item.beatSlug, licenseTypeId: item.licenseTypeId })),
-                promoCode: appliedPromo?.code ?? "",
-                agreedToTerms: agreed,
-              }}
-              buttonLabel={`Pay ${money(totals.total, currency)}`}
-              disabled={paymentMethod === "global" || !agreed}
-              disabledReason={paymentMethod === "global" ? globalDisabledReason : !agreed ? "Review and agree to the selected license terms before paying." : undefined}
-            />
-          </div>
-        </section>
+          </section>
+        ) : (
+          <>
+            <section className="card p-6 md:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="eyebrow">02 · Payment Method</p>
+                  <h1 className="display mt-2 text-3xl md:text-4xl">{paymentMethod === "ghana" ? "Mobile Money Ghana" : "Global Payment Worldwide"}</h1>
+                  <p className="mt-2 text-sm text-muted">Your selected payment option</p>
+                </div>
+                <Link href="/cart" className="btn-ghost !px-4 !py-2 text-xs">Change method</Link>
+              </div>
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <PaymentMethodLogo method={paymentMethod} />
+              </div>
+              {paymentMethod === "global" && <p className="mt-4 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-xs leading-relaxed text-amber-100">{globalDisabledReason}</p>}
+            </section>
+
+            <div className="card p-5">
+              <p className="eyebrow">Promo Code</p>
+              <div className="mt-3 flex gap-2">
+                <input
+                  value={promoInput}
+                  onChange={(event) => setPromoInput(event.target.value.toUpperCase())}
+                  onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void applyPromo(); } }}
+                  className="field font-mono uppercase"
+                  placeholder="Enter code"
+                  aria-label="Promo code"
+                />
+                <button type="button" onClick={() => void applyPromo()} disabled={promoLoading} className="btn-ghost shrink-0 !px-5">
+                  {promoLoading ? "Checking…" : "Apply"}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-muted">Have a promo code? Enter it above.</p>
+              {appliedPromo && <p className="mt-2 text-xs font-semibold text-ok">{appliedPromo.code} applied — {appliedPromo.percent}% off.</p>}
+              {promoError && <p className="mt-2 text-xs text-danger" role="alert">{promoError}</p>}
+            </div>
+
+            <section className="card p-6 md:p-8">
+              <p className="eyebrow">03 · Your details</p>
+              <h2 className="mt-2 text-xl font-bold">Secure checkout</h2>
+              <p className="mt-1 text-sm text-muted">Your files and license are released only after the payment is confirmed.</p>
+              <div className="mt-5 flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <input id="license-agreement" type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-acid" />
+                <label htmlFor="license-agreement" className="text-xs leading-relaxed text-cream/80">
+                  I have reviewed and agree to the selected license terms{" "}
+                  <button type="button" onClick={() => setShowTerms(true)} className="font-bold text-acid underline underline-offset-2">(view terms)</button>{" "}
+                  <span>for every beat and license listed above.</span>
+                </label>
+              </div>
+              {showTerms && (
+                <div className="fixed inset-0 z-50 grid place-items-center bg-ink/80 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="cart-terms-title">
+                  <div className="glass-strong max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 md:p-8">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="eyebrow">License terms</p>
+                        <h3 id="cart-terms-title" className="mt-2 text-2xl font-bold">Review every selected license</h3>
+                      </div>
+                      <button type="button" onClick={() => setShowTerms(false)} className="btn-ghost !px-3 !py-1.5" aria-label="Close license terms">×</button>
+                    </div>
+                    <div className="mt-6 space-y-4">
+                      {items.map((item) => (
+                        <article key={item.key} className="rounded-2xl border border-white/10 bg-ink/30 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <p className="font-bold">{item.beatTitle}</p>
+                              <p className="text-xs text-acid">{item.licenseName} license</p>
+                            </div>
+                            <Link href={`/beats/${item.beatSlug}`} className="text-xs font-semibold text-muted hover:text-cream">Open beat page →</Link>
+                          </div>
+                          <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-cream/75">{item.terms || "The full terms for this license are available on the beat page."}</p>
+                        </article>
+                      ))}
+                    </div>
+                    <button type="button" onClick={() => { setAgreed(true); setShowTerms(false); }} className="btn-primary mt-6 w-full">I agree to these terms</button>
+                  </div>
+                </div>
+              )}
+              <div className="mt-6">
+                <CheckoutForm
+                  endpoint="/api/checkout/beats"
+                  account={account}
+                  paymentMethod={paymentMethod}
+                  payload={{
+                    items: items.map((item) => ({ beatSlug: item.beatSlug, licenseTypeId: item.licenseTypeId })),
+                    promoCode: appliedPromo?.code ?? "",
+                    agreedToTerms: agreed,
+                  }}
+                  buttonLabel={`Pay ${money(totals.total, currency)}`}
+                  disabled={paymentMethod === "global" || !agreed}
+                  disabledReason={paymentMethod === "global" ? globalDisabledReason : !agreed ? "Review and agree to the selected license terms before paying." : undefined}
+                />
+              </div>
+            </section>
+          </>
+        )}
       </section>
     </div>
   );

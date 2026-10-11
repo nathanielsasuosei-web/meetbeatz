@@ -14,7 +14,7 @@ export default async function CartPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <Link href="/beats" className="text-sm font-semibold text-muted hover:text-cream">← Back to beats</Link>
-      <CartCheckout feePercent={num(settings.feePercent)} currency={settings.currency} account={account} />
+      <CartCheckout feePercent={num(settings.feePercent)} currency={settings.currency} account={account} stage="method" />
     </div>
   );
 }
