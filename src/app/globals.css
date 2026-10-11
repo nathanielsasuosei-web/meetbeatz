@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #120206;
-  --color-ink-2: #1c060c;
-  --color-panel: #2a0c14;
-  --color-panel-2: #3a1220;
-  --color-line: #4a2430;
-  --color-line-2: #5e3040;
+  --color-ink: #050506;
+  --color-ink-2: #0d080a;
+  --color-panel: #21080e;
+  --color-panel-2: #351019;
+  --color-line: #54202b;
+  --color-line-2: #71303e;
   --color-acid: #c6f135;
   --color-acid-2: #a9d41f;
   /* The "BEATZ" half of the wordmark, to match the logo's red neon.
@@ -125,11 +125,11 @@ body::before {
   z-index: -2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 72% 56% at 12% 8%, rgba(255, 36, 48, 0.58), transparent 60%),
-    radial-gradient(ellipse 58% 46% at 92% 16%, rgba(220, 18, 36, 0.52), transparent 58%),
-    radial-gradient(ellipse 78% 52% at 48% 108%, rgba(150, 12, 30, 0.7), transparent 62%),
-    radial-gradient(ellipse 48% 42% at 58% 46%, rgba(190, 16, 34, 0.32), transparent 68%),
-    linear-gradient(160deg, #3a0a14 0%, #4c1020 42%, #24060e 100%);
+    radial-gradient(ellipse 72% 56% at 10% 6%, rgba(246, 24, 42, 0.68), transparent 60%),
+    radial-gradient(ellipse 58% 46% at 94% 14%, rgba(184, 8, 26, 0.58), transparent 58%),
+    radial-gradient(ellipse 78% 52% at 48% 108%, rgba(104, 5, 20, 0.72), transparent 62%),
+    radial-gradient(ellipse 48% 42% at 58% 46%, rgba(170, 10, 30, 0.24), transparent 68%),
+    linear-gradient(160deg, #160207 0%, #070507 46%, #020203 100%);
   background-size: 140% 140%, 130% 130%, 150% 150%, 120% 120%, 100% 100%;
   animation: liquid-drift 26s ease-in-out infinite;
 }
