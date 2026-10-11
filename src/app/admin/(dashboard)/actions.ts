@@ -246,6 +246,7 @@ export async function saveSettingsAction(formData: FormData) {
     location: str(formData, "location"),
     instagram: str(formData, "instagram"),
     notifyEmail: str(formData, "notifyEmail"),
+    whatsappAlerts: str(formData, "whatsappAlerts"),
     bookingPolicy: str(formData, "bookingPolicy"),
   });
   revalidatePath("/", "layout");

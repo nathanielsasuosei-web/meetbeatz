@@ -1086,6 +1086,236 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   transform-origin: left;
   animation: bar-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
+
+/* ─── Account (login / signup) motion ─── */
+
+/* Staggered blur-rise entrance; pair with an inline animation-delay. */
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.auth-in {
+  animation: auth-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* Tiny acid equalizer beside the eyebrow — the page "tunes in" */
+.eq-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 12px;
+  margin-right: 0.6rem;
+  vertical-align: -1px;
+}
+
+.eq-bars span {
+  width: 3px;
+  border-radius: 999px;
+  background: var(--color-acid);
+  transform-origin: bottom;
+  box-shadow: 0 0 10px rgba(198, 241, 53, 0.55);
+  animation: eq 0.9s ease-in-out infinite;
+}
+
+.eq-bars span:nth-child(1) {
+  height: 60%;
+  animation-delay: -0.25s;
+}
+
+.eq-bars span:nth-child(2) {
+  height: 100%;
+  animation-delay: -0.6s;
+}
+
+.eq-bars span:nth-child(3) {
+  height: 42%;
+  animation-delay: -0.1s;
+}
+
+/* Failed submit: drop in, then a quick shake */
+@keyframes auth-error-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+  62% {
+    transform: translateX(4px);
+  }
+  74% {
+    transform: translateX(-3px);
+  }
+  86% {
+    transform: translateX(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.auth-error {
+  animation: auth-error-in 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Sheen sweep riding the button while the form is submitting */
+@keyframes busy-sheen {
+  from {
+    transform: translateX(-110%) skewX(-12deg);
+  }
+  to {
+    transform: translateX(260%) skewX(-12deg);
+  }
+}
+
+.btn-primary.is-busy::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.55) 50%, transparent 80%);
+  transform: translateX(-110%) skewX(-12deg);
+  animation: busy-sheen 1.15s ease-in-out infinite;
+}
+
+/* Cursor spotlight on glass cards (fed by useSpotlight's --mx/--my) */
+.spot-card .card-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  background: radial-gradient(
+    300px circle at var(--mx, 50%) var(--my, 0%),
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 110, 100, 0.05) 42%,
+    transparent 66%
+  );
+}
+
+.spot-card:hover .card-glow,
+.spot-card:focus-within .card-glow {
+  opacity: 1;
+}
+
+/* The glass "condenses" while a field inside is focused */
+.spot-card:focus-within {
+  border-color: rgba(255, 176, 164, 0.38);
+  box-shadow:
+    0 0 0 1px rgba(255, 180, 170, 0.08) inset,
+    0 1px 0 0 rgba(255, 255, 255, 0.16) inset,
+    0 -1px 0 0 rgba(80, 0, 10, 0.22) inset,
+    0 18px 48px -14px rgba(40, 0, 8, 0.6),
+    0 0 52px -18px rgba(198, 241, 53, 0.2);
+}
+
+.field:hover:not(:focus):not(:disabled) {
+  border-color: rgba(255, 150, 140, 0.32);
+}
+
+/* ─── Dynamic glass header ───
+   The bar reacts to the page: it condenses and the glass deepens as you
+   scroll, an acid line traces your reading progress, and a specular
+   highlight chases the cursor (fed by useSpotlight's --mx/--my). */
+
+.glass-header {
+  --nav-h: 4rem;
+}
+
+.glass-header .nav-row {
+  height: var(--nav-h);
+  transition: height 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.glass-header.is-scrolled {
+  --nav-h: 3.4rem;
+}
+
+.glass-header .nav-shell {
+  transition:
+    backdrop-filter 0.45s ease,
+    -webkit-backdrop-filter 0.45s ease,
+    box-shadow 0.45s ease,
+    background-color 0.45s ease;
+}
+
+.glass-header.is-scrolled .nav-shell {
+  background-color: rgba(43, 3, 11, 0.8);
+  backdrop-filter: blur(56px) saturate(2);
+  -webkit-backdrop-filter: blur(56px) saturate(2);
+  box-shadow:
+    0 0 0 1px rgba(255, 180, 170, 0.07) inset,
+    0 1px 0 0 rgba(255, 255, 255, 0.24) inset,
+    0 -1px 0 0 rgba(80, 0, 12, 0.35) inset,
+    0 24px 60px -16px rgba(40, 0, 6, 0.8),
+    0 0 64px -12px rgba(200, 30, 34, 0.4);
+}
+
+/* Specular light that glides across the bar with the cursor */
+.glass-header .glass-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  background: radial-gradient(
+    340px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.13) 0%,
+    rgba(255, 90, 80, 0.05) 45%,
+    transparent 65%
+  );
+}
+
+.glass-header:hover .glass-glow {
+  opacity: 1;
+}
+
+/* Acid reading-progress line along the bottom edge (scaleX via --progress) */
+.glass-header .nav-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  height: 2px;
+  transform-origin: left center;
+  transform: scaleX(var(--progress, 0));
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(198, 241, 53, 0.45), var(--color-acid) 35%, #e9ffa1);
+  box-shadow:
+    0 0 14px rgba(198, 241, 53, 0.65),
+    0 1px 6px rgba(198, 241, 53, 0.4);
+}
+
+/* Logo condenses with the bar */
+.glass-header .nav-logo {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.glass-header.is-scrolled .nav-logo {
+  transform: scale(0.9);
+}
 } /* @layer components */
 
 @media (prefers-reduced-motion: reduce) {
@@ -1102,13 +1332,22 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   .mobile-menu.open .m-item,
   .chat-panel,
   .chat-msg,
-  .play-bar {
+  .play-bar,
+  .auth-in,
+  .auth-error,
+  .eq-bars span,
+  .btn-primary.is-busy::after {
     animation: none !important;
   }
   .nav-pill,
   .nav-pill-ghost,
   .mobile-menu,
-  .mobile-menu.open {
+  .mobile-menu.open,
+  .glass-header .nav-row,
+  .glass-header .nav-shell,
+  .glass-header .nav-logo,
+  .glass-header .glass-glow,
+  .spot-card .card-glow {
     transition: none !important;
   }
   .reveal .reveal-target {

@@ -22,6 +22,7 @@ import { makeLicenseKey, makeReference, randomToken } from "./ids";
 import { initializeTransaction, isValidSplitCode, isValidSubaccountCode, verifyTransaction, type VerifyResult } from "./paystack";
 import { getPaymentMode, getSettings, type SiteSettings } from "./settings";
 import { isSlotAvailable, isValidDateString, todayString } from "./slots";
+import { notifyBooking } from "./notifications";
 import { getBaseUrl } from "./url";
 
 export class CheckoutError extends Error {
@@ -280,22 +281,32 @@ export async function createBookingOrder(input: {
     })
     .returning();
 
-  await db.insert(bookings).values({
-    orderId: order.id,
-    serviceId: service.id,
-    serviceName: service.name,
-    customerName: customer.name,
-    customerEmail: customer.email,
-    customerPhone: customer.phone,
-    bookingDate: input.date,
-    startTime: input.startTime,
-    endTime,
-    hours,
-    notes: (input.notes ?? "").trim().slice(0, 1000),
-    sessionPrice: sessionPrice.toFixed(2),
-    amountPaid: "0.00",
-    status: "pending_payment",
-  });
+  const [booking] = await db
+    .insert(bookings)
+    .values({
+      orderId: order.id,
+      serviceId: service.id,
+      serviceName: service.name,
+      customerName: customer.name,
+      customerEmail: customer.email,
+      customerPhone: customer.phone,
+      bookingDate: input.date,
+      startTime: input.startTime,
+      endTime,
+      hours,
+      notes: (input.notes ?? "").trim().slice(0, 1000),
+      sessionPrice: sessionPrice.toFixed(2),
+      amountPaid: "0.00",
+      status: "pending_payment",
+    })
+    .returning();
+
+  // Alert the producer (site inbox + WhatsApp) the moment the request lands.
+  try {
+    await notifyBooking(booking, order, "request");
+  } catch (err) {
+    console.error("[payments] failed to notify producer of new booking", err);
+  }
 
   const baseUrl = await getBaseUrl();
   const url = await startPayment(order, settings, baseUrl, {
@@ -403,6 +414,19 @@ export async function finalizeOrder(
     await sendOrderEmails(order.id, { includeAdmin: true });
   } catch (err) {
     console.error("[payments] failed to send order emails", err);
+  }
+
+  if (order.kind === "booking") {
+    // Second alert for the producer: deposit landed, slot is locked.
+    // finalizeOrder is idempotent (paid orders early-return), so this fires once.
+    const [booking] = await db.select().from(bookings).where(eq(bookings.orderId, order.id)).limit(1);
+    if (booking) {
+      try {
+        await notifyBooking({ ...booking, amountPaid: order.subtotal }, order, "confirmed");
+      } catch (err) {
+        console.error("[payments] failed to notify producer of confirmed booking", err);
+      }
+    }
   }
 
   const [updated] = await db.select().from(orders).where(eq(orders.id, order.id)).limit(1);

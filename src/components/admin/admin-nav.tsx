@@ -12,13 +12,14 @@ const LINKS = [
   { href: "/admin/orders", label: "Orders", icon: "◎" },
   { href: "/admin/bookings", label: "Bookings", icon: "◷" },
   { href: "/admin/messages", label: "Messages", icon: "✉" },
+  { href: "/admin/notifications", label: "Notifications", icon: "◈" },
   { href: "/admin/enquiries", label: "Enquiries", icon: "▤" },
   { href: "/admin/studio", label: "Studio & hours", icon: "◍" },
   { href: "/admin/licenses", label: "Licenses", icon: "✎" },
   { href: "/admin/settings", label: "Settings", icon: "⚙" },
 ];
 
-export function AdminNav({ openEnquiries = 0 }: { openEnquiries?: number }) {
+export function AdminNav({ openEnquiries = 0, unreadNotifications = 0 }: { openEnquiries?: number; unreadNotifications?: number }) {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement | null>(null);
   const itemRefs = useRef<Array<HTMLElement | null>>([]);
@@ -43,6 +44,7 @@ export function AdminNav({ openEnquiries = 0 }: { openEnquiries?: number }) {
         // Dark text only while the solid acid pill covers it; otherwise cream
         // (or muted when neither active nor hovered) so it stays readable.
         const tone = active && lit ? "text-ink" : active || lit ? "text-cream" : "text-muted";
+        const badge = l.href === "/admin/enquiries" ? openEnquiries : l.href === "/admin/notifications" ? unreadNotifications : 0;
         return (
           <Link
             key={l.href}
@@ -58,9 +60,9 @@ export function AdminNav({ openEnquiries = 0 }: { openEnquiries?: number }) {
           >
             <span className="w-4 text-center text-base leading-none">{l.icon}</span>
             {l.label}
-            {l.href === "/admin/enquiries" && openEnquiries > 0 && (
+            {badge > 0 && (
               <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-bold ${lit ? "bg-ink/20 text-ink" : "bg-acid text-ink"}`}>
-                {openEnquiries > 99 ? "99+" : openEnquiries}
+                {badge > 99 ? "99+" : badge}
               </span>
             )}
           </Link>

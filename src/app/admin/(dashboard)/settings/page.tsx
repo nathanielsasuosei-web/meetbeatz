@@ -7,6 +7,7 @@ import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
 import { getAdsTxt } from "@/lib/ads-txt";
 import { configuredAdSensePublisherId, configuredAdSenseSlotId } from "@/lib/adsense-config";
 import { getBaseUrl } from "@/lib/url";
+import { isWhatsAppConfigured } from "@/lib/whatsapp";
 import { changePasswordAction, saveSettingsAction, sendTestEmailAction } from "../actions";
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
@@ -110,6 +111,52 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 <textarea name="bookingPolicy" className="field min-h-24" defaultValue={settings.bookingPolicy} />
               </div>
             </div>
+          </section>
+
+          <section className="card p-5">
+            <h2 className="font-bold">Booking alerts</h2>
+            <p className="mt-1 text-xs text-muted">
+              When a customer books a studio session, you get a message in the Notifications inbox straight away — and
+              on your WhatsApp too when a number is set below.
+            </p>
+            <div className="mt-4">
+              <label className="label" htmlFor="whatsappAlerts">
+                Your WhatsApp number for booking alerts
+              </label>
+              <input
+                id="whatsappAlerts"
+                name="whatsappAlerts"
+                className="field"
+                defaultValue={settings.whatsappAlerts}
+                placeholder="+233 24 000 0000"
+              />
+            </div>
+            <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+              <div
+                className={`rounded-lg border px-3 py-2 ${
+                  isWhatsAppConfigured() ? "border-ok/30 text-ok" : "border-amber-500/30 text-amber-300"
+                }`}
+              >
+                WhatsApp delivery: {isWhatsAppConfigured() ? "connected" : "not connected"}
+              </div>
+              <div
+                className={`rounded-lg border px-3 py-2 ${
+                  settings.whatsappAlerts ? "border-ok/30 text-ok" : "border-amber-500/30 text-amber-300"
+                }`}
+              >
+                Alert number: {settings.whatsappAlerts ? "set" : "not set"}
+              </div>
+            </div>
+            {!isWhatsAppConfigured() && (
+              <p className="mt-3 text-xs leading-relaxed text-muted">
+                To deliver alerts on WhatsApp, connect Meta&apos;s WhatsApp Business Cloud API: set{" "}
+                <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[11px]">WHATSAPP_ACCESS_TOKEN</code> and{" "}
+                <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[11px]">WHATSAPP_PHONE_NUMBER_ID</code>{" "}
+                in your environment variables. The API sends from the business-verified number, so it must be different
+                from the alert number above (e.g. your personal WhatsApp). Until then, alerts still appear in the
+                Notifications inbox and the order email.
+              </p>
+            )}
           </section>
 
           <button type="submit" className="btn-primary !px-8 !py-3">
