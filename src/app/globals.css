@@ -690,12 +690,57 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   @apply border-b border-line/70 px-3 py-3 align-top text-cream/80;
 }
 
+.hero-copy {
+  color: var(--color-cream);
+  text-shadow: 0 2px 22px rgb(18 2 6 / 0.62);
+}
+
+.hero-copy .hero-intro {
+  color: var(--color-cream);
+  color: color-mix(in srgb, var(--color-cream) 84%, var(--color-acid) 16%);
+  text-shadow: 0 2px 24px rgb(var(--accent-rgb, 198 241 53) / 0.18), 0 2px 18px rgb(18 2 6 / 0.72);
+}
+
+.hero-copy .hero-stats dt {
+  color: var(--color-muted);
+  color: color-mix(in srgb, var(--color-muted) 72%, var(--color-acid) 28%);
+}
+
+.hero-copy .hero-stats dd:not(.text-acid) {
+  color: var(--color-cream);
+  color: color-mix(in srgb, var(--color-cream) 88%, var(--color-acid) 12%);
+}
+
+.hero-copy .hero-logo {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.2),
+    0 12px 40px -8px rgb(0 0 0 / 0.5),
+    0 0 40px -10px rgb(var(--accent-rgb, 198 241 53) / 0.5);
+}
+
 .hero-grid {
   background-image:
     linear-gradient(to right, rgba(255, 140, 130, 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 140, 130, 0.08) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+@keyframes hero-wave-drift {
+  0% {
+    opacity: 0.32;
+    stroke-dashoffset: 0;
+    transform: translate3d(-1%, 5px, 0) scaleY(0.92);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translate3d(0.5%, -4px, 0) scaleY(1.04);
+  }
+  100% {
+    opacity: 0.38;
+    stroke-dashoffset: -420;
+    transform: translate3d(1%, 3px, 0) scaleY(0.96);
+  }
 }
 
 @keyframes hero-music-bar {
@@ -721,6 +766,69 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   opacity: 0.82;
   mix-blend-mode: screen;
   mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+}
+
+/* Resolution-independent neon ribbons keep the 5D wave crisp at 8K-sized viewports. */
+.hero-wave-ribbons {
+  position: absolute;
+  left: -3%;
+  right: -3%;
+  bottom: 7%;
+  z-index: 0;
+  width: 106%;
+  height: 45%;
+  overflow: visible;
+  filter: drop-shadow(0 0 16px rgb(var(--accent-rgb, 198 241 53) / 0.42));
+  mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+}
+
+.hero-wave-ribbon {
+  fill: none;
+  stroke: rgb(var(--accent-rgb, 198 241 53) / 0.45);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 18 26;
+  stroke-width: 2.4;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hero-wave-drift 8s ease-in-out infinite;
+}
+
+.hero-wave-ribbon-back {
+  opacity: 0.36;
+  stroke-width: 1.5;
+  animation-duration: 12s;
+  animation-delay: -4s;
+}
+
+.hero-wave-ribbon-mid {
+  opacity: 0.52;
+  stroke-width: 2;
+  animation-duration: 9s;
+  animation-delay: -2.5s;
+}
+
+.hero-wave-ribbon-front {
+  opacity: 0.78;
+  stroke-width: 2.8;
+  stroke-dasharray: 11 18;
+  animation-duration: 7s;
+  animation-delay: -1.2s;
+}
+
+.hero-wave-ribbon-glow {
+  opacity: 0.62;
+  stroke: rgb(var(--accent-rgb, 198 241 53) / 0.86);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 30;
+  filter: drop-shadow(0 0 9px rgb(var(--accent-rgb, 198 241 53) / 0.8));
+  animation-duration: 5.5s;
+  animation-delay: -3.6s;
+}
+
+.hero-wave-ribbon-glow-two {
+  animation-duration: 6.5s;
+  animation-delay: -1.8s;
 }
 
 .hero-wave-layer canvas {
@@ -754,6 +862,13 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hero-wave-ribbon {
+    opacity: 0.5;
+    animation: none;
+    stroke-dashoffset: -80;
+    transform: none;
+  }
+
   .hero-wave-bars span {
     opacity: 0.55;
     transform: scaleY(0.48);
@@ -806,6 +921,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 /* Photo heroes: red glass wash so the image sits in the same liquid field */
 .red-glass-wash {
   background:
+    radial-gradient(ellipse 60% 44% at 52% 42%, rgb(var(--accent-rgb, 198 241 53) / 0.14), transparent 70%),
     radial-gradient(ellipse 80% 55% at 12% 0%, rgba(255, 48, 56, 0.4), transparent 58%),
     radial-gradient(ellipse 50% 40% at 90% 20%, rgba(160, 12, 28, 0.35), transparent 55%),
     linear-gradient(180deg, rgba(74, 8, 16, 0.42) 0%, rgba(18, 2, 6, 0.82) 68%, #120206 100%);

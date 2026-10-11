@@ -38,7 +38,8 @@ export function HeroWave() {
       const rect = layer.getBoundingClientRect();
       width = Math.max(1, rect.width);
       height = Math.max(1, rect.height);
-      ratio = Math.min(window.devicePixelRatio || 1, 2);
+      // Keep the raster layer crisp on high-density displays; the vector ribbons below remain resolution-independent.
+      ratio = Math.min(window.devicePixelRatio || 1, 3);
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(height * ratio);
       canvas.style.width = `${width}px`;
@@ -165,6 +166,13 @@ export function HeroWave() {
 
   return (
     <div ref={layerRef} className="hero-wave-layer" aria-hidden="true">
+      <svg className="hero-wave-ribbons" viewBox="0 0 1200 320" preserveAspectRatio="none">
+        <path className="hero-wave-ribbon hero-wave-ribbon-back" d="M0 184 C125 76 218 286 354 180 S572 84 704 180 S946 278 1200 148" />
+        <path className="hero-wave-ribbon hero-wave-ribbon-mid" d="M0 206 C118 112 226 274 360 198 S576 106 716 196 S952 266 1200 174" />
+        <path className="hero-wave-ribbon hero-wave-ribbon-front" d="M0 230 C126 146 224 286 374 216 S588 130 724 210 S972 282 1200 194" />
+        <path className="hero-wave-ribbon hero-wave-ribbon-glow" d="M0 160 C130 54 214 252 344 160 S570 66 698 162 S940 252 1200 128" />
+        <path className="hero-wave-ribbon hero-wave-ribbon-glow hero-wave-ribbon-glow-two" d="M0 252 C132 184 238 302 390 236 S604 166 752 234 S1000 300 1200 218" />
+      </svg>
       <canvas ref={canvasRef} />
       <div className="hero-wave-bars">
         {MUSIC_BARS.map((height, index) => (

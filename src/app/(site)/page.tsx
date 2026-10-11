@@ -45,7 +45,7 @@ export default async function HomePage() {
           </div>
           <HeroWave />
         </div>
-        <div className="relative z-10 mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
+        <div className="hero-copy relative z-10 mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
           <div className="glass inline-flex rounded-full px-4 py-1.5">
             <p className="eyebrow !tracking-[0.18em]">Beat store · Recording studio · {settings.location}</p>
           </div>
@@ -56,11 +56,11 @@ export default async function HomePage() {
               width={128}
               height={128}
               priority
-              className="h-16 w-16 rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-8px_rgba(0,0,0,0.5),0_0_40px_-10px_rgba(198,241,53,0.3)] sm:h-24 sm:w-24 md:h-32 md:w-32"
+              className="hero-logo h-16 w-16 rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-8px_rgba(0,0,0,0.5)] sm:h-24 sm:w-24 md:h-32 md:w-32"
             />
             <span className="sr-only">{settings.siteName}</span>
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream/80">
+          <p className="hero-intro mt-6 max-w-xl text-lg leading-relaxed">
             Original Afrobeats, Asakaa drill, Highlife and more — produced by {settings.siteName}. Pay with any mobile money network and your
             files plus license certificate land in your inbox in seconds.
           </p>
@@ -75,7 +75,7 @@ export default async function HomePage() {
               Book studio time
             </Link>
           </div>
-          <dl className="glass mt-14 grid max-w-2xl grid-cols-3 gap-6 rounded-2xl p-6">
+          <dl className="hero-stats glass mt-14 grid max-w-2xl grid-cols-3 gap-6 rounded-2xl p-6">
             <div>
               <dt className="text-xs uppercase tracking-wider text-muted">Beats in store</dt>
               <dd className="display mt-1 text-3xl md:text-4xl">{beatCount.value}</dd>
