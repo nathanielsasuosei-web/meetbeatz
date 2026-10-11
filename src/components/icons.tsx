@@ -86,6 +86,36 @@ export function PhoneIcon(props: P) {
   );
 }
 
+export function PaletteIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 21a9 9 0 1 1 9-9c0 2-1.6 3-3.2 3H16a2 2 0 0 0-1.4 3.4c.4.5.6 1 .6 1.4A1.7 1.7 0 0 1 12 21Z" />
+      <circle cx="7.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="10" cy="8" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="14.5" cy="8" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function GridIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="4" y="4" width="7" height="7" rx="1.5" />
+      <rect x="13" y="4" width="7" height="7" rx="1.5" />
+      <rect x="4" y="13" width="7" height="7" rx="1.5" />
+      <rect x="13" y="13" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+export function ListIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M4 6.5h2.5M4 12h2.5M4 17.5h2.5M10 6.5h10M10 12h10M10 17.5h10" />
+    </svg>
+  );
+}
+
 export function Equalizer({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex h-4 items-end gap-[3px] ${className}`} aria-hidden>

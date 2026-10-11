@@ -25,10 +25,10 @@ export default async function AdminBookingsPage({ searchParams }: { searchParams
     <>
       <PageHeader eyebrow="Studio" title="Bookings">
         <div className="flex gap-1">
-          <Link href="/admin/bookings" className={`badge !px-3 !py-1.5 !text-xs ${view !== "past" ? "!border-acid !bg-acid !text-ink" : ""}`}>
+          <Link href="/admin/bookings" className={`badge !px-3 !py-1.5 !text-xs ${view !== "past" ? "!border-acid !bg-acid !text-[var(--acid-on)]" : ""}`}>
             Upcoming
           </Link>
-          <Link href="/admin/bookings?view=past" className={`badge !px-3 !py-1.5 !text-xs ${view === "past" ? "!border-acid !bg-acid !text-ink" : ""}`}>
+          <Link href="/admin/bookings?view=past" className={`badge !px-3 !py-1.5 !text-xs ${view === "past" ? "!border-acid !bg-acid !text-[var(--acid-on)]" : ""}`}>
             Past
           </Link>
         </div>

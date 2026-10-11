@@ -61,7 +61,7 @@ export function AdminNav({ openEnquiries = 0, unreadNotifications = 0 }: { openE
             <span className="w-4 text-center text-base leading-none">{l.icon}</span>
             {l.label}
             {badge > 0 && (
-              <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-bold ${lit ? "bg-ink/20 text-ink" : "bg-acid text-ink"}`}>
+              <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-bold ${lit ? "bg-ink/20 text-[var(--acid-on)]" : "bg-acid text-[var(--acid-on)]"}`}>
                 {badge > 99 ? "99+" : badge}
               </span>
             )}

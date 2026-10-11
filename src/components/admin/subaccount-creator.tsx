@@ -67,7 +67,7 @@ export function SubaccountCreator({ enabled }: { enabled: boolean }) {
     <div className="space-y-3">
       <div className="flex gap-2">
         {(["mobile_money", "ghipss"] as const).map((t) => (
-          <button key={t} type="button" onClick={() => setType(t)} className={`badge !px-3 !py-1.5 !text-xs ${type === t ? "!border-acid !bg-acid !text-ink" : ""}`}>
+          <button key={t} type="button" onClick={() => setType(t)} className={`badge !px-3 !py-1.5 !text-xs ${type === t ? "!border-acid !bg-acid !text-[var(--acid-on)]" : ""}`}>
             {t === "mobile_money" ? "Mobile Money wallet" : "Bank account"}
           </button>
         ))}

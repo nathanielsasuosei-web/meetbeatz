@@ -88,7 +88,7 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
         type="button"
         onClick={() => setOpen((o) => !o)}
         style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
-        className="fixed right-4 z-50 grid h-14 w-14 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_10px_32px_-4px_rgba(198,241,53,0.5),0_8px_24px_-6px_rgba(0,0,0,0.5)] transition hover:scale-105"
+        className="fixed right-4 z-50 grid h-14 w-14 place-items-center rounded-full bg-acid text-[var(--acid-on)] shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_10px_32px_-4px_rgb(var(--acid-rgb)/0.5),0_8px_24px_-6px_rgba(0,0,0,0.5)] transition hover:scale-105"
         aria-label={open ? "Close chat" : "Chat with us"}
       >
         {open ? <CloseIcon className="h-6 w-6" /> : <ChatIcon className="h-6 w-6" />}
@@ -148,7 +148,7 @@ export function ChatWidget({ customer }: { customer: { name: string } | null }) 
                       <div
                         className={`chat-msg max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
                           m.fromRole === "customer"
-                            ? "rounded-br-md bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset]"
+                            ? "rounded-br-md bg-acid text-[var(--acid-on)] shadow-[0_1px_0_0_rgba(255,255,255,0.3)_inset]"
                             : "rounded-bl-md border border-white/10 bg-white/10 text-cream backdrop-blur-md"
                         }`}
                       >

@@ -77,7 +77,7 @@ export default async function LicensingPage() {
                       </div>
                       {lt.isExclusive && <span className="badge-acid shrink-0">Exclusive</span>}
                     </div>
-                    <p className="display mt-4 text-3xl text-acid drop-shadow-[0_0_16px_rgba(198,241,53,0.3)]">
+                    <p className="display mt-4 text-3xl text-acid drop-shadow-[0_0_16px_rgb(var(--acid-rgb)/0.3)]">
                       {money(lt.defaultPrice, settings.currency)}
                       <span className="ml-1.5 align-baseline text-xs font-semibold uppercase tracking-wider text-muted">from</span>
                     </p>

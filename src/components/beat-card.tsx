@@ -12,7 +12,7 @@ export function CoverArt({ beat, className = "" }: { beat: { cover: string | nul
     // eslint-disable-next-line @next/next/no-img-element
     <img src={beat.cover} alt={beat.title} className={`h-full w-full object-cover ${className}`} />
   ) : (
-    <div className={`grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,rgba(198,241,53,0.55),transparent_55%),radial-gradient(circle_at_80%_80%,rgba(120,80,255,0.45),transparent_50%),#141417] ${className}`}>
+    <div className={`grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,rgb(var(--acid-rgb)/0.55),transparent_55%),radial-gradient(circle_at_80%_80%,rgba(120,80,255,0.45),transparent_50%),#141417] ${className}`}>
       <span className="display px-4 text-center text-2xl text-cream/90">{beat.title}</span>
     </div>
   );
@@ -27,7 +27,7 @@ export function BeatCard({ beat, queue, currency }: { beat: BeatCardData; queue:
     <div
       className={`card group overflow-hidden ${
         active
-          ? "border-acid/45! shadow-[0_0_0_1px_rgba(198,241,53,0.15)_inset,0_12px_40px_-12px_rgba(198,241,53,0.25),0_10px_32px_-12px_rgba(0,0,0,0.5)]"
+          ? "border-acid/45! shadow-[0_0_0_1px_rgb(var(--acid-rgb)/0.15)_inset,0_12px_40px_-12px_rgb(var(--acid-rgb)/0.25),0_10px_32px_-12px_rgba(0,0,0,0.5)]"
           : ""
       }`}
     >
@@ -41,7 +41,7 @@ export function BeatCard({ beat, queue, currency }: { beat: BeatCardData; queue:
         <button
           type="button"
           onClick={() => toggle(toTrack(beat), queue.map(toTrack))}
-          className={`absolute bottom-3 left-3 grid h-12 w-12 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_8px_24px_-4px_rgba(198,241,53,0.55),0_4px_12px_-2px_rgba(0,0,0,0.4)] transition hover:scale-105 ${
+          className={`absolute bottom-3 left-3 grid h-12 w-12 place-items-center rounded-full bg-acid text-[var(--acid-on)] shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_8px_24px_-4px_rgb(var(--acid-rgb)/0.55),0_4px_12px_-2px_rgba(0,0,0,0.4)] transition hover:scale-105 ${
             active ? "" : "sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
           }`}
           aria-label={isPlaying ? "Pause preview" : "Play preview"}
@@ -59,7 +59,7 @@ export function BeatCard({ beat, queue, currency }: { beat: BeatCardData; queue:
           {beat.isFeatured && <span className="badge-acid bg-black/40">Featured</span>}
         </div>
         {isPlaying && (
-          <div className="absolute bottom-5 right-3 text-acid drop-shadow-[0_0_8px_rgba(198,241,53,0.6)]">
+          <div className="absolute bottom-5 right-3 text-acid drop-shadow-[0_0_8px_rgb(var(--acid-rgb)/0.6)]">
             <Equalizer />
           </div>
         )}

@@ -91,7 +91,7 @@ export default async function AboutPage() {
             { label: "Delivery", value: "Instant" },
           ].map((stat) => (
             <div key={stat.label}>
-              <p className="display text-3xl text-acid drop-shadow-[0_0_18px_rgba(198,241,53,0.3)] sm:text-4xl">{stat.value}</p>
+              <p className="display text-3xl text-acid drop-shadow-[0_0_18px_rgb(var(--acid-rgb)/0.3)] sm:text-4xl">{stat.value}</p>
               <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-muted">{stat.label}</p>
             </div>
           ))}

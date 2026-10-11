@@ -33,7 +33,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
             ["pending", "Pending"],
             ["failed", "Failed"],
           ].map(([v, label]) => (
-            <Link key={v} href={v ? `/admin/orders?status=${v}` : "/admin/orders"} className={`badge !px-3 !py-1.5 !text-xs ${status === v || (!status && !v) ? "!border-acid !bg-acid !text-ink" : ""}`}>
+            <Link key={v} href={v ? `/admin/orders?status=${v}` : "/admin/orders"} className={`badge !px-3 !py-1.5 !text-xs ${status === v || (!status && !v) ? "!border-acid !bg-acid !text-[var(--acid-on)]" : ""}`}>
               {label}
             </Link>
           ))}

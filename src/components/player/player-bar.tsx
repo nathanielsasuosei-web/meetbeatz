@@ -30,7 +30,7 @@ export function PlayerBar() {
             }}
           >
             <span
-              className="absolute inset-y-0 left-0 bg-acid shadow-[0_0_12px_rgba(198,241,53,0.55)]"
+              className="absolute inset-y-0 left-0 bg-acid shadow-[0_0_12px_rgb(var(--acid-rgb)/0.55)]"
               style={{ width: `${progress * 100}%` }}
             />
           </button>
@@ -57,7 +57,7 @@ export function PlayerBar() {
               <button
                 type="button"
                 onClick={() => toggle()}
-                className="grid h-11 w-11 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_6px_20px_-4px_rgba(198,241,53,0.5)] transition hover:scale-105 hover:bg-acid-2"
+                className="grid h-11 w-11 place-items-center rounded-full bg-acid text-[var(--acid-on)] shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_6px_20px_-4px_rgb(var(--acid-rgb)/0.5)] transition hover:scale-105 hover:bg-acid-2"
                 aria-label={playing ? "Pause" : "Play"}
               >
                 {playing ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="ml-0.5 h-5 w-5" />}

@@ -100,7 +100,7 @@ export function MessagesPanel({
             <div key={m.id} className={`flex ${m.fromRole === "admin" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
-                  m.fromRole === "admin" ? "rounded-br-md bg-acid text-ink" : "rounded-bl-md bg-panel-2 text-cream"
+                  m.fromRole === "admin" ? "rounded-br-md bg-acid text-[var(--acid-on)]" : "rounded-bl-md bg-panel-2 text-cream"
                 }`}
               >
                 <p className={`mb-0.5 text-[10px] font-bold uppercase tracking-wider ${m.fromRole === "admin" ? "text-ink/60" : "text-acid"}`}>

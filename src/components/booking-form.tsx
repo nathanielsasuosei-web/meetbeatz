@@ -145,7 +145,7 @@ export function BookingForm({
                     onClick={() => setStartTime(s)}
                     className={`rounded-lg px-2 py-2 text-sm font-semibold transition ${
                       startTime === s
-                        ? "border border-acid/50 bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.35)_inset,0_4px_14px_-4px_rgba(198,241,53,0.45)]"
+                        ? "border border-acid/50 bg-acid text-[var(--acid-on)] shadow-[0_1px_0_0_rgba(255,255,255,0.35)_inset,0_4px_14px_-4px_rgb(var(--acid-rgb)/0.45)]"
                         : "glass-subtle hover:border-white/20"
                     }`}
                   >

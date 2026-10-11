@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { BeatGrid } from "@/components/beat-card";
+import { BeatBrowser } from "@/components/beat-browser";
 import { Reveal } from "@/components/reveal";
 import { listBeats, listGenres } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
@@ -8,7 +8,7 @@ import { getSettings } from "@/lib/settings";
 export const metadata: Metadata = { title: "Beat Store" };
 export const dynamic = "force-dynamic";
 
-export default async function BeatsPage({ searchParams }: { searchParams: Promise<{ q?: string; genre?: string }> }) {
+export default async function BeatsPage({ searchParams }: { searchParams: Promise<{ q?: string; genre?: string; view?: string }> }) {
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const genre = (params.genre ?? "").trim();
@@ -21,7 +21,8 @@ export default async function BeatsPage({ searchParams }: { searchParams: Promis
           <p className="eyebrow">Beat store</p>
           <h1 className="display mt-2 text-5xl md:text-6xl">All beats</h1>
           <p className="mt-3 max-w-lg text-sm text-muted">
-            Preview in full, choose a license, pay with Mobile Money. {beats.length} beat{beats.length === 1 ? "" : "s"} available.
+            Preview in full, choose a license, pay with Mobile Money. {beats.length} beat{beats.length === 1 ? "" : "s"} available —
+            listed here as a tracklist, or as covers if you switch the view.
           </p>
         </div>
         <form className="flex w-full gap-2 md:w-auto" action="/beats" method="get">
@@ -34,22 +35,22 @@ export default async function BeatsPage({ searchParams }: { searchParams: Promis
       </div>
 
       <div className="mt-8 flex flex-wrap gap-2">
-        <Link href={q ? `/beats?q=${encodeURIComponent(q)}` : "/beats"} className={`badge !px-3.5 !py-1.5 !text-xs ${!genre ? "!border-acid !bg-acid !text-ink" : "hover:border-cream/40"}`}>
+        <Link href={q ? `/beats?q=${encodeURIComponent(q)}` : "/beats"} className={`badge !px-3.5 !py-1.5 !text-xs ${!genre ? "!border-acid !bg-acid !text-[var(--acid-on)]" : "hover:border-cream/40"}`}>
           All genres
         </Link>
         {genres.map((g) => (
           <Link
             key={g}
             href={`/beats?genre=${encodeURIComponent(g)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-            className={`badge !px-3.5 !py-1.5 !text-xs ${genre === g ? "!border-acid !bg-acid !text-ink" : "hover:border-cream/40"}`}
+            className={`badge !px-3.5 !py-1.5 !text-xs ${genre === g ? "!border-acid !bg-acid !text-[var(--acid-on)]" : "hover:border-cream/40"}`}
           >
             {g}
           </Link>
         ))}
       </div>
 
-      <Reveal className="mt-10" target=".card" stagger={90}>
-        <BeatGrid beats={beats} currency={settings.currency} />
+      <Reveal className="mt-10">
+        <BeatBrowser beats={beats} currency={settings.currency} initialView={params.view === "grid" ? "grid" : "list"} />
       </Reveal>
     </div>
   );

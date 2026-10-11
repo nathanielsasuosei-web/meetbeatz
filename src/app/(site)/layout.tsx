@@ -4,6 +4,7 @@ import { PlayerBar } from "@/components/player/player-bar";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ChatWidget } from "@/components/chat-widget";
+import { AccentPicker } from "@/components/accent-picker";
 import { AdSenseScript, AmpAutoAdsScript } from "@/components/adsense";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { ensureSeeded } from "@/lib/seed";
@@ -21,6 +22,8 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       <SiteFooter settings={settings} />
       <PlayerBar />
       <ChatWidget customer={customer ? { name: customer.name } : null} />
+      {/* Floating accent picker — the visitor's adjustable colour */}
+      <AccentPicker />
       {/*
         AdSense loader. Renders nothing unless NEXT_PUBLIC_ADSENSE_PUBLISHER_ID
         is set in .env to a real ca-pub-... ID, so the site is unaffected

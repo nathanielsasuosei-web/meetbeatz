@@ -45,7 +45,7 @@ export function LicensePicker({
               }`}
             >
               {active && (
-                <span className="absolute right-3 top-3 z-10 grid h-6 w-6 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_4px_12px_-2px_rgba(198,241,53,0.5)]">
+                <span className="absolute right-3 top-3 z-10 grid h-6 w-6 place-items-center rounded-full bg-acid text-[var(--acid-on)] shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_4px_12px_-2px_rgb(var(--acid-rgb)/0.5)]">
                   <CheckIcon className="h-3.5 w-3.5" />
                 </span>
               )}

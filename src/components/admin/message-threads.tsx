@@ -46,7 +46,7 @@ export function MessageThreads({ initialThreads, selectedId }: { initialThreads:
               <div className="flex items-center justify-between gap-2">
                 <p className="truncate text-sm font-bold">{t.name}</p>
                 {t.unread > 0 && (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-acid px-1 text-[10px] font-bold text-ink">
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-acid px-1 text-[10px] font-bold text-[var(--acid-on)]">
                     {t.unread > 9 ? "9+" : t.unread}
                   </span>
                 )}

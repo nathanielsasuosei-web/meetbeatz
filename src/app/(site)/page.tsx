@@ -4,6 +4,8 @@ import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, licenses, soundKits } from "@/db/schema";
 import { BeatGrid } from "@/components/beat-card";
+import { BeatList } from "@/components/beat-list";
+import { HeroStage } from "@/components/hero-stage";
 import { DownloadIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { listActiveServices, listBeats, listLicenseTypes } from "@/lib/catalog";
@@ -16,10 +18,11 @@ export const dynamic = "force-dynamic";
 const MARQUEE = ["MTN Mobile Money", "Telecel Cash", "AirtelTigo Money", "Visa & Mastercard", "Instant email delivery", "Licensed & legal", "Recording · Mixing · Mastering"];
 
 export default async function HomePage() {
-  const [settings, featured, latest, services, licenseTypes, [beatCount], [licenseCount], publicKits] = await Promise.all([
+  const [settings, featured, latest, recent, services, licenseTypes, [beatCount], [licenseCount], publicKits] = await Promise.all([
     getSettings(),
     listBeats({ featured: true, limit: 8 }),
     listBeats({ limit: 8 }),
+    listBeats({ limit: 12 }),
     listActiveServices(),
     listLicenseTypes(),
     db.select({ value: count() }).from(beats).where(eq(beats.isPublished, true)),
@@ -27,14 +30,22 @@ export default async function HomePage() {
     db.select().from(soundKits).where(eq(soundKits.isPublished, true)).orderBy(desc(soundKits.createdAt)).limit(4),
   ]);
   const showcase = featured.length >= 4 ? featured : latest;
+  // The rack lists what the featured grid does not already show, so the same
+  // beat never appears twice on one page.
+  const shown = new Set(showcase.map((b) => b.id));
+  const rack = recent.filter((b) => !shown.has(b.id)).slice(0, 8);
+  // Same split as the header wordmark: MEET + BEATZ, the second half in red.
+  const wordmark = settings.siteName.toLowerCase().startsWith("meet")
+    ? ["MEET", settings.siteName.slice(4).toUpperCase()]
+    : [settings.siteName.toUpperCase(), ""];
 
   return (
     <>
-      {/* Hero */}
+      {/* Hero — tilting 3D turntable stage, with the drops floating as sleeves */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/meetbeatz-producer.jpeg" alt="" className="h-full w-full object-cover object-[center_30%] opacity-50" />
+          <img src="/images/meetbeatz-producer.jpeg" alt="" className="h-full w-full object-cover object-[center_30%] opacity-40" />
           <div className="red-glass-wash absolute inset-0" />
           <div className="hero-grid absolute inset-0" />
           <div className="liquid-orbs absolute inset-0">
@@ -43,50 +54,58 @@ export default async function HomePage() {
             <span />
           </div>
         </div>
-        <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
-          <div className="glass inline-flex rounded-full px-4 py-1.5">
-            <p className="eyebrow !tracking-[0.18em]">Beat store · Recording studio · {settings.location}</p>
+        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-4 pb-16 pt-16 sm:px-6 md:pb-24 md:pt-24 lg:grid-cols-[1.02fr_0.98fr]">
+          <div>
+            <div className="glass inline-flex rounded-full px-4 py-1.5">
+              <p className="eyebrow !tracking-[0.18em]">Beat store · Recording studio · {settings.location}</p>
+            </div>
+            <h1 className="mt-6 flex items-center gap-4">
+              <Image
+                src="/images/logo.png"
+                alt=""
+                width={128}
+                height={128}
+                priority
+                className="h-14 w-14 rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-8px_rgba(0,0,0,0.5),0_0_40px_-10px_rgb(var(--acid-rgb)/0.3)] sm:h-20 sm:w-20"
+              />
+              <span className="display text-4xl tracking-[0.14em] sm:text-5xl">
+                {wordmark[0]}
+                <span className="text-deep-red">{wordmark[1]}</span>
+              </span>
+            </h1>
+            <p className="display mt-6 max-w-xl text-3xl leading-[1.05] md:text-5xl">Beats that move. Rights that are yours.</p>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-cream/80 md:text-lg">
+              Original Afrobeats, Asakaa drill, Highlife and more — produced by {settings.siteName}. Pay with any mobile money network and your
+              files plus license certificate land in your inbox in seconds.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
+                Browse beats
+              </Link>
+              <Link href="/sound-kits" className="btn-ghost px-7! py-3.5! text-base">
+                Sound Kits
+              </Link>
+              <Link href="/studio" className="btn-ghost px-7! py-3.5! text-base">
+                Book studio time
+              </Link>
+            </div>
+            <dl className="glass mt-12 grid max-w-2xl grid-cols-3 gap-6 rounded-2xl p-6">
+              <div>
+                <dt className="text-xs uppercase tracking-wider text-muted">Beats in store</dt>
+                <dd className="display mt-1 text-3xl md:text-4xl">{beatCount.value}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wider text-muted">Licenses issued</dt>
+                <dd className="display mt-1 text-3xl md:text-4xl">{licenseCount.value}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wider text-muted">Delivery</dt>
+                <dd className="display mt-1 text-3xl text-acid md:text-4xl">Instant</dd>
+              </div>
+            </dl>
           </div>
-          <h1 className="mt-6">
-            <Image
-              src="/images/logo.png"
-              alt={`${settings.siteName} logo`}
-              width={128}
-              height={128}
-              priority
-              className="h-16 w-16 rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-8px_rgba(0,0,0,0.5),0_0_40px_-10px_rgba(198,241,53,0.3)] sm:h-24 sm:w-24 md:h-32 md:w-32"
-            />
-            <span className="sr-only">{settings.siteName}</span>
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream/80">
-            Original Afrobeats, Asakaa drill, Highlife and more — produced by {settings.siteName}. Pay with any mobile money network and your
-            files plus license certificate land in your inbox in seconds.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
-              Browse beats
-            </Link>
-            <Link href="/sound-kits" className="btn-ghost px-7! py-3.5! text-base">
-              Sound Kits
-            </Link>
-            <Link href="/studio" className="btn-ghost px-7! py-3.5! text-base">
-              Book studio time
-            </Link>
-          </div>
-          <dl className="glass mt-14 grid max-w-2xl grid-cols-3 gap-6 rounded-2xl p-6">
-            <div>
-              <dt className="text-xs uppercase tracking-wider text-muted">Beats in store</dt>
-              <dd className="display mt-1 text-3xl md:text-4xl">{beatCount.value}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wider text-muted">Licenses issued</dt>
-              <dd className="display mt-1 text-3xl md:text-4xl">{licenseCount.value}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wider text-muted">Delivery</dt>
-              <dd className="display mt-1 text-3xl text-acid md:text-4xl">Instant</dd>
-            </div>
-          </dl>
+
+          <HeroStage beats={showcase} siteName={settings.siteName} />
         </div>
       </section>
 
@@ -100,6 +119,24 @@ export default async function HomePage() {
           ))}
         </div>
       </div>
+
+      {/* The rack — the same store as a tracklist you can scan top to bottom */}
+      {rack.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pb-2 pt-20 sm:px-6">
+          <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Straight off the rack</p>
+              <h2 className="display mt-2 text-4xl md:text-5xl">The beat list</h2>
+            </div>
+            <Link href="/beats" className="btn-ghost">
+              Open the full store →
+            </Link>
+          </div>
+          <Reveal>
+            <BeatList beats={rack} currency={settings.currency} />
+          </Reveal>
+        </section>
+      )}
 
       {/* Featured beats */}
       <section className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6">
@@ -172,7 +209,7 @@ export default async function HomePage() {
               },
             ].map((step) => (
               <div key={step.n} className="card p-7">
-                <p className="display text-5xl text-acid drop-shadow-[0_0_20px_rgba(198,241,53,0.35)]">{step.n}</p>
+                <p className="display text-5xl text-acid drop-shadow-[0_0_20px_rgb(var(--acid-rgb)/0.35)]">{step.n}</p>
                 <h3 className="mt-5 text-xl font-bold">{step.title}</h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted">{step.text}</p>
               </div>
@@ -275,7 +312,7 @@ export default async function HomePage() {
                 <p className="text-lg font-bold">{lt.name}</p>
                 <p className="mt-1 text-xs text-muted">{lt.tagline}</p>
                 <p className="mt-4 text-sm text-muted">from</p>
-                <p className="display text-3xl text-acid drop-shadow-[0_0_16px_rgba(198,241,53,0.3)]">{money(lt.defaultPrice, settings.currency)}</p>
+                <p className="display text-3xl text-acid drop-shadow-[0_0_16px_rgb(var(--acid-rgb)/0.3)]">{money(lt.defaultPrice, settings.currency)}</p>
                 <ul className="mt-5 space-y-1.5 text-sm text-cream/80">
                   {deliverableList(lt.deliverables).map((d) => (
                     <li key={d}>✓ {DELIVERABLE_LABELS[d] ?? d}</li>

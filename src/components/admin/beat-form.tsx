@@ -493,7 +493,7 @@ export function BeatForm({ licenseTypes, beat, currency }: { licenseTypes: Licen
                   name={f.key}
                   type="file"
                   accept={ALLOWED_EXT[f.kind].join(",")}
-                  className="field file:mr-3 file:rounded-full file:border-0 file:bg-acid file:px-3 file:py-1 file:text-xs file:font-bold file:text-ink"
+                  className="field file:mr-3 file:rounded-full file:border-0 file:bg-acid file:px-3 file:py-1 file:text-xs file:font-bold file:text-[var(--acid-on)]"
                 />
                 <p className="mt-1 text-[11px] text-muted">{f.hint}</p>
               </div>

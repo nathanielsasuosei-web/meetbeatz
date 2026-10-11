@@ -105,8 +105,8 @@ Environment-variable overrides are embedded into the browser bundle at build tim
 
 | Page | What it is |
 | --- | --- |
-| `/` | Hero, featured beats, sound kits, how it works, producer & studio, license overview |
-| `/beats`, `/beats/[slug]` | Store with search + genre filters; beat page with full preview, “About this beat”, license picker |
+| `/` | 3D hero (tilting turntable stage), featured beats, the beat list, sound kits, how it works, producer & studio, license overview |
+| `/beats`, `/beats/[slug]` | Store with search + genre filters, shown as a tracklist or as covers (your choice is remembered); beat page with full preview, “About this beat”, license picker |
 | `/sound-kits` | Free downloadable kits |
 | `/studio` | Services, live slot availability and booking |
 | `/licensing` | Beat licensing guide: tier cards, comparison table, the exact clauses per tier |
@@ -121,6 +121,26 @@ public pages, the legal pages and the contact details on every page, and a brand
 main destinations. `robots.txt` and `sitemap.xml` (public pages + published beats) are generated
 by `src/app/robots.ts` and `src/app/sitemap.ts`; set `NEXT_PUBLIC_APP_URL` to the production
 domain so the sitemap lists the right host, otherwise `https://meetbeatz.com` is used.
+
+### The hero, the beat list and the adjustable accent
+
+The homepage hero (`src/components/hero-stage.tsx`) is a CSS 3D stage: a platter lying back on a
+receding grid, the logo standing upright on it, and up to four current drops floating in front as
+sleeves. The pointer tilt is written to `--rx` / `--ry` / `--sy` by one rAF loop that eases toward
+the cursor and stops requesting frames once it settles; `prefers-reduced-motion` turns the loops off
+and leaves the stage static.
+
+The same beats are also listed as a tracklist — `BeatList` on the homepage ("The beat list", which
+never repeats a beat the featured grid already shows) and on `/beats`, where the **List / Grid**
+switch is remembered in `localStorage` under `meetbeatz:beat-view`.
+
+The accent colour is adjustable from the floating **Colour** button (bottom-left of every public
+page): eight presets plus a native colour picker. It rewrites `--color-acid`, `--color-acid-2`,
+`--acid-hi`, `--acid-hi-2`, `--acid-rgb` and `--acid-on` (ink or cream, whichever is legible on the
+chosen fill) on `<html>`, so buttons, badges, glows, the player bar, the nav pill and the hero all
+re-tint together. The choice is stored in `localStorage` (`meetbeatz:accent`) and re-applied by an
+inline script in `<head>` before first paint — see `src/lib/accent.ts`, which is also where
+`window.__mbSetAccent` is installed. With no stored choice the brand acid (`#c6f135`) is used.
 
 ### The contact form
 
@@ -142,6 +162,7 @@ text is untouched, so an admin's own copy is never overwritten.
 ## Features
 
 - **Public store**: full-length previews with a global audio player, search & genre filters, per-beat license pricing (Basic / Premium / Unlimited / Exclusive), transparent fee breakdown.
+- **Storefront motion**: an animated 3D hero (pointer-tilted turntable with the latest drops floating as sleeves), a tracklist view of the catalogue, and a visitor-adjustable accent colour — see below.
 - **Checkout**: customer name, email, network + MoMo number → Paystack (or simulated prompt in test mode) → verification → licenses issued → email with download links + printable license certificate.
 - **Downloads**: token-protected links tied to the license (MP3 / WAV / stems as included).
 - **Studio bookings**: services, opening hours, live slot availability with conflict prevention, deposit payment, email confirmation, balance due at studio.

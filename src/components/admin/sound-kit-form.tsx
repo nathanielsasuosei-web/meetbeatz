@@ -97,7 +97,7 @@ export function SoundKitForm() {
           name="file"
           type="file"
           accept=".zip,.rar,.7z"
-          className="field file:mr-3 file:rounded-full file:border-0 file:bg-acid file:px-3 file:py-1 file:text-xs file:font-bold file:text-ink"
+          className="field file:mr-3 file:rounded-full file:border-0 file:bg-acid file:px-3 file:py-1 file:text-xs file:font-bold file:text-[var(--acid-on)]"
           required
         />
         <p className="mt-1 text-[11px] text-muted">ZIP, RAR or 7Z · maximum 512 MB. Large kits upload in safe pieces.</p>

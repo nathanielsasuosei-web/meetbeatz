@@ -58,7 +58,7 @@ export function ContactForm({
   if (state === "sent") {
     return (
       <div className="glass-acid rounded-2xl p-6 text-center sm:p-8">
-        <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_8px_24px_-6px_rgba(198,241,53,0.6)]">
+        <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-acid text-[var(--acid-on)] shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_8px_24px_-6px_rgb(var(--acid-rgb)/0.6)]">
           <CheckIcon className="h-6 w-6" />
         </span>
         <h3 className="display mt-4 text-2xl">Message sent</h3>

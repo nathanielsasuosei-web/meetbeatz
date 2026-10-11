@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { ACCENT_BOOTSTRAP } from "@/lib/accent";
 import "./globals.css";
 
 // The icon routes are the files next to this layout, all cut from the same
@@ -38,6 +39,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        {/*
+          Accent bootstrap. Runs before first paint and installs
+          window.__mbSetAccent, so a visitor who picked a colour never sees the
+          default acid flash in on the way back. See src/lib/accent.ts.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: ACCENT_BOOTSTRAP }} />
+      </head>
       <body className="min-h-screen bg-ink font-sans text-cream antialiased">
         <div className="liquid-bg" aria-hidden="true">
           <span />

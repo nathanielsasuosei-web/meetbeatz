@@ -58,7 +58,7 @@ export default async function StudioPage({ searchParams }: { searchParams: Promi
             {services.map((s) => (
               <div key={s.id} className="glass rounded-2xl p-4">
                 <p className="font-bold">{s.name}</p>
-                <p className="display mt-1 text-2xl text-acid drop-shadow-[0_0_16px_rgba(198,241,53,0.3)]">{money(s.pricePerHour, settings.currency)}</p>
+                <p className="display mt-1 text-2xl text-acid drop-shadow-[0_0_16px_rgb(var(--acid-rgb)/0.3)]">{money(s.pricePerHour, settings.currency)}</p>
                 <p className="text-[11px] uppercase tracking-wider text-muted">
                   per hour · {s.minHours}–{s.maxHours} hrs · {s.depositPercent}% deposit
                 </p>
