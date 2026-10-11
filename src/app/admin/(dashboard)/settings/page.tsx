@@ -8,7 +8,7 @@ import { getAdsTxt } from "@/lib/ads-txt";
 import { configuredAdSensePublisherId, configuredAdSenseSlotId } from "@/lib/adsense-config";
 import { getBaseUrl } from "@/lib/url";
 import { isWhatsAppConfigured } from "@/lib/whatsapp";
-import { changePasswordAction, saveSettingsAction, sendTestEmailAction } from "../actions";
+import { changePasswordAction, saveSettingsAction, sendTestEmailAction, sendTestWhatsAppAction } from "../actions";
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   const { msg, err } = await searchParams;
@@ -137,7 +137,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                   isWhatsAppConfigured() ? "border-ok/30 text-ok" : "border-amber-500/30 text-amber-300"
                 }`}
               >
-                WhatsApp delivery: {isWhatsAppConfigured() ? "connected" : "not connected"}
+                WhatsApp API: {isWhatsAppConfigured() ? "connected" : "not connected"}
               </div>
               <div
                 className={`rounded-lg border px-3 py-2 ${
@@ -147,16 +147,21 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 Alert number: {settings.whatsappAlerts ? "set" : "not set"}
               </div>
             </div>
-            {!isWhatsAppConfigured() && (
-              <p className="mt-3 text-xs leading-relaxed text-muted">
-                To deliver alerts on WhatsApp, connect Meta&apos;s WhatsApp Business Cloud API: set{" "}
-                <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[11px]">WHATSAPP_ACCESS_TOKEN</code> and{" "}
-                <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[11px]">WHATSAPP_PHONE_NUMBER_ID</code>{" "}
-                in your environment variables. The API sends from the business-verified number, so it must be different
-                from the alert number above (e.g. your personal WhatsApp). Until then, alerts still appear in the
-                Notifications inbox and the order email.
-              </p>
-            )}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button type="submit" formAction={sendTestWhatsAppAction} className="btn-ghost !px-4 !py-2 text-xs">
+                Send WhatsApp test
+              </button>
+              <span className="text-[11px] text-muted">Save the settings after changing the number.</span>
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-muted">
+              Set <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[11px]">WHATSAPP_ACCESS_TOKEN</code> and{" "}
+              <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[11px]">WHATSAPP_PHONE_NUMBER_ID</code> in your
+              environment variables. The API sends from the business-verified number, so it must be different from the
+              alert number above (for example, the producer&apos;s personal WhatsApp). For alerts outside an active WhatsApp
+              conversation, also set an approved one-variable template in{" "}
+              <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[11px]">WHATSAPP_ALERT_TEMPLATE</code>. Until the API is
+              connected, booking alerts still appear in the Notifications inbox.
+            </p>
           </section>
 
           <button type="submit" className="btn-primary !px-8 !py-3">
@@ -189,6 +194,9 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 ["SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS", "any SMTP provider (Gmail app password, Zoho, Brevo…)"],
                 ["RESEND_API_KEY", "alternative to SMTP"],
                 ["EMAIL_FROM", `"Meetbeatz <no-reply@yourdomain.com>"`],
+                ["WHATSAPP_ACCESS_TOKEN", "Meta WhatsApp Business Cloud API token (server-side only)"],
+                ["WHATSAPP_PHONE_NUMBER_ID", "verified Meta number that sends alerts"],
+                ["WHATSAPP_ALERT_TEMPLATE", "approved one-variable template for proactive alerts"],
                 ["SESSION_SECRET", "long random string for admin sessions"],
                 ["ADMIN_EMAIL / ADMIN_PASSWORD", "initial login (first run only)"],
                 ["NEXT_PUBLIC_ADSENSE_PUBLISHER_ID", "optional override; configured publisher ID is used by default"],

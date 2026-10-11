@@ -7,9 +7,10 @@ import { formatDate, formatDateTime, formatTime12, money, networkLabel } from "@
 import { isPaystackConfigured } from "@/lib/paystack";
 import { emailProvider, getSettings } from "@/lib/settings";
 import { todayString } from "@/lib/slots";
+import { listNotifications } from "@/lib/notifications";
 
 export default async function AdminDashboard() {
-  const settings = await getSettings();
+  const [settings, recentNotifications] = await Promise.all([getSettings(), listNotifications(4).catch(() => [])]);
   const [[rev], [beatCount], [playCount], beatPlays, [licCount], [upcoming], recentOrders, upcomingBookings] = await Promise.all([
     db
       .select({ subtotal: sum(orders.subtotal), fee: sum(orders.fee), total: sum(orders.total), n: count() })
@@ -171,6 +172,30 @@ export default async function AdminDashboard() {
                 </li>
               ))}
             </ul>
+          </div>
+
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <h2 className="font-bold">Booking alerts</h2>
+              <Link href="/admin/notifications" className="text-xs font-semibold text-acid">
+                Open inbox →
+              </Link>
+            </div>
+            <div className="divide-y divide-line">
+              {recentNotifications.length === 0 && <p className="px-5 py-6 text-center text-sm text-muted">No booking alerts yet.</p>}
+              {recentNotifications.map((notification) => (
+                <Link key={notification.id} href={notification.link || "/admin/bookings"} className="block px-5 py-3 transition hover:bg-white/[0.03]">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 text-acid" aria-hidden>◷</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{notification.title}</p>
+                      <p className="mt-1 line-clamp-2 whitespace-pre-line text-xs text-muted">{notification.body}</p>
+                      <p className="mt-1 text-[11px] text-muted">{formatDateTime(notification.createdAt)}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
 
           <div className="card overflow-hidden">

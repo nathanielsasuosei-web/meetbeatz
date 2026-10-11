@@ -85,6 +85,9 @@ git push -u origin main
 | `EMAIL_FROM` | Sender, e.g. `Meetbeatz <no-reply@meetbeatz.com>` |
 | `SESSION_SECRET` | Secret for admin session cookies |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial admin account (first run only) |
+| `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Meta WhatsApp Business Cloud API credentials for producer booking alerts |
+| `WHATSAPP_ALERT_TEMPLATE`, `WHATSAPP_ALERT_LANGUAGE` | Optional approved template (recommended for proactive alerts) and its language, default `en_US` |
+| `WHATSAPP_DEFAULT_COUNTRY_CODE` | Country code used when the producer enters a local alert number, default `233` |
 | `NEXT_PUBLIC_ADSENSE_PUBLISHER_ID` | Optional override for the configured Google AdSense publisher ID |
 | `NEXT_PUBLIC_ADSENSE_SLOT_BEAT_DETAIL` | Optional override for the beat-detail display-ad slot |
 | `NEXT_PUBLIC_ADSENSE_AUTO_ADS` | Set to `1` to enable AdSense Auto Ads; off by default |
@@ -131,6 +134,15 @@ address). Every enquiry is listed in **Admin → Enquiries**, where it can be ma
 minute per IP) plus a hidden honeypot field keep the inbox clear of spam; the form works even
 with no email provider configured, because the database copy is always written first.
 
+### Producer booking alerts
+
+Every studio booking creates two producer-side alerts:
+
+- A durable message is written to **Admin → Notifications** immediately when the booking order is started, and the admin dashboard shows a live “New booking alert” toast while it is open.
+- The same message is sent to the producer’s WhatsApp when **Admin → Settings → Booking alerts** has an alert number and the Meta WhatsApp Business Cloud API is configured. A second alert is sent when the deposit is verified and the booking becomes confirmed.
+
+Set `WHATSAPP_ACCESS_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID` on the server, save the producer’s WhatsApp number in Settings, then use **Send WhatsApp test** before going live. The business-verified sending number must be different from the producer’s recipient number. Meta requires an approved message template for a business-initiated message outside an active 24-hour conversation, so set `WHATSAPP_ALERT_TEMPLATE` to an approved template with one body variable (`{{1}}`); without it, plain text works for the Meta test recipient or an existing WhatsApp conversation. WhatsApp failures are logged and never block the customer’s booking or payment.
+
 ### Beat descriptions
 
 Write the description for each beat in Admin → Beats → *Description*: it appears on the beat page
@@ -145,7 +157,7 @@ text is untouched, so an admin's own copy is never overwritten.
 - **Checkout**: customer name, email, network + MoMo number → Paystack (or simulated prompt in test mode) → verification → licenses issued → email with download links + printable license certificate.
 - **Downloads**: token-protected links tied to the license (MP3 / WAV / stems as included).
 - **Studio bookings**: services, opening hours, live slot availability with conflict prevention, deposit payment, email confirmation, balance due at studio.
-- **Admin dashboard**: revenue split overview, beat upload with real progress (cover, tagged preview, MP3, WAV, stems), license/price management, orders (resend email), bookings (confirm / complete / cancel), support messages, website enquiries, services & hours, license types, settings, payout subaccount creator, test email, password change.
+- **Admin dashboard**: revenue split overview, beat upload with real progress (cover, tagged preview, MP3, WAV, stems), license/price management, orders (resend email), bookings (confirm / complete / cancel), live booking notifications (website inbox + WhatsApp), support messages, website enquiries, services & hours, license types, settings, payout subaccount creator, test email, password change.
 - **Trust pages**: privacy policy, terms & conditions, refund policy, a full beat licensing guide, an about page and a contact page with a stored enquiry inbox — all mobile-first and linked from the header drawer and footer.
 
 ## Where uploaded files live

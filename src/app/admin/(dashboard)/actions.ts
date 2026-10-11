@@ -17,6 +17,7 @@ import { getBaseUrl } from "@/lib/url";
 import { saveAdsTxt } from "@/lib/ads-txt";
 import { validateAdsTxt } from "@/lib/ads-txt-format";
 import { setContactHandled } from "@/lib/contact";
+import { sendWhatsAppAlert } from "@/lib/whatsapp";
 
 async function guard() {
   const session = await getAdminSession();
@@ -282,6 +283,22 @@ export async function sendTestEmailAction(formData: FormData) {
   });
   if (result.status === "sent") done("/admin/settings", `Test email sent to ${to}.`);
   fail("/admin/settings", `Test email failed: ${result.error ?? "unknown error"}`);
+}
+
+export async function sendTestWhatsAppAction(formData: FormData) {
+  await guard();
+  const settings = await getSettings();
+  // Prefer the value in the submitted form so the producer can test a newly
+  // entered number before saving the rest of the settings form.
+  const to = str(formData, "whatsappAlerts") || settings.whatsappAlerts;
+  if (!to) fail("/admin/settings", "Enter your WhatsApp alert number first.");
+
+  const result = await sendWhatsAppAlert(
+    to,
+    `Meetbeatz test alert ✅\nThis is where new studio booking requests and payment confirmations will arrive.`,
+  );
+  if (result.status === "sent") done("/admin/settings", `WhatsApp test sent to ${to}.`);
+  fail("/admin/settings", `WhatsApp test failed: ${result.detail}`);
 }
 
 // ---------------- Ads.txt ----------------
