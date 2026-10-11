@@ -38,16 +38,18 @@ export function BeatCard({ beat, queue, currency }: { beat: BeatCardData; queue:
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
         {/* Glass sheen on cover */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/12 via-transparent to-transparent opacity-60" />
-        <button
-          type="button"
-          onClick={() => toggle(toTrack(beat), queue.map(toTrack))}
-          className={`absolute bottom-3 left-3 grid h-12 w-12 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_8px_24px_-4px_rgba(198,241,53,0.55),0_4px_12px_-2px_rgba(0,0,0,0.4)] transition hover:scale-105 ${
-            active ? "" : "sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
-          }`}
-          aria-label={isPlaying ? "Pause preview" : "Play preview"}
-        >
-          {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="ml-0.5 h-5 w-5" />}
-        </button>
+        {beat.previewUrl && (
+          <button
+            type="button"
+            onClick={() => toggle(toTrack(beat), queue.map(toTrack))}
+            className={`absolute bottom-3 left-3 grid h-12 w-12 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_8px_24px_-4px_rgba(198,241,53,0.55),0_4px_12px_-2px_rgba(0,0,0,0.4)] transition hover:scale-105 ${
+              active ? "" : "sm:translate-y-2 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
+            }`}
+            aria-label={isPlaying ? "Pause preview" : "Play preview"}
+          >
+            {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="ml-0.5 h-5 w-5" />}
+          </button>
+        )}
         <div className="absolute left-3 top-3">
           <span className="badge bg-black/40 tabular-nums" title="Full preview plays">
             ▶ {beat.plays.toLocaleString("en-US")} {beat.plays === 1 ? "play" : "plays"}

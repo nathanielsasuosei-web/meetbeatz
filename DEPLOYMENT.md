@@ -49,7 +49,14 @@ SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 SMTP_SECURE=false
+WHATSAPP_ACCESS_TOKEN=your_meta_cloud_api_token
+WHATSAPP_PHONE_NUMBER_ID=your_verified_sending_number_id
+WHATSAPP_ALERT_TEMPLATE=meetbeatz_booking_alert
+WHATSAPP_ALERT_LANGUAGE=en_US
+WHATSAPP_DEFAULT_COUNTRY_CODE=233
 ```
+
+The WhatsApp variables are optional, but when configured they send booking-request and deposit-confirmed alerts to the number saved under Admin → Settings → Booking alerts. Create and approve `WHATSAPP_ALERT_TEMPLATE` in Meta with one body variable (`{{1}}`) for proactive messages; free-form text is limited to an active 24-hour conversation.
 
 **OR if using Resend instead of SMTP:**
 ```

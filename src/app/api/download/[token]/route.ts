@@ -1,7 +1,7 @@
 import path from "path";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { beats, licenses } from "@/db/schema";
+import { beats, licenses, orders } from "@/db/schema";
 import { getReadyFile, storedFileResponse } from "@/lib/files";
 import { deliverableList, slugify } from "@/lib/format";
 
@@ -13,8 +13,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
   const url = new URL(req.url);
   const file = (url.searchParams.get("file") ?? "mp3").toLowerCase();
 
-  const [license] = await db.select().from(licenses).where(eq(licenses.downloadToken, token)).limit(1);
-  if (!license) return new Response("This download link is invalid.", { status: 404 });
+  const [row] = await db
+    .select({ license: licenses, orderStatus: orders.status })
+    .from(licenses)
+    .innerJoin(orders, eq(licenses.orderId, orders.id))
+    .where(eq(licenses.downloadToken, token))
+    .limit(1);
+  if (!row) return new Response("This download link is invalid.", { status: 404 });
+  if (row.orderStatus !== "paid") return new Response("Payment has not been confirmed for this download.", { status: 403 });
+  const license = row.license;
   if (!deliverableList(license.deliverables).includes(file)) {
     return new Response("Your license does not include this file type.", { status: 403 });
   }

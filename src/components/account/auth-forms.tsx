@@ -25,7 +25,7 @@ function ErrorBox({ state }: { state: AuthState }) {
 export function CustomerLoginForm() {
   const [state, action] = useFormState<AuthState, FormData>(loginAction, undefined);
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="auth-form space-y-4">
       <div>
         <label className="label" htmlFor="email">Email</label>
         <input id="email" name="email" type="email" className="field" autoComplete="username" required />
@@ -49,7 +49,7 @@ export function CustomerLoginForm() {
 export function CustomerRegisterForm() {
   const [state, action] = useFormState<AuthState, FormData>(registerAction, undefined);
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="auth-form space-y-4">
       <div>
         <label className="label" htmlFor="name">Your name / artist name</label>
         <input id="name" name="name" className="field" autoComplete="name" required placeholder="e.g. Kwame Keys" />

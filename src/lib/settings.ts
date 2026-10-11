@@ -5,6 +5,8 @@ import { sql } from "drizzle-orm";
 export type SiteSettings = {
   siteName: string;
   tagline: string;
+  /** Main neon accent used by the storefront glass UI and hero. */
+  accentColor: string;
   currency: string;
   feePercent: string;
   paystackSubaccount: string;
@@ -23,6 +25,7 @@ export type SiteSettings = {
 export const DEFAULT_SETTINGS: SiteSettings = {
   siteName: "Meetbeatz",
   tagline: "Premium beats & studio sessions. Pay with Mobile Money, get your files instantly.",
+  accentColor: "#c6f135",
   currency: "GHS",
   feePercent: "10",
   paystackSubaccount: "SPL_u2dhKWTU3y",
