@@ -110,13 +110,21 @@ export function CheckoutForm({
             <div>
               <p className="eyebrow">MTN approval help</p>
               <h3 id="mtn-approval-help-title" className="mt-1 text-sm font-bold">No payment prompt? Open My Approvals.</h3>
-              <p className="mt-1 text-xs leading-relaxed text-muted">Dial *170#, choose My Wallet, then My Approvals. Select the pending Meetbeatz payment and choose Approve.</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted">Use these menu numbers if the prompt does not appear:</p>
+              <ol className="mt-2 grid gap-1 text-xs text-cream/80 sm:grid-cols-2">
+                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">1</span>Dial <code>*170#</code></li>
+                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">2</span>Press <strong>6</strong> for My Wallet</li>
+                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">3</span>Press <strong>3</strong> for My Approvals</li>
+                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">4</span>Press <strong>1</strong> to select My Approvals</li>
+                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">5</span>Enter your MoMo PIN</li>
+                <li><span className="mr-1.5 inline-flex min-w-5 justify-center rounded bg-acid px-1 font-black text-ink">6</span>Select the pending payment and choose Approve</li>
+              </ol>
             </div>
             <span className="rounded-full border border-acid/30 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-acid">Audio guide</span>
           </div>
           <audio className="mt-4 h-10 w-full" controls preload="metadata" aria-label="How to approve a missing MTN Mobile Money payment prompt">
             <source src="/audio/mtn-momo-approval-help.mp3" type="audio/mpeg" />
-            Your browser does not support audio. Dial star one seven zero hash, choose My Wallet, then My Approvals, select the pending payment, and choose Approve.
+            Your browser does not support audio. Dial star one seven zero hash, press six for My Wallet, press three for My Approvals, press one to select My Approvals, select the pending payment, and choose Approve.
           </audio>
           <p className="mt-2 text-[11px] text-muted">Never share your MoMo PIN with anyone.</p>
         </aside>
