@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logoutAction } from "./actions";
+import { EmailChangeForm } from "@/components/account/email-form";
 import { DownloadIcon } from "@/components/icons";
 import { loadAccountData } from "@/lib/account";
 import { getCustomerSession } from "@/lib/customer-auth";
@@ -40,6 +41,21 @@ export default async function AccountPage() {
           </button>
         </form>
       </div>
+
+      <section className="mt-8">
+        <div className="card p-6">
+          <p className="eyebrow">Account</p>
+          <h2 className="mt-2 text-2xl font-bold">Email address</h2>
+          <p className="mt-1 max-w-xl text-sm text-muted">
+            You are signed in as <span className="text-cream">{session.email}</span>. Enter a new address below and your
+            account moves to it — receipts, download links, license certificates and chat replies all follow. Anything
+            you have already bought stays here, and purchases made with the new address join this account automatically.
+          </p>
+          <div className="mt-5 max-w-md">
+            <EmailChangeForm currentEmail={session.email} />
+          </div>
+        </div>
+      </section>
 
       <section className="mt-8">
         <div className="card flex flex-wrap items-center justify-between gap-4 p-6">

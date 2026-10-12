@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { bookings, customers, orders } from "@/db/schema";
 import { hashPassword, verifyPassword } from "./auth";
+import { EMAIL_ERROR, isValidEmail, normalizeEmailAddress } from "./email-address";
 
 /**
  * Artist/customer accounts.
@@ -29,7 +30,7 @@ function secretKey(): Uint8Array {
 }
 
 export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+  return normalizeEmailAddress(email);
 }
 
 export async function createCustomerSession(customer: CustomerSession) {
@@ -86,7 +87,7 @@ export async function linkCustomerPurchases(customerId: number, email: string) {
 
 function validateCredentials(name: string, email: string, password: string) {
   if (name.trim().length < 2) throw new AccountError("Please enter your name.");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new AccountError("Please enter a valid email address.");
+  if (!isValidEmail(email)) throw new AccountError(EMAIL_ERROR);
   if (password.length < 8) throw new AccountError("Your password must be at least 8 characters.");
 }
 
@@ -114,4 +115,39 @@ export async function authenticateCustomer(email: string, password: string): Pro
 export async function getCustomerById(id: number): Promise<CustomerSession | null> {
   const [customer] = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
   return customer ? { id: customer.id, email: customer.email, name: customer.name } : null;
+}
+
+/**
+ * Moves an account onto a new email address. Artists change address (a new
+ * artist name, a label inbox, a typo when they signed up), so they can do it
+ * themselves from Your account.
+ *
+ * The current password is required — otherwise anyone who borrowed a phone
+ * could point the account (and its licence certificates) at their own inbox.
+ * Purchases already sitting on the old address stay linked to the account, and
+ * anything bought with the new address joins it the moment it changes.
+ */
+export async function changeCustomerEmail(
+  customerId: number,
+  nextEmail: string,
+  password: string,
+): Promise<CustomerSession> {
+  const email = normalizeEmail(nextEmail);
+  if (!isValidEmail(email)) throw new AccountError(EMAIL_ERROR);
+  const [customer] = await db.select().from(customers).where(eq(customers.id, customerId)).limit(1);
+  if (!customer) throw new AccountError("We could not find your account — please sign in again.");
+  if (!verifyPassword(password, customer.passwordHash)) {
+    throw new AccountError("That password is not right. Enter your current password to change your email.");
+  }
+  if (email === customer.email) {
+    throw new AccountError("That is already the email on your account — enter a different one to change it.");
+  }
+  const [taken] = await db.select({ id: customers.id }).from(customers).where(eq(customers.email, email)).limit(1);
+  if (taken) throw new AccountError("Another account already uses that email — sign in with it instead.");
+
+  await db.update(customers).set({ email }).where(eq(customers.id, customerId));
+  // Orders and bookings bought with the new address but not yet attached to an
+  // account now follow it, exactly as they would on sign-in.
+  await linkCustomerPurchases(customerId, email);
+  return { id: customer.id, email, name: customer.name };
 }

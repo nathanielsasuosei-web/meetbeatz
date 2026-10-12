@@ -19,6 +19,7 @@ import {
   type OrderItem,
 } from "@/db/schema";
 import { sendEmail } from "./email";
+import { EMAIL_ERROR, isValidEmail, normalizeEmailAddress } from "./email-address";
 import { adminNewOrderHtml, bookingEmailHtml, purchaseEmailHtml } from "./email-templates";
 import { minutesToTime, num, round2, timeToMinutes, toMinor } from "./format";
 import { makeLicenseKey, makeReference, randomToken } from "./ids";
@@ -65,11 +66,14 @@ export function computePromoTotals(subtotal: number, feePercent: number, promoPe
 
 function cleanCustomer(raw: Partial<CustomerInput>): CustomerInput {
   const name = (raw.name ?? "").trim();
-  const email = (raw.email ?? "").trim().toLowerCase();
+  const email = normalizeEmailAddress(raw.email);
   const phone = (raw.phone ?? "").trim();
   const network = (raw.network ?? "mtn").trim();
   if (name.length < 2) throw new CheckoutError("Please enter your full name.");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new CheckoutError("Please enter a valid email address — your files are delivered there.");
+  // The address the files, license certificate and receipt are sent to, so it
+  // is validated here as well as in the browser — a bad address would mean a
+  // paid order nobody can receive.
+  if (!isValidEmail(email)) throw new CheckoutError(`${EMAIL_ERROR} Your files are delivered there.`);
   if (!["mtn", "vodafone", "airteltigo", "card"].includes(network)) throw new CheckoutError("Please choose a payment network.");
   if (network !== "card" && phone.replace(/\D/g, "").length < 9) throw new CheckoutError("Please enter the mobile money number you will pay with.");
   return { name, email, phone, network };
