@@ -8,7 +8,8 @@ import { getAdsTxt } from "@/lib/ads-txt";
 import { configuredAdSensePublisherId, configuredAdSenseSlotId } from "@/lib/adsense-config";
 import { getBaseUrl } from "@/lib/url";
 import { isWhatsAppConfigured } from "@/lib/whatsapp";
-import { changePasswordAction, generatePromoCodeAction, saveSettingsAction, sendTestEmailAction, sendTestWhatsAppAction } from "../actions";
+import { listPromoCodes } from "@/lib/promos";
+import { changePasswordAction, createPromoCodeAction, generatePromoCodeAction, saveSettingsAction, sendTestEmailAction, sendTestWhatsAppAction, togglePromoCodeAction } from "../actions";
 
 function promoExpiryInput(value: string): string {
   if (!value) return "";
@@ -18,9 +19,15 @@ function promoExpiryInput(value: string): string {
   return local.toISOString().slice(0, 16);
 }
 
+function promoExpiryLabel(value: string | null): string {
+  if (!value) return "No expiry";
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toLocaleString("en-GH", { dateStyle: "medium", timeStyle: "short" }) : "Invalid expiry";
+}
+
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   const { msg, err } = await searchParams;
-  const [settings, baseUrl, adsTxt] = await Promise.all([getSettings(), getBaseUrl(), getAdsTxt()]);
+  const [settings, baseUrl, adsTxt, promoCodes] = await Promise.all([getSettings(), getBaseUrl(), getAdsTxt(), listPromoCodes()]);
   const paystack = isPaystackConfigured();
   const mode = getPaymentMode();
   const email = emailProvider();
@@ -85,11 +92,12 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="promoCode">Promo code</label>
-                <div className="flex gap-2">
-                  <input id="promoCode" name="promoCode" className="field font-mono uppercase" defaultValue={settings.promoCode} placeholder="MB5X9R2K7Q4N" />
-                  <button type="submit" formAction={generatePromoCodeAction} className="btn-ghost shrink-0">Generate</button>
+                <div className="flex flex-wrap gap-2">
+                  <input id="promoCode" name="promoCode" className="field min-w-0 flex-1 font-mono uppercase" defaultValue={settings.promoCode} placeholder="Enter your own code" />
+                  <button type="submit" formAction={createPromoCodeAction} className="btn-ghost shrink-0">Add code</button>
+                  <button type="submit" formAction={generatePromoCodeAction} className="btn-primary shrink-0">Generate</button>
                 </div>
-                <p className="mt-1 text-[11px] text-muted">Use at least 10 letters and numbers. Generate replaces the current code and keeps the selected end date.</p>
+                <p className="mt-1 text-[11px] text-muted">Use at least 10 letters and numbers. Each new code can be used by unlimited customers and keeps the selected end date.</p>
               </div>
               <div>
                 <label className="label" htmlFor="promoPercent">Discount % (fixed)</label>
@@ -102,6 +110,27 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 <p className="mt-1 text-[11px] text-muted">Leave blank for no expiry. Customers see the end date when they apply it.</p>
               </div>
             </div>
+            {promoCodes.length > 0 && (
+              <div className="mt-6">
+                <p className="label">Generated promo codes</p>
+                <div className="mt-2 divide-y divide-white/10 overflow-hidden rounded-xl border border-white/10">
+                  {promoCodes.map((promo) => {
+                    const expired = Boolean(promo.expiresAt && new Date(promo.expiresAt).getTime() <= Date.now());
+                    return (
+                      <div key={promo.id} className="flex flex-wrap items-center justify-between gap-3 bg-white/[0.02] px-4 py-3">
+                        <div className="min-w-0">
+                          <p className={`font-mono text-sm font-bold ${promo.isActive && !expired ? "text-acid" : "text-muted line-through"}`}>{promo.code}</p>
+                          <p className="text-[11px] text-muted">5% off · {expired ? "Expired" : promo.isActive ? `Ends ${promoExpiryLabel(promo.expiresAt)}` : "Disabled"}</p>
+                        </div>
+                        <button type="submit" name="promoCodeId" value={promo.id} formAction={togglePromoCodeAction} className="btn-ghost !px-3 !py-2 text-[11px]">
+                          {promo.isActive ? "Disable" : "Enable"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="card p-5">

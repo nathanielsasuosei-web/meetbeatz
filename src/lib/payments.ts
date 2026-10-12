@@ -23,7 +23,8 @@ import { adminNewOrderHtml, bookingEmailHtml, purchaseEmailHtml } from "./email-
 import { minutesToTime, num, round2, timeToMinutes, toMinor } from "./format";
 import { makeLicenseKey, makeReference, randomToken } from "./ids";
 import { initializeTransaction, isValidSplitCode, isValidSubaccountCode, verifyTransaction, type VerifyResult } from "./paystack";
-import { getPaymentMode, getPromoConfig, getSettings, type SiteSettings } from "./settings";
+import { resolvePromoCode } from "./promos";
+import { getPaymentMode, getSettings, type SiteSettings } from "./settings";
 import { isSlotAvailable, isValidDateString, todayString } from "./slots";
 import { notifyBooking } from "./notifications";
 import { getBaseUrl } from "./url";
@@ -253,12 +254,11 @@ export async function createBeatCartOrder(input: {
 
   const settings = await getSettings();
   const subtotal = round2(selected.reduce((sum, item) => sum + num(item.bl.price), 0));
-  const configuredPromo = getPromoConfig(settings);
   const requestedPromo = String(input.promoCode ?? "").trim().toUpperCase();
-  if (requestedPromo && (!configuredPromo || requestedPromo !== configuredPromo.code)) {
-    throw new CheckoutError("That promo code is not valid.");
+  const appliedPromo = requestedPromo ? await resolvePromoCode(requestedPromo, settings) : null;
+  if (requestedPromo && !appliedPromo) {
+    throw new CheckoutError("That promo code is not valid or has expired.");
   }
-  const appliedPromo = requestedPromo && configuredPromo ? configuredPromo : null;
   const totals = computePromoTotals(subtotal, num(settings.feePercent), appliedPromo?.percent ?? 0);
   const reference = makeReference("MB");
 

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { beats, bookings, contactMessages, licenseTypes, orders, services, soundKits, storedFiles, studioHours } from "@/db/schema";
+import { beats, bookings, contactMessages, licenseTypes, orders, promoCodes, services, soundKits, storedFiles, studioHours } from "@/db/schema";
 import { changeAdminPassword, destroyAdminSession, getAdminSession, verifyPassword } from "@/lib/auth";
 import { admins } from "@/db/schema";
 import { slugify } from "@/lib/format";
@@ -13,6 +13,7 @@ import { sendEmail } from "@/lib/email";
 import { emailLayout } from "@/lib/email-templates";
 import { sendOrderEmails } from "@/lib/payments";
 import { isPaystackConfigured, isValidSplitCode, subaccountIsUsable } from "@/lib/paystack";
+import { isValidPromoCode } from "@/lib/promos";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
 import { saveAdsTxt } from "@/lib/ads-txt";
@@ -249,7 +250,7 @@ export async function saveSettingsAction(formData: FormData) {
   const subaccount = str(formData, "paystackSubaccount").trim();
   const promoCode = str(formData, "promoCode").toUpperCase();
   const promoExpiresAt = promoExpiry(formData);
-  if (promoCode && !/^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{10,64}$/.test(promoCode)) {
+  if (promoCode && !isValidPromoCode(promoCode)) {
     fail("/admin/settings", "Promo code must be at least 10 characters and contain both letters and numbers only.");
   }
   // Only validate subaccount codes (ACCT_xxx) against Paystack. Split codes
@@ -285,17 +286,45 @@ export async function saveSettingsAction(formData: FormData) {
   done("/admin/settings", "Settings saved.");
 }
 
+export async function createPromoCodeAction(formData: FormData) {
+  await guard();
+  const code = str(formData, "promoCode").toUpperCase();
+  if (!isValidPromoCode(code)) {
+    fail("/admin/settings", "Promo code must be at least 10 characters and contain both letters and numbers only.");
+  }
+  const expiry = promoExpiry(formData);
+  const [created] = await db
+    .insert(promoCodes)
+    .values({ code, expiresAt: expiry ? new Date(expiry) : null, isActive: true })
+    .onConflictDoNothing({ target: promoCodes.code })
+    .returning({ id: promoCodes.id });
+  if (!created) fail("/admin/settings", "That promo code already exists. Choose another code.");
+  done("/admin/settings", `Promo code ${code} created.`);
+}
+
 export async function generatePromoCodeAction(formData: FormData) {
   await guard();
-  const current = str(formData, "promoCode").toUpperCase();
-  let code = generatedPromoCode();
-  while (code === current) code = generatedPromoCode();
-  await saveSettings({
-    promoCode: code,
-    promoPercent: "5",
-    promoExpiresAt: promoExpiry(formData),
-  });
-  done("/admin/settings", `Generated promo code ${code}.`);
+  const expiry = promoExpiry(formData);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const code = generatedPromoCode();
+    const [created] = await db
+      .insert(promoCodes)
+      .values({ code, expiresAt: expiry ? new Date(expiry) : null, isActive: true })
+      .onConflictDoNothing({ target: promoCodes.code })
+      .returning({ id: promoCodes.id });
+    if (created) done("/admin/settings", `Generated promo code ${code}.`);
+  }
+  fail("/admin/settings", "Could not generate a unique promo code. Please try again.");
+}
+
+export async function togglePromoCodeAction(formData: FormData) {
+  await guard();
+  const id = Number(formData.get("promoCodeId"));
+  if (!Number.isSafeInteger(id) || id <= 0) fail("/admin/settings", "Invalid promo code.");
+  const [promo] = await db.select().from(promoCodes).where(eq(promoCodes.id, id)).limit(1);
+  if (!promo) fail("/admin/settings", "Promo code not found.");
+  await db.update(promoCodes).set({ isActive: !promo.isActive }).where(eq(promoCodes.id, id));
+  done("/admin/settings", `${promo.code} is now ${promo.isActive ? "disabled" : "active"}.`);
 }
 
 export async function changePasswordAction(formData: FormData) {
