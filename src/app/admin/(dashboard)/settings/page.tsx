@@ -77,7 +77,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="label" htmlFor="promoCode">Promo code</label>
-                <input id="promoCode" name="promoCode" className="field font-mono uppercase" defaultValue={settings.promoCode} placeholder="WELCOME10" />
+                <input id="promoCode" name="promoCode" className="field font-mono uppercase" defaultValue={settings.promoCode} placeholder="MEETBEATZ5" />
               </div>
               <div>
                 <label className="label" htmlFor="promoPercent">Discount %</label>
