@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
@@ -43,6 +44,21 @@ function dec(fd: FormData, key: string, fallback = 0): string {
 function hexColor(fd: FormData, key: string, fallback: string): string {
   const value = str(fd, key).toLowerCase();
   return /^#[0-9a-f]{6}$/.test(value) ? value : fallback;
+}
+
+const PROMO_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generatedPromoCode(): string {
+  const bytes = randomBytes(12);
+  return Array.from(bytes, (byte) => PROMO_ALPHABET[byte % PROMO_ALPHABET.length]).join("");
+}
+
+function promoExpiry(fd: FormData): string {
+  const raw = str(fd, "promoExpiresAt");
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (!Number.isFinite(parsed.getTime())) fail("/admin/settings", "Enter a valid promo-code end date.");
+  return parsed.toISOString();
 }
 
 function done(path: string, message: string): never {
@@ -232,6 +248,7 @@ export async function saveSettingsAction(formData: FormData) {
   const accentColor = hexColor(formData, "accentColor", "#c6f135");
   const subaccount = str(formData, "paystackSubaccount").trim();
   const promoCode = str(formData, "promoCode").toUpperCase();
+  const promoExpiresAt = promoExpiry(formData);
   if (promoCode && !/^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{10,64}$/.test(promoCode)) {
     fail("/admin/settings", "Promo code must be at least 10 characters and contain both letters and numbers only.");
   }
@@ -252,6 +269,7 @@ export async function saveSettingsAction(formData: FormData) {
     feePercent: (Number.isFinite(feePercent) ? Math.min(50, Math.max(0, feePercent)) : 10).toString(),
     promoCode,
     promoPercent: "5",
+    promoExpiresAt,
     paystackSubaccount: subaccount,
     feeBearer: str(formData, "feeBearer") === "subaccount" ? "subaccount" : "account",
     contactEmail: str(formData, "contactEmail"),
@@ -265,6 +283,19 @@ export async function saveSettingsAction(formData: FormData) {
   });
   revalidatePath("/", "layout");
   done("/admin/settings", "Settings saved.");
+}
+
+export async function generatePromoCodeAction(formData: FormData) {
+  await guard();
+  const current = str(formData, "promoCode").toUpperCase();
+  let code = generatedPromoCode();
+  while (code === current) code = generatedPromoCode();
+  await saveSettings({
+    promoCode: code,
+    promoPercent: "5",
+    promoExpiresAt: promoExpiry(formData),
+  });
+  done("/admin/settings", `Generated promo code ${code}.`);
 }
 
 export async function changePasswordAction(formData: FormData) {

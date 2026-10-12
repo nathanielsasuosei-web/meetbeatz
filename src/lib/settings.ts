@@ -12,6 +12,8 @@ export type SiteSettings = {
   /** One optional site-wide promo code configured by the producer. */
   promoCode: string;
   promoPercent: string;
+  /** ISO or datetime-local value; blank means the campaign has no end date. */
+  promoExpiresAt: string;
   paystackSubaccount: string;
   feeBearer: "account" | "subaccount";
   contactEmail: string;
@@ -33,6 +35,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   feePercent: "10",
   promoCode: "MB5X9R2K7Q4N",
   promoPercent: "5",
+  promoExpiresAt: "",
   paystackSubaccount: "SPL_u2dhKWTU3y",
   feeBearer: "account",
   contactEmail: "hello@meetbeatz.com",
@@ -61,14 +64,22 @@ export async function getSettings(): Promise<SiteSettings> {
   return merged as unknown as SiteSettings;
 }
 
-export function getPromoConfig(siteSettings: SiteSettings): { code: string; percent: number } | null {
+export function getPromoConfig(siteSettings: SiteSettings): { code: string; percent: number; expiresAt: string | null } | null {
   const code = siteSettings.promoCode.trim().toUpperCase();
   // Promo codes are intentionally alphanumeric, mixed, and at least ten
   // characters long so a live code is difficult to guess or mistype.
   if (!/^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{10,64}$/.test(code)) return null;
+
+  const rawExpiry = siteSettings.promoExpiresAt.trim();
+  if (rawExpiry) {
+    const expiry = new Date(rawExpiry);
+    if (!Number.isFinite(expiry.getTime()) || expiry.getTime() <= Date.now()) return null;
+    return { code, percent: 5, expiresAt: expiry.toISOString() };
+  }
+
   // This campaign is fixed at 5%; do not trust a persisted/browser-supplied
   // percentage to change the discount.
-  return { code, percent: 5 };
+  return { code, percent: 5, expiresAt: null };
 }
 
 export async function saveSettings(partial: Partial<Record<keyof SiteSettings, string>>) {

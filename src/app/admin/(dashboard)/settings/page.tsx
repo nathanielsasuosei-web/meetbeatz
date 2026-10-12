@@ -8,7 +8,15 @@ import { getAdsTxt } from "@/lib/ads-txt";
 import { configuredAdSensePublisherId, configuredAdSenseSlotId } from "@/lib/adsense-config";
 import { getBaseUrl } from "@/lib/url";
 import { isWhatsAppConfigured } from "@/lib/whatsapp";
-import { changePasswordAction, saveSettingsAction, sendTestEmailAction, sendTestWhatsAppAction } from "../actions";
+import { changePasswordAction, generatePromoCodeAction, saveSettingsAction, sendTestEmailAction, sendTestWhatsAppAction } from "../actions";
+
+function promoExpiryInput(value: string): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   const { msg, err } = await searchParams;
@@ -73,16 +81,25 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
 
           <section className="card p-5">
             <h2 className="font-bold">Promo Code</h2>
-            <p className="mt-1 text-xs text-muted">Create one optional site-wide discount. Leave the code blank to keep promotions off.</p>
+            <p className="mt-1 text-xs text-muted">Create your own code or generate a secure one. One active code can be used by unlimited customers until its end date.</p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
+              <div className="sm:col-span-2">
                 <label className="label" htmlFor="promoCode">Promo code</label>
-                <input id="promoCode" name="promoCode" className="field font-mono uppercase" defaultValue={settings.promoCode} placeholder="MB5X9R2K7Q4N" />
+                <div className="flex gap-2">
+                  <input id="promoCode" name="promoCode" className="field font-mono uppercase" defaultValue={settings.promoCode} placeholder="MB5X9R2K7Q4N" />
+                  <button type="submit" formAction={generatePromoCodeAction} className="btn-ghost shrink-0">Generate</button>
+                </div>
+                <p className="mt-1 text-[11px] text-muted">Use at least 10 letters and numbers. Generate replaces the current code and keeps the selected end date.</p>
               </div>
               <div>
                 <label className="label" htmlFor="promoPercent">Discount % (fixed)</label>
                 <input id="promoPercent" name="promoPercent" type="number" min={5} max={5} step="1" className="field" value="5" readOnly />
                 <p className="mt-1 text-[11px] text-muted">This campaign always gives exactly 5% off.</p>
+              </div>
+              <div>
+                <label className="label" htmlFor="promoExpiresAt">Promo ends</label>
+                <input id="promoExpiresAt" name="promoExpiresAt" type="datetime-local" className="field" defaultValue={promoExpiryInput(settings.promoExpiresAt)} />
+                <p className="mt-1 text-[11px] text-muted">Leave blank for no expiry. Customers see the end date when they apply it.</p>
               </div>
             </div>
           </section>

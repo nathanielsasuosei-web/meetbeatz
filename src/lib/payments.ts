@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   admins,
@@ -9,7 +9,6 @@ import {
   licenses,
   orderItems,
   orders,
-  promoRedemptions,
   services,
   type Beat,
   type BeatLicense,
@@ -264,16 +263,6 @@ export async function createBeatCartOrder(input: {
   const reference = makeReference("MB");
 
   const [order] = await db.transaction(async (tx) => {
-    // Keep legacy orders from bypassing the new one-time redemption table.
-    if (appliedPromo) {
-      const [legacyOrder] = await tx
-        .select({ id: orders.id })
-        .from(orders)
-        .where(and(eq(orders.promoCode, appliedPromo.code), inArray(orders.status, ["pending", "paid"])))
-        .limit(1);
-      if (legacyOrder) throw new CheckoutError("That promo code has already been used.", 409);
-    }
-
     const [created] = await tx
       .insert(orders)
       .values({
@@ -308,15 +297,6 @@ export async function createBeatCartOrder(input: {
       })),
     );
 
-    if (appliedPromo) {
-      const [claim] = await tx
-        .insert(promoRedemptions)
-        .values({ code: appliedPromo.code, orderId: created.id })
-        .onConflictDoNothing({ target: promoRedemptions.code })
-        .returning({ id: promoRedemptions.id });
-      if (!claim) throw new CheckoutError("That promo code has already been used.", 409);
-    }
-
     return [created];
   });
 
@@ -331,8 +311,7 @@ export async function createBeatCartOrder(input: {
       discount: totals.discount,
     });
   } catch (error) {
-    // If the gateway cannot initialize, release the one-time claim so a
-    // failed attempt does not permanently consume the promotion.
+    // If the gateway cannot initialize, mark the pending order as failed.
     await markOrderFailed(reference, { initialization_error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
@@ -477,39 +456,6 @@ export async function finalizeOrder(
 
   const now = new Date();
   await db.transaction(async (tx) => {
-    if (order.kind === "beat" && order.promoCode) {
-      const [existingClaim] = await tx
-        .select({ id: promoRedemptions.id, orderId: promoRedemptions.orderId })
-        .from(promoRedemptions)
-        .where(eq(promoRedemptions.code, order.promoCode))
-        .limit(1);
-      if (existingClaim && existingClaim.orderId !== order.id) {
-        throw new CheckoutError("That promo code has already been used.", 409);
-      }
-      if (!existingClaim) {
-        const legacyPaid = await tx
-          .select({ id: orders.id })
-          .from(orders)
-          .where(and(eq(orders.promoCode, order.promoCode), eq(orders.status, "paid")))
-          .limit(1);
-        if (legacyPaid.some((row) => row.id !== order.id)) {
-          throw new CheckoutError("That promo code has already been used.", 409);
-        }
-        const [claim] = await tx
-          .insert(promoRedemptions)
-          .values({ code: order.promoCode, orderId: order.id })
-          .onConflictDoNothing({ target: promoRedemptions.code })
-          .returning({ id: promoRedemptions.id, orderId: promoRedemptions.orderId });
-        if (!claim || claim.orderId !== order.id) {
-          throw new CheckoutError("That promo code has already been used.", 409);
-        }
-      }
-      await tx
-        .update(promoRedemptions)
-        .set({ redeemedAt: now })
-        .where(and(eq(promoRedemptions.orderId, order.id), isNull(promoRedemptions.redeemedAt)));
-    }
-
     await tx
       .update(orders)
       .set({
@@ -584,16 +530,10 @@ export async function finalizeOrder(
 }
 
 export async function markOrderFailed(reference: string, providerData?: unknown) {
-  await db.transaction(async (tx) => {
-    const [failed] = await tx
-      .update(orders)
-      .set({ status: "failed", providerData: (providerData ?? null) as Record<string, unknown> | null })
-      .where(and(eq(orders.reference, reference), eq(orders.status, "pending")))
-      .returning({ id: orders.id });
-    if (failed) {
-      await tx.delete(promoRedemptions).where(and(eq(promoRedemptions.orderId, failed.id), isNull(promoRedemptions.redeemedAt)));
-    }
-  });
+  await db
+    .update(orders)
+    .set({ status: "failed", providerData: (providerData ?? null) as Record<string, unknown> | null })
+    .where(and(eq(orders.reference, reference), eq(orders.status, "pending")));
 }
 
 export async function sendOrderEmails(orderId: number, opts: { includeAdmin?: boolean } = {}) {

@@ -8,6 +8,14 @@ import { CoverArt } from "@/components/beat-card";
 import { useCart } from "@/components/cart/cart-provider";
 import { DELIVERABLE_LABELS, deliverableList, money, round2 } from "@/lib/format";
 
+function formatPromoExpiry(value: string | null): string {
+  if (!value) return "No expiry date";
+  const date = new Date(value);
+  return Number.isFinite(date.getTime())
+    ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date)
+    : "No expiry date";
+}
+
 function PaymentChoice({ method }: { method: PaymentMethod }) {
   const isGhana = method === "ghana";
   return (
@@ -56,7 +64,7 @@ export function CartCheckout({
   const [agreed, setAgreed] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [promoInput, setPromoInput] = useState("");
-  const [appliedPromo, setAppliedPromo] = useState<{ code: string; percent: number } | null>(null);
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; percent: number; expiresAt: string | null } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
 
@@ -87,12 +95,12 @@ export function CartCheckout({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       });
-      const data = (await response.json().catch(() => ({}))) as { code?: string; percent?: number; error?: string };
+      const data = (await response.json().catch(() => ({}))) as { code?: string; percent?: number; expiresAt?: string | null; error?: string };
       if (!response.ok || !data.code || !data.percent) {
         setPromoError(data.error ?? "That promo code is not valid.");
         return;
       }
-      setAppliedPromo({ code: data.code, percent: data.percent });
+      setAppliedPromo({ code: data.code, percent: data.percent, expiresAt: data.expiresAt ?? null });
     } catch {
       setPromoError("Could not check the promo code. Please try again.");
     } finally {
@@ -204,7 +212,11 @@ export function CartCheckout({
                 </button>
               </div>
               <p className="mt-2 text-xs text-muted">Have a promo code? Enter it above.</p>
-              {appliedPromo && <p className="mt-2 text-xs font-semibold text-ok">{appliedPromo.code} applied — {appliedPromo.percent}% off.</p>}
+              {appliedPromo && (
+                <p className="mt-2 text-xs font-semibold text-ok">
+                  {appliedPromo.code} applied — {appliedPromo.percent}% off. Valid until {formatPromoExpiry(appliedPromo.expiresAt)}.
+                </p>
+              )}
               {promoError && <p className="mt-2 text-xs text-danger" role="alert">{promoError}</p>}
             </div>
 

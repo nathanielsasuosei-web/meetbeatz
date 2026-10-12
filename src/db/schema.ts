@@ -179,9 +179,9 @@ export const orders = pgTable("orders", {
 });
 
 /**
- * One-time promo claims. A row is reserved when a discounted checkout is
- * created and kept after payment; the unique code prevents another order from
- * claiming the same promotion. Failed payments release the reservation.
+ * Legacy one-time promo claims retained for database compatibility. Current
+ * producer campaigns are unlimited-use and the application no longer reads or
+ * writes this table.
  */
 export const promoRedemptions = pgTable("promo_redemptions", {
   id: serial("id").primaryKey(),
