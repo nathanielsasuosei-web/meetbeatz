@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EMAIL_ERROR, isValidEmail } from "@/lib/email-address";
 import { NETWORKS } from "@/lib/format";
 
 export type PaymentMethod = "ghana" | "global";
@@ -90,17 +91,39 @@ export function CheckoutForm({
   showMtnApprovalHelp?: boolean;
 }) {
   const [name, setName] = useState(account?.name ?? "");
-  const [email, setEmail] = useState(account?.email ?? "");
+  // Deliberately not pre-filled from the account: whichever address is typed
+  // here is where the files and receipt are sent, and buyers kept finding an
+  // address already in the box that they could not change. Signed-in artists
+  // get a one-tap button below to reuse their account email instead.
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [network, setNetwork] = useState<string>("mtn");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
+  /**
+   * The browser's own `type="email"` check accepts addresses such as `kwame@`
+   * or `kwame@gmail`, and the server rejects those with a message the customer
+   * only sees after pressing pay. So the same rule runs here first, on blur and
+   * again before submitting.
+   */
+  function validateEmail(value: string): string | null {
+    if (!value.trim()) return "Enter your email address — your files are delivered there.";
+    return isValidEmail(value) ? null : EMAIL_ERROR;
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const emailProblem = validateEmail(email);
+    if (emailProblem) {
+      setEmailError(emailProblem);
+      return;
+    }
+    setEmailError(null);
     setLoading(true);
     try {
       const res = await fetch(endpoint, {
@@ -141,10 +164,39 @@ export function CheckoutForm({
       </div>
       <div>
         <label className="label" htmlFor="co-email">Email address</label>
-        <input id="co-email" type="email" className="field" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" readOnly={!!account} required />
+        <input
+          id="co-email"
+          type="email"
+          className="field"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (emailError) setEmailError(null);
+          }}
+          onBlur={() => setEmailError(validateEmail(email))}
+          placeholder="you@example.com"
+          autoComplete="email"
+          inputMode="email"
+          spellCheck={false}
+          aria-invalid={emailError ? true : undefined}
+          aria-describedby={emailError ? "co-email-error" : undefined}
+          required
+        />
         <p className="mt-1.5 text-xs text-muted">
-          {account ? "This is your account email — your purchases appear in Your account." : "Your files, license and receipt are delivered to this address. Use your account email to see purchases there."}
+          {account
+            ? "Your files, license and receipt go to this address — type any email you can open. The purchase still shows in Your account either way."
+            : "Your files, license and receipt are delivered to this address. Use your account email to see purchases in Your account."}
         </p>
+        {account && account.email !== email.trim().toLowerCase() && (
+          <button type="button" onClick={() => { setEmail(account.email); setEmailError(null); }} className="mt-2 text-xs font-semibold text-acid hover:underline">
+            Use my account email ({account.email})
+          </button>
+        )}
+        {emailError && (
+          <p id="co-email-error" role="alert" className="mt-1.5 text-xs font-semibold text-danger">
+            {emailError}
+          </p>
+        )}
       </div>
       <div>
         <span className="label">Pay with</span>

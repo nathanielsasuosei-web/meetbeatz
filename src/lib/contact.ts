@@ -2,6 +2,7 @@ import { desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { contactMessages, type ContactMessage } from "@/db/schema";
 import { sendEmail } from "./email";
+import { EMAIL_ERROR, isValidEmail, normalizeEmailAddress } from "./email-address";
 import { emailLayout } from "./email-templates";
 import { getSettings, type SiteSettings } from "./settings";
 import { getBaseUrl } from "./url";
@@ -40,8 +41,6 @@ export type ContactInput = {
 
 export class ContactError extends Error {}
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
 function clean(value: unknown, max: number): string {
   return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
@@ -49,14 +48,14 @@ function clean(value: unknown, max: number): string {
 /** Validates and stores an enquiry, then notifies the studio by email. */
 export async function createContactMessage(input: ContactInput): Promise<ContactMessage> {
   const name = clean(input.name, 120);
-  const email = clean(input.email, 180).toLowerCase();
+  const email = normalizeEmailAddress(input.email).slice(0, 180);
   const phone = clean(input.phone, 40);
   const body = String(input.body ?? "").trim().slice(0, 4000);
   const topic = CONTACT_TOPICS.some((t) => t.value === input.topic) ? (input.topic as ContactTopic) : "other";
   const orderReference = clean(input.orderReference, 60);
 
   if (name.length < 2) throw new ContactError("Please tell us your name.");
-  if (!EMAIL_RE.test(email)) throw new ContactError("That email address does not look right.");
+  if (!isValidEmail(email)) throw new ContactError(EMAIL_ERROR);
   if (body.length < 10) throw new ContactError("Please add a little more detail (at least 10 characters).");
 
   const [row] = await db
