@@ -90,6 +90,7 @@ ${licenseBlocks}
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:18px 0 0 0;border-top:1px solid #26262c;padding-top:12px">
 ${summaryRow("Order reference", `<span style="font-family:Menlo,Consolas,monospace">${esc(order.reference)}</span>`)}
 ${summaryRow("Beat price", money(order.subtotal, currency))}
+${Number(order.discount) > 0 ? summaryRow(`Promo discount${order.promoCode ? ` (${esc(order.promoCode)})` : ""}`, `−${money(order.discount, currency)}`) : ""}
 ${summaryRow(`Service fee (${Number(order.feePercent)}%)`, money(order.fee, currency))}
 ${summaryRow("Total paid", money(order.total, currency), true)}
 </table>
@@ -168,6 +169,7 @@ export function adminNewOrderHtml(opts: {
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0 0 0;border-top:1px solid #26262c;padding-top:12px">
 ${summaryRow("Reference", esc(order.reference))}
 ${summaryRow("Goes to Meetbeatz", money(order.subtotal, currency), true)}
+${Number(order.discount) > 0 ? summaryRow(`Promo discount${order.promoCode ? ` (${esc(order.promoCode)})` : ""}`, `−${money(order.discount, currency)}`) : ""}
 ${summaryRow(`Fee account (${Number(order.feePercent)}%)`, money(order.fee, currency))}
 ${summaryRow("Customer paid", money(order.total, currency), true)}
 </table>

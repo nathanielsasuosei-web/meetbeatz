@@ -10,8 +10,11 @@ import {
   orderItems,
   orders,
   services,
+  type Beat,
+  type BeatLicense,
   type Booking,
   type License,
+  type LicenseType,
   type Order,
   type OrderItem,
 } from "@/db/schema";
@@ -20,6 +23,7 @@ import { adminNewOrderHtml, bookingEmailHtml, purchaseEmailHtml } from "./email-
 import { minutesToTime, num, round2, timeToMinutes, toMinor } from "./format";
 import { makeLicenseKey, makeReference, randomToken } from "./ids";
 import { initializeTransaction, isValidSplitCode, isValidSubaccountCode, verifyTransaction, type VerifyResult } from "./paystack";
+import { resolvePromoCode } from "./promos";
 import { getPaymentMode, getSettings, type SiteSettings } from "./settings";
 import { isSlotAvailable, isValidDateString, todayString } from "./slots";
 import { notifyBooking } from "./notifications";
@@ -44,6 +48,19 @@ export function computeTotals(subtotal: number, feePercent: number) {
   const sub = round2(subtotal);
   const fee = round2((sub * feePercent) / 100);
   return { subtotal: sub, fee, total: round2(sub + fee) };
+}
+
+export function computePromoTotals(subtotal: number, feePercent: number, promoPercent: number) {
+  const originalSubtotal = round2(subtotal);
+  const discount = round2((originalSubtotal * promoPercent) / 100);
+  const discountedSubtotal = round2(originalSubtotal - discount);
+  const fee = round2((discountedSubtotal * feePercent) / 100);
+  return {
+    subtotal: originalSubtotal,
+    discount,
+    fee,
+    total: round2(discountedSubtotal + fee),
+  };
 }
 
 function cleanCustomer(raw: Partial<CustomerInput>): CustomerInput {
@@ -147,78 +164,157 @@ async function startPayment(order: Order, settings: SiteSettings, baseUrl: strin
 // ---------------------------------------------------------------------------
 // Beat purchase
 // ---------------------------------------------------------------------------
+export type BeatCartItemInput = {
+  beatSlug: string;
+  licenseTypeId: number;
+};
+
 export async function createBeatOrder(input: {
   beatSlug: string;
   licenseTypeId: number;
   customer: Partial<CustomerInput>;
   /** Signed-in artist — puts the order straight onto their account. */
   customerId?: number | null;
+  paymentMethod?: "ghana" | "global";
+  promoCode?: string;
+  agreedToTerms?: boolean;
 }): Promise<{ url: string; reference: string }> {
-  const customer = cleanCustomer(input.customer);
-  const [beat] = await db
-    .select()
-    .from(beats)
-    .where(and(eq(beats.slug, input.beatSlug), eq(beats.isPublished, true)))
-    .limit(1);
-  if (!beat) throw new CheckoutError("This beat is no longer available.", 404);
-  if (!beat.mp3Path && !beat.wavPath) throw new CheckoutError("This beat has no downloadable files yet.");
+  return createBeatCartOrder({
+    items: [{ beatSlug: input.beatSlug, licenseTypeId: input.licenseTypeId }],
+    customer: input.customer,
+    customerId: input.customerId,
+    paymentMethod: input.paymentMethod,
+    promoCode: input.promoCode,
+    agreedToTerms: input.agreedToTerms,
+  });
+}
 
-  const [row] = await db
-    .select({ bl: beatLicenses, lt: licenseTypes })
-    .from(beatLicenses)
-    .innerJoin(licenseTypes, eq(beatLicenses.licenseTypeId, licenseTypes.id))
-    .where(
-      and(
-        eq(beatLicenses.beatId, beat.id),
-        eq(beatLicenses.licenseTypeId, input.licenseTypeId),
-        eq(beatLicenses.isEnabled, true),
-        eq(licenseTypes.isActive, true),
-      ),
-    )
-    .limit(1);
-  if (!row) throw new CheckoutError("That license is not available for this beat.");
-  if (row.lt.isExclusive && beat.exclusiveSold) throw new CheckoutError("Exclusive rights for this beat have already been sold.");
+/**
+ * Creates one pending order for every beat/license in the cart. Prices and
+ * license availability are always re-read here; the browser cart is only a
+ * convenience and is never trusted for payment totals.
+ */
+export async function createBeatCartOrder(input: {
+  items: BeatCartItemInput[];
+  customer: Partial<CustomerInput>;
+  customerId?: number | null;
+  paymentMethod?: "ghana" | "global";
+  promoCode?: string;
+  agreedToTerms?: boolean;
+}): Promise<{ url: string; reference: string }> {
+  if (input.paymentMethod === "global") {
+    throw new CheckoutError("Global Payment Worldwide is not connected yet. Choose Mobile Money Ghana.", 503);
+  }
+  if (input.agreedToTerms !== true) {
+    throw new CheckoutError("Please review and agree to the selected license terms before paying.");
+  }
+  if (!Array.isArray(input.items) || input.items.length === 0) {
+    throw new CheckoutError("Your cart is empty.");
+  }
+  if (input.items.length > 25) throw new CheckoutError("Your cart has too many items.");
+
+  const customer = cleanCustomer(input.customer);
+  const seen = new Set<string>();
+  const selected: Array<{ beat: Beat; bl: BeatLicense; lt: LicenseType }> = [];
+
+  for (const item of input.items) {
+    const slug = String(item.beatSlug ?? "").trim();
+    const licenseTypeId = Number(item.licenseTypeId);
+    const key = `${slug}:${licenseTypeId}`;
+    if (!slug || !Number.isSafeInteger(licenseTypeId) || licenseTypeId <= 0 || seen.has(key)) {
+      throw new CheckoutError("One of the items in your cart is invalid.");
+    }
+    seen.add(key);
+
+    const [beat] = await db
+      .select()
+      .from(beats)
+      .where(and(eq(beats.slug, slug), eq(beats.isPublished, true)))
+      .limit(1);
+    if (!beat) throw new CheckoutError("One of the beats in your cart is no longer available.", 404);
+    if (!beat.mp3Path && !beat.wavPath) throw new CheckoutError(`${beat.title} has no downloadable files yet.`);
+
+    const [row] = await db
+      .select({ bl: beatLicenses, lt: licenseTypes })
+      .from(beatLicenses)
+      .innerJoin(licenseTypes, eq(beatLicenses.licenseTypeId, licenseTypes.id))
+      .where(
+        and(
+          eq(beatLicenses.beatId, beat.id),
+          eq(beatLicenses.licenseTypeId, licenseTypeId),
+          eq(beatLicenses.isEnabled, true),
+          eq(licenseTypes.isActive, true),
+        ),
+      )
+      .limit(1);
+    if (!row) throw new CheckoutError(`The selected license for ${beat.title} is no longer available.`);
+    if (row.lt.isExclusive && beat.exclusiveSold) throw new CheckoutError(`Exclusive rights for ${beat.title} have already been sold.`);
+    selected.push({ beat, bl: row.bl, lt: row.lt });
+  }
 
   const settings = await getSettings();
-  const totals = computeTotals(num(row.bl.price), num(settings.feePercent));
+  const subtotal = round2(selected.reduce((sum, item) => sum + num(item.bl.price), 0));
+  const requestedPromo = String(input.promoCode ?? "").trim().toUpperCase();
+  const appliedPromo = requestedPromo ? await resolvePromoCode(requestedPromo, settings) : null;
+  if (requestedPromo && !appliedPromo) {
+    throw new CheckoutError("That promo code is not valid or has expired.");
+  }
+  const totals = computePromoTotals(subtotal, num(settings.feePercent), appliedPromo?.percent ?? 0);
   const reference = makeReference("MB");
 
-  const [order] = await db
-    .insert(orders)
-    .values({
-      reference,
-      kind: "beat",
-      customerId: input.customerId ?? null,
-      customerName: customer.name,
-      customerEmail: customer.email,
-      customerPhone: customer.phone,
-      network: customer.network,
-      subtotal: totals.subtotal.toFixed(2),
-      feePercent: num(settings.feePercent).toFixed(2),
-      fee: totals.fee.toFixed(2),
-      total: totals.total.toFixed(2),
-      currency: settings.currency,
-      status: "pending",
-      paymentProvider: getPaymentMode(),
-      splitSubaccount: settings.paystackSubaccount.trim() || null,
-    })
-    .returning();
+  const [order] = await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(orders)
+      .values({
+        reference,
+        kind: "beat",
+        customerId: input.customerId ?? null,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+        network: customer.network,
+        subtotal: totals.subtotal.toFixed(2),
+        discount: totals.discount.toFixed(2),
+        promoCode: appliedPromo?.code ?? "",
+        feePercent: num(settings.feePercent).toFixed(2),
+        fee: totals.fee.toFixed(2),
+        total: totals.total.toFixed(2),
+        currency: settings.currency,
+        status: "pending",
+        paymentProvider: getPaymentMode(),
+        splitSubaccount: settings.paystackSubaccount.trim() || null,
+      })
+      .returning();
 
-  await db.insert(orderItems).values({
-    orderId: order.id,
-    beatId: beat.id,
-    licenseTypeId: row.lt.id,
-    beatTitle: beat.title,
-    licenseName: row.lt.name,
-    price: totals.subtotal.toFixed(2),
+    await tx.insert(orderItems).values(
+      selected.map(({ beat, lt, bl }) => ({
+        orderId: created.id,
+        beatId: beat.id,
+        licenseTypeId: lt.id,
+        beatTitle: beat.title,
+        licenseName: lt.name,
+        price: num(bl.price).toFixed(2),
+      })),
+    );
+
+    return [created];
   });
 
   const baseUrl = await getBaseUrl();
-  const url = await startPayment(order, settings, baseUrl, {
-    kind: "beat",
-    beat: beat.title,
-    license: row.lt.name,
-  });
+  let url: string;
+  try {
+    url = await startPayment(order, settings, baseUrl, {
+      kind: "beat",
+      beats: selected.map(({ beat, lt }) => ({ beat: beat.title, license: lt.name })),
+      payment_method: input.paymentMethod ?? "ghana",
+      promo_code: appliedPromo?.code ?? null,
+      discount: totals.discount,
+    });
+  } catch (error) {
+    // If the gateway cannot initialize, mark the pending order as failed.
+    await markOrderFailed(reference, { initialization_error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
   return { url, reference };
 }
 

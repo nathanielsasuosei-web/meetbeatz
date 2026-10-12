@@ -13,7 +13,7 @@ export default async function AccountRegisterPage() {
   const session = await getCustomerSession();
   if (session) redirect("/account");
   return (
-    <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
+    <div className="auth-stage mx-auto max-w-md px-4 py-16 sm:px-6">
       <p className="eyebrow auth-in">
         <span className="eq-bars" aria-hidden>
           <span />

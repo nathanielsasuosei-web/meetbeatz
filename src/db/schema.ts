@@ -34,6 +34,15 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/** Producer-managed campaigns. Each active code can be used by many customers. */
+export const promoCodes = pgTable("promo_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ---------------------------------------------------------------------------
 // Customers (artist accounts) & support chat
 // ---------------------------------------------------------------------------
@@ -162,6 +171,9 @@ export const orders = pgTable("orders", {
   customerPhone: text("customer_phone").default("").notNull(),
   network: text("network").default("").notNull(), // mtn | vodafone | airteltigo | card
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
+  /** Discount is recorded separately so receipts can show the original price and promo savings. */
+  discount: numeric("discount", { precision: 10, scale: 2 }).default("0").notNull(),
+  promoCode: text("promo_code").default("").notNull(),
   feePercent: numeric("fee_percent", { precision: 5, scale: 2 }).notNull(),
   fee: numeric("fee", { precision: 10, scale: 2 }).notNull(),
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),
@@ -173,6 +185,22 @@ export const orders = pgTable("orders", {
   paidAt: timestamp("paid_at", { withTimezone: true }),
   emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * Legacy one-time promo claims retained for database compatibility. Current
+ * producer campaigns are unlimited-use and the application no longer reads or
+ * writes this table.
+ */
+export const promoRedemptions = pgTable("promo_redemptions", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  orderId: integer("order_id")
+    .notNull()
+    .unique()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  reservedAt: timestamp("reserved_at", { withTimezone: true }).defaultNow().notNull(),
+  redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
 });
 
 export const orderItems = pgTable("order_items", {
@@ -237,16 +265,20 @@ export const bookings = pgTable("bookings", {
 
 // Producer inbox: on-site notification messages (booking requests, confirmations).
 // The same alerts are also pushed to the producer's WhatsApp when configured.
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  kind: text("kind").notNull(), // booking_request | booking_confirmed
-  title: text("title").notNull(),
-  body: text("body").notNull(),
-  reference: text("reference").default("").notNull(),
-  link: text("link").default("").notNull(),
-  readAt: timestamp("read_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: serial("id").primaryKey(),
+    kind: text("kind").notNull(), // booking_request | booking_confirmed
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    reference: text("reference").default("").notNull(),
+    link: text("link").default("").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("notifications_kind_reference_idx").on(t.kind, t.reference)],
+);
 
 export const emailLogs = pgTable("email_logs", {
   id: serial("id").primaryKey(),

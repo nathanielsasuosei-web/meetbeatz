@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { notifications, type Booking, type Order } from "@/db/schema";
 import { formatDate, money, num } from "./format";
 import { getSettings } from "./settings";
-import { sendWhatsAppAlert } from "./whatsapp";
+import { normalizeWhatsAppNumber, sendWhatsAppAlert } from "./whatsapp";
 
 /**
  * The producer's on-site inbox. Every studio booking posts a message here the
@@ -66,7 +66,8 @@ export function bookingAlertText(
 ): { title: string; body: string } {
   const when = `${formatDate(booking.bookingDate)} · ${booking.startTime}–${booking.endTime} (${booking.hours}h)`;
   const contact = [booking.customerName, booking.customerPhone, booking.customerEmail].filter(Boolean).join(" · ");
-  const reply = booking.customerPhone ? `Reply on WhatsApp: https://wa.me/${booking.customerPhone.replace(/\D/g, "")}` : "";
+  const customerWhatsApp = normalizeWhatsAppNumber(booking.customerPhone);
+  const reply = customerWhatsApp ? `Reply on WhatsApp: https://wa.me/${customerWhatsApp}` : "";
 
   if (phase === "request") {
     return {
@@ -104,27 +105,41 @@ export function bookingAlertText(
 }
 
 /**
- * Posts a booking alert to the producer's inbox and (when an alert number is
- * set) their WhatsApp. The WhatsApp send is fire-and-forget: it must never add
- * latency to checkout or fail it. Callers should still wrap this in
- * try/catch — a broken DB should not take down the booking.
+ * Posts a booking alert to the producer's inbox and their WhatsApp when it is
+ * configured. The WhatsApp request is awaited deliberately: serverless
+ * runtimes may stop executing as soon as a response is returned, which would
+ * make fire-and-forget delivery unreliable. The sender itself fails soft, so
+ * a WhatsApp outage still cannot fail checkout.
  */
 export async function notifyBooking(booking: Booking, order: Order | null, phase: "request" | "confirmed"): Promise<void> {
   const { title, body } = bookingAlertText(booking, order, phase);
+  const kind = phase === "request" ? "booking_request" : "booking_confirmed";
+  // A reference is always present for normal checkout bookings. The fallback
+  // keeps manually-created records deduplicated as well.
+  const reference = order?.reference || `booking-${booking.id}`;
+
+  // Paystack can deliver the same webhook more than once. The unique key plus
+  // onConflictDoNothing makes both the website message and WhatsApp alert
+  // idempotent, so the producer does not get duplicate confirmations.
+  const [created] = await db
+    .insert(notifications)
+    .values({
+      kind,
+      title,
+      body,
+      reference,
+      link: "/admin/bookings",
+    })
+    .onConflictDoNothing({ target: [notifications.kind, notifications.reference] })
+    .returning({ id: notifications.id });
+
+  if (!created) return;
+
   const settings = await getSettings();
-
-  await db.insert(notifications).values({
-    kind: phase === "request" ? "booking_request" : "booking_confirmed",
-    title,
-    body,
-    reference: order?.reference ?? "",
-    link: "/admin/bookings",
-  });
-
   const to = settings.whatsappAlerts.trim();
   if (!to) return;
-  void sendWhatsAppAlert(to, `${title}\n${body}`).then((result) => {
-    if (result.status === "sent") return;
+  const result = await sendWhatsAppAlert(to, `${title}\n${body}`);
+  if (result.status !== "sent") {
     console.warn(`[whatsapp] booking alert (${phase}) ${result.status}: ${result.detail}`);
-  });
+  }
 }

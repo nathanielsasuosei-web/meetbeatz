@@ -1,10 +1,11 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { beats, bookings, contactMessages, licenseTypes, orders, services, soundKits, storedFiles, studioHours } from "@/db/schema";
+import { beats, bookings, contactMessages, licenseTypes, orders, promoCodes, services, soundKits, storedFiles, studioHours } from "@/db/schema";
 import { changeAdminPassword, destroyAdminSession, getAdminSession, verifyPassword } from "@/lib/auth";
 import { admins } from "@/db/schema";
 import { slugify } from "@/lib/format";
@@ -12,11 +13,13 @@ import { sendEmail } from "@/lib/email";
 import { emailLayout } from "@/lib/email-templates";
 import { sendOrderEmails } from "@/lib/payments";
 import { isPaystackConfigured, isValidSplitCode, subaccountIsUsable } from "@/lib/paystack";
+import { isValidPromoCode } from "@/lib/promos";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
 import { saveAdsTxt } from "@/lib/ads-txt";
 import { validateAdsTxt } from "@/lib/ads-txt-format";
 import { setContactHandled } from "@/lib/contact";
+import { sendWhatsAppAlert } from "@/lib/whatsapp";
 
 async function guard() {
   const session = await getAdminSession();
@@ -37,6 +40,26 @@ function int(fd: FormData, key: string, fallback: number): number {
 function dec(fd: FormData, key: string, fallback = 0): string {
   const n = parseFloat(str(fd, key));
   return (Number.isFinite(n) ? Math.max(0, n) : fallback).toFixed(2);
+}
+
+function hexColor(fd: FormData, key: string, fallback: string): string {
+  const value = str(fd, key).toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(value) ? value : fallback;
+}
+
+const PROMO_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generatedPromoCode(): string {
+  const bytes = randomBytes(12);
+  return Array.from(bytes, (byte) => PROMO_ALPHABET[byte % PROMO_ALPHABET.length]).join("");
+}
+
+function promoExpiry(fd: FormData): string {
+  const raw = str(fd, "promoExpiresAt");
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (!Number.isFinite(parsed.getTime())) fail("/admin/settings", "Enter a valid promo-code end date.");
+  return parsed.toISOString();
 }
 
 function done(path: string, message: string): never {
@@ -223,7 +246,13 @@ export async function saveLicenseType(formData: FormData) {
 export async function saveSettingsAction(formData: FormData) {
   await guard();
   const feePercent = parseFloat(str(formData, "feePercent", "10"));
+  const accentColor = hexColor(formData, "accentColor", "#c6f135");
   const subaccount = str(formData, "paystackSubaccount").trim();
+  const promoCode = str(formData, "promoCode").toUpperCase();
+  const promoExpiresAt = promoExpiry(formData);
+  if (promoCode && !isValidPromoCode(promoCode)) {
+    fail("/admin/settings", "Promo code must be at least 10 characters and contain both letters and numbers only.");
+  }
   // Only validate subaccount codes (ACCT_xxx) against Paystack. Split codes
   // (SPL_xxx) are pre-configured in the Paystack dashboard and don't need
   // validation here — they'll be verified when the first transaction runs.
@@ -236,8 +265,12 @@ export async function saveSettingsAction(formData: FormData) {
   await saveSettings({
     siteName: str(formData, "siteName") || "Meetbeatz",
     tagline: str(formData, "tagline"),
+    accentColor,
     currency: (str(formData, "currency") || "GHS").toUpperCase().slice(0, 3),
     feePercent: (Number.isFinite(feePercent) ? Math.min(50, Math.max(0, feePercent)) : 10).toString(),
+    promoCode,
+    promoPercent: "5",
+    promoExpiresAt,
     paystackSubaccount: subaccount,
     feeBearer: str(formData, "feeBearer") === "subaccount" ? "subaccount" : "account",
     contactEmail: str(formData, "contactEmail"),
@@ -251,6 +284,47 @@ export async function saveSettingsAction(formData: FormData) {
   });
   revalidatePath("/", "layout");
   done("/admin/settings", "Settings saved.");
+}
+
+export async function createPromoCodeAction(formData: FormData) {
+  await guard();
+  const code = str(formData, "promoCode").toUpperCase();
+  if (!isValidPromoCode(code)) {
+    fail("/admin/settings", "Promo code must be at least 10 characters and contain both letters and numbers only.");
+  }
+  const expiry = promoExpiry(formData);
+  const [created] = await db
+    .insert(promoCodes)
+    .values({ code, expiresAt: expiry ? new Date(expiry) : null, isActive: true })
+    .onConflictDoNothing({ target: promoCodes.code })
+    .returning({ id: promoCodes.id });
+  if (!created) fail("/admin/settings", "That promo code already exists. Choose another code.");
+  done("/admin/settings", `Promo code ${code} created.`);
+}
+
+export async function generatePromoCodeAction(formData: FormData) {
+  await guard();
+  const expiry = promoExpiry(formData);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const code = generatedPromoCode();
+    const [created] = await db
+      .insert(promoCodes)
+      .values({ code, expiresAt: expiry ? new Date(expiry) : null, isActive: true })
+      .onConflictDoNothing({ target: promoCodes.code })
+      .returning({ id: promoCodes.id });
+    if (created) done("/admin/settings", `Generated promo code ${code}.`);
+  }
+  fail("/admin/settings", "Could not generate a unique promo code. Please try again.");
+}
+
+export async function togglePromoCodeAction(formData: FormData) {
+  await guard();
+  const id = Number(formData.get("promoCodeId"));
+  if (!Number.isSafeInteger(id) || id <= 0) fail("/admin/settings", "Invalid promo code.");
+  const [promo] = await db.select().from(promoCodes).where(eq(promoCodes.id, id)).limit(1);
+  if (!promo) fail("/admin/settings", "Promo code not found.");
+  await db.update(promoCodes).set({ isActive: !promo.isActive }).where(eq(promoCodes.id, id));
+  done("/admin/settings", `${promo.code} is now ${promo.isActive ? "disabled" : "active"}.`);
 }
 
 export async function changePasswordAction(formData: FormData) {
@@ -282,6 +356,22 @@ export async function sendTestEmailAction(formData: FormData) {
   });
   if (result.status === "sent") done("/admin/settings", `Test email sent to ${to}.`);
   fail("/admin/settings", `Test email failed: ${result.error ?? "unknown error"}`);
+}
+
+export async function sendTestWhatsAppAction(formData: FormData) {
+  await guard();
+  const settings = await getSettings();
+  // Prefer the value in the submitted form so the producer can test a newly
+  // entered number before saving the rest of the settings form.
+  const to = str(formData, "whatsappAlerts") || settings.whatsappAlerts;
+  if (!to) fail("/admin/settings", "Enter your WhatsApp alert number first.");
+
+  const result = await sendWhatsAppAlert(
+    to,
+    `Meetbeatz test alert ✅\nThis is where new studio booking requests and payment confirmations will arrive.`,
+  );
+  if (result.status === "sent") done("/admin/settings", `WhatsApp test sent to ${to}.`);
+  fail("/admin/settings", `WhatsApp test failed: ${result.detail}`);
 }
 
 // ---------------- Ads.txt ----------------

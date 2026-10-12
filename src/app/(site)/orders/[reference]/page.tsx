@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { DownloadIcon } from "@/components/icons";
+import { CartCleanup } from "@/components/cart/cart-cleanup";
 import {
   DELIVERABLE_LABELS,
   deliverableList,
@@ -70,6 +71,7 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
 
       {order.status === "paid" && (
         <>
+          {order.kind === "beat" && <CartCleanup />}
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="eyebrow">Payment successful</p>
@@ -187,6 +189,12 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
                   <tr className="border-b border-line/60">
                     <td className="py-2 text-cream/80">Booking deposit</td>
                     <td className="py-2 text-right">{money(order.subtotal, order.currency)}</td>
+                  </tr>
+                )}
+                {num(order.discount) > 0 && (
+                  <tr>
+                    <td className="py-2 text-ok">Promo discount{order.promoCode ? ` (${order.promoCode})` : ""}</td>
+                    <td className="py-2 text-right text-ok">−{money(order.discount, order.currency)}</td>
                   </tr>
                 )}
                 <tr>

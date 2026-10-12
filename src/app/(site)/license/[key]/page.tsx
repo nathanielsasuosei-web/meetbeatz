@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { db } from "@/db";
 import { licenses, orders } from "@/db/schema";
@@ -16,7 +16,7 @@ export default async function LicensePage({ params }: { params: Promise<{ key: s
     .select({ lic: licenses, order: orders })
     .from(licenses)
     .innerJoin(orders, eq(licenses.orderId, orders.id))
-    .where(eq(licenses.licenseKey, decodeURIComponent(key).toUpperCase()))
+    .where(and(eq(licenses.licenseKey, decodeURIComponent(key).toUpperCase()), eq(orders.status, "paid")))
     .limit(1);
   if (!row) notFound();
   const { lic, order } = row;

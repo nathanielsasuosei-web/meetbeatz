@@ -6,6 +6,7 @@ const PAYMENT_BADGES = ["MTN MoMo", "Telecel Cash", "AirtelTigo Money", "Visa / 
 
 const EXPLORE = [
   { href: "/beats", label: "Beat store" },
+  { href: "/how-it-works", label: "How it works" },
   { href: "/sound-kits", label: "Sound Kits" },
   { href: "/studio", label: "Studio bookings" },
   { href: "/licensing", label: "Beat licensing" },

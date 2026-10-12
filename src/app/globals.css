@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #120206;
-  --color-ink-2: #1c060c;
-  --color-panel: #2a0c14;
-  --color-panel-2: #3a1220;
-  --color-line: #4a2430;
-  --color-line-2: #5e3040;
+  --color-ink: #050506;
+  --color-ink-2: #0d080a;
+  --color-panel: #21080e;
+  --color-panel-2: #351019;
+  --color-line: #54202b;
+  --color-line-2: #71303e;
   --color-acid: #c6f135;
   --color-acid-2: #a9d41f;
   /* The "BEATZ" half of the wordmark, to match the logo's red neon.
@@ -125,11 +125,11 @@ body::before {
   z-index: -2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 72% 56% at 12% 8%, rgba(255, 36, 48, 0.58), transparent 60%),
-    radial-gradient(ellipse 58% 46% at 92% 16%, rgba(220, 18, 36, 0.52), transparent 58%),
-    radial-gradient(ellipse 78% 52% at 48% 108%, rgba(150, 12, 30, 0.7), transparent 62%),
-    radial-gradient(ellipse 48% 42% at 58% 46%, rgba(190, 16, 34, 0.32), transparent 68%),
-    linear-gradient(160deg, #3a0a14 0%, #4c1020 42%, #24060e 100%);
+    radial-gradient(ellipse 72% 56% at 10% 6%, rgba(246, 24, 42, 0.68), transparent 60%),
+    radial-gradient(ellipse 58% 46% at 94% 14%, rgba(184, 8, 26, 0.58), transparent 58%),
+    radial-gradient(ellipse 78% 52% at 48% 108%, rgba(104, 5, 20, 0.72), transparent 62%),
+    radial-gradient(ellipse 48% 42% at 58% 46%, rgba(170, 10, 30, 0.24), transparent 68%),
+    linear-gradient(160deg, #160207 0%, #070507 46%, #020203 100%);
   background-size: 140% 140%, 130% 130%, 150% 150%, 120% 120%, 100% 100%;
   animation: liquid-drift 26s ease-in-out infinite;
 }
@@ -371,16 +371,16 @@ body::after {
   background:
     linear-gradient(
       155deg,
-      rgba(198, 241, 53, 0.22) 0%,
-      rgba(198, 241, 53, 0.06) 50%,
+      rgb(var(--accent-rgb, 198 241 53) / 0.22) 0%,
+      rgb(var(--accent-rgb, 198 241 53) / 0.06) 50%,
       rgba(255, 255, 255, 0.03) 100%
     );
-  background-color: rgba(198, 241, 53, 0.08);
-  border: 1px solid rgba(198, 241, 53, 0.35);
+  background-color: rgb(var(--accent-rgb, 198 241 53) / 0.08);
+  border: 1px solid rgb(var(--accent-rgb, 198 241 53) / 0.35);
   box-shadow:
-    0 0 0 1px rgba(198, 241, 53, 0.08) inset,
+    0 0 0 1px rgb(var(--accent-rgb, 198 241 53) / 0.08) inset,
     0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
-    0 12px 36px -10px rgba(198, 241, 53, 0.2),
+    0 12px 36px -10px rgb(var(--accent-rgb, 198 241 53) / 0.2),
     0 8px 24px -8px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(28px) saturate(1.6);
   -webkit-backdrop-filter: blur(28px) saturate(1.6);
@@ -395,7 +395,7 @@ body::after {
   background: linear-gradient(
     125deg,
     rgba(255, 255, 255, 0.25) 0%,
-    rgba(198, 241, 53, 0.1) 25%,
+    rgb(var(--accent-rgb, 198 241 53) / 0.1) 25%,
     transparent 50%
   );
 }
@@ -411,9 +411,9 @@ body::after {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(198, 241, 53, 0.7) 40%,
+    rgb(var(--accent-rgb, 198 241 53) / 0.7) 40%,
     rgba(255, 255, 255, 0.8) 50%,
-    rgba(198, 241, 53, 0.7) 60%,
+    rgb(var(--accent-rgb, 198 241 53) / 0.7) 60%,
     transparent
   );
 }
@@ -499,7 +499,7 @@ body::after {
     0 0 0 1px rgba(255, 255, 255, 0.06) inset,
     0 1px 0 0 rgba(255, 255, 255, 0.16) inset,
     0 16px 40px -12px rgba(0, 0, 0, 0.55),
-    0 0 40px -16px rgba(198, 241, 53, 0.12);
+    0 0 40px -16px rgb(var(--accent-rgb, 198 241 53) / 0.12);
 }
 
 .btn-primary,
@@ -519,7 +519,7 @@ body::after {
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.45) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.12) inset,
-    0 8px 24px -6px rgba(198, 241, 53, 0.45),
+    0 8px 24px -6px rgb(var(--accent-rgb, 198 241 53) / 0.45),
     0 2px 8px -2px rgba(0, 0, 0, 0.3);
 }
 
@@ -529,7 +529,7 @@ body::after {
     linear-gradient(180deg, #e0ff6e 0%, #d0f548 40%, var(--color-acid) 100%);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
-    0 10px 28px -6px rgba(198, 241, 53, 0.55),
+    0 10px 28px -6px rgb(var(--accent-rgb, 198 241 53) / 0.55),
     0 2px 8px -2px rgba(0, 0, 0, 0.3);
   transform: translateY(-1px);
 }
@@ -578,11 +578,11 @@ body::after {
 }
 
 .field:focus {
-  border-color: rgba(198, 241, 53, 0.5);
+  border-color: rgb(var(--accent-rgb, 198 241 53) / 0.5);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-    0 0 0 3px rgba(198, 241, 53, 0.15),
-    0 0 24px -6px rgba(198, 241, 53, 0.25);
+    0 0 0 3px rgb(var(--accent-rgb, 198 241 53) / 0.15),
+    0 0 24px -6px rgb(var(--accent-rgb, 198 241 53) / 0.25);
 }
 
 select.field {
@@ -612,12 +612,12 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 }
 
 .badge-acid {
-  background: rgba(198, 241, 53, 0.12);
-  border-color: rgba(198, 241, 53, 0.4);
+  background: rgb(var(--accent-rgb, 198 241 53) / 0.12);
+  border-color: rgb(var(--accent-rgb, 198 241 53) / 0.4);
   color: var(--color-acid);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-    0 0 12px -4px rgba(198, 241, 53, 0.3);
+    0 0 12px -4px rgb(var(--accent-rgb, 198 241 53) / 0.3);
 }
 
 .table-base {
@@ -690,12 +690,184 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   @apply border-b border-line/70 px-3 py-3 align-top text-cream/80;
 }
 
+.hero-copy {
+  color: var(--color-cream);
+  text-shadow: 0 2px 22px rgb(18 2 6 / 0.62);
+}
+
+.hero-copy .hero-stats dt {
+  color: var(--color-muted);
+  color: color-mix(in srgb, var(--color-muted) 72%, var(--color-acid) 28%);
+}
+
+.hero-copy .hero-stats dd:not(.text-acid) {
+  color: var(--color-cream);
+  color: color-mix(in srgb, var(--color-cream) 88%, var(--color-acid) 12%);
+}
+
+.hero-copy .hero-logo {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.2),
+    0 12px 40px -8px rgb(0 0 0 / 0.5),
+    0 0 40px -10px rgb(var(--accent-rgb, 198 241 53) / 0.5);
+}
+
 .hero-grid {
   background-image:
     linear-gradient(to right, rgba(255, 140, 130, 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 140, 130, 0.08) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+@keyframes hero-wave-drift {
+  0% {
+    opacity: 0.32;
+    stroke-dashoffset: 0;
+    transform: translate3d(-1%, 5px, 0) scaleY(0.92);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translate3d(0.5%, -4px, 0) scaleY(1.04);
+  }
+  100% {
+    opacity: 0.38;
+    stroke-dashoffset: -420;
+    transform: translate3d(1%, 3px, 0) scaleY(0.96);
+  }
+}
+
+@keyframes hero-music-bar {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scaleY(0.22);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scaleY(1);
+  }
+}
+
+/* Five-depth music stage painted by HeroWave. It sits above the photo and
+   below the copy, so the wave feels dimensional without reducing contrast. */
+.hero-wave-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.82;
+  mix-blend-mode: screen;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+}
+
+/* Resolution-independent neon ribbons keep the 5D wave crisp at 8K-sized viewports. */
+.hero-wave-ribbons {
+  position: absolute;
+  left: -3%;
+  right: -3%;
+  bottom: 7%;
+  z-index: 0;
+  width: 106%;
+  height: 45%;
+  overflow: visible;
+  filter: drop-shadow(0 0 16px rgb(var(--accent-rgb, 198 241 53) / 0.42));
+  mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+}
+
+.hero-wave-ribbon {
+  fill: none;
+  stroke: rgb(var(--accent-rgb, 198 241 53) / 0.45);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 18 26;
+  stroke-width: 2.4;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hero-wave-drift 8s ease-in-out infinite;
+}
+
+.hero-wave-ribbon-back {
+  opacity: 0.36;
+  stroke-width: 1.5;
+  animation-duration: 12s;
+  animation-delay: -4s;
+}
+
+.hero-wave-ribbon-mid {
+  opacity: 0.52;
+  stroke-width: 2;
+  animation-duration: 9s;
+  animation-delay: -2.5s;
+}
+
+.hero-wave-ribbon-front {
+  opacity: 0.78;
+  stroke-width: 2.8;
+  stroke-dasharray: 11 18;
+  animation-duration: 7s;
+  animation-delay: -1.2s;
+}
+
+.hero-wave-ribbon-glow {
+  opacity: 0.62;
+  stroke: rgb(var(--accent-rgb, 198 241 53) / 0.86);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 30;
+  filter: drop-shadow(0 0 9px rgb(var(--accent-rgb, 198 241 53) / 0.8));
+  animation-duration: 5.5s;
+  animation-delay: -3.6s;
+}
+
+.hero-wave-ribbon-glow-two {
+  animation-duration: 6.5s;
+  animation-delay: -1.8s;
+}
+
+.hero-wave-layer canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-wave-bars {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 7%;
+  z-index: 1;
+  display: flex;
+  height: 28%;
+  align-items: flex-end;
+  gap: clamp(2px, 0.55vw, 8px);
+  opacity: 0.74;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.hero-wave-bars span {
+  min-height: 8%;
+  flex: 1 1 0;
+  transform-origin: bottom;
+  border-radius: 999px 999px 2px 2px;
+  background: linear-gradient(to top, rgb(var(--accent-rgb, 198 241 53) / 0.18), rgb(var(--accent-rgb, 198 241 53) / 0.85));
+  box-shadow: 0 0 14px rgb(var(--accent-rgb, 198 241 53) / 0.45);
+  animation: hero-music-bar 1.35s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-wave-ribbon {
+    opacity: 0.5;
+    animation: none;
+    stroke-dashoffset: -80;
+    transform: none;
+  }
+
+  .hero-wave-bars span {
+    opacity: 0.55;
+    transform: scaleY(0.48);
+    animation: none;
+  }
 }
 
 /* Floating liquid orbs for depth behind content */
@@ -743,6 +915,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 /* Photo heroes: red glass wash so the image sits in the same liquid field */
 .red-glass-wash {
   background:
+    radial-gradient(ellipse 60% 44% at 52% 42%, rgb(var(--accent-rgb, 198 241 53) / 0.14), transparent 70%),
     radial-gradient(ellipse 80% 55% at 12% 0%, rgba(255, 48, 56, 0.4), transparent 58%),
     radial-gradient(ellipse 50% 40% at 90% 20%, rgba(160, 12, 28, 0.35), transparent 55%),
     linear-gradient(180deg, rgba(74, 8, 16, 0.42) 0%, rgba(18, 2, 6, 0.82) 68%, #120206 100%);
@@ -771,14 +944,14 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 .glass-marquee {
   position: relative;
   overflow: hidden;
-  border-block: 1px solid rgba(198, 241, 53, 0.35);
+  border-block: 1px solid rgb(var(--accent-rgb, 198 241 53) / 0.35);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 40%),
-    linear-gradient(90deg, rgba(198, 241, 53, 0.92), rgba(212, 248, 90, 0.95), rgba(198, 241, 53, 0.92));
+    linear-gradient(90deg, rgb(var(--accent-rgb, 198 241 53) / 0.92), rgba(212, 248, 90, 0.95), rgb(var(--accent-rgb, 198 241 53) / 0.92));
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.4) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.1) inset,
-    0 8px 32px -8px rgba(198, 241, 53, 0.35);
+    0 8px 32px -8px rgb(var(--accent-rgb, 198 241 53) / 0.35);
   color: var(--color-ink);
 }
 
@@ -880,13 +1053,13 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 /* Acid glow while resting on the active link */
 .nav-pill.is-acid {
   background:
-    linear-gradient(160deg, rgba(198, 241, 53, 0.24) 0%, rgba(198, 241, 53, 0.08) 50%, rgba(255, 255, 255, 0.04) 100%),
-    rgba(198, 241, 53, 0.1);
-  border-color: rgba(198, 241, 53, 0.45);
+    linear-gradient(160deg, rgb(var(--accent-rgb, 198 241 53) / 0.24) 0%, rgb(var(--accent-rgb, 198 241 53) / 0.08) 50%, rgba(255, 255, 255, 0.04) 100%),
+    rgb(var(--accent-rgb, 198 241 53) / 0.1);
+  border-color: rgb(var(--accent-rgb, 198 241 53) / 0.45);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.3) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.2) inset,
-    0 0 24px -6px rgba(198, 241, 53, 0.55),
+    0 0 24px -6px rgb(var(--accent-rgb, 198 241 53) / 0.55),
     0 8px 24px -8px rgba(0, 0, 0, 0.5);
 }
 
@@ -899,7 +1072,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.45) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.12) inset,
-    0 8px 20px -6px rgba(198, 241, 53, 0.45);
+    0 8px 20px -6px rgb(var(--accent-rgb, 198 241 53) / 0.45);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -917,7 +1090,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
 /* Soft acid blob trailing behind — the liquid smear */
 .nav-pill-ghost {
   z-index: 0;
-  background: rgba(198, 241, 53, 0.4);
+  background: rgb(var(--accent-rgb, 198 241 53) / 0.4);
   filter: blur(14px);
   transition:
     transform 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.06s,
@@ -1107,6 +1280,83 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   animation: auth-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
+.auth-stage {
+  position: relative;
+  isolation: isolate;
+}
+
+.auth-stage::before,
+.auth-stage::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(42px);
+  opacity: 0.35;
+  animation: auth-orbit 12s ease-in-out infinite;
+}
+
+.auth-stage::before {
+  width: 12rem;
+  height: 12rem;
+  top: 1rem;
+  left: -7rem;
+  background: rgb(var(--accent-rgb, 198 241 53) / 0.24);
+}
+
+.auth-stage::after {
+  width: 10rem;
+  height: 10rem;
+  right: -5rem;
+  bottom: 4rem;
+  background: rgba(255, 48, 56, 0.28);
+  animation-delay: -5s;
+}
+
+@keyframes auth-orbit {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1.2rem, -1rem, 0) scale(1.12);
+  }
+}
+
+.auth-form > * {
+  animation: auth-field-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.auth-form > *:nth-child(1) { animation-delay: 120ms; }
+.auth-form > *:nth-child(2) { animation-delay: 180ms; }
+.auth-form > *:nth-child(3) { animation-delay: 240ms; }
+.auth-form > *:nth-child(4) { animation-delay: 300ms; }
+.auth-form > *:nth-child(5) { animation-delay: 360ms; }
+.auth-form > *:nth-child(6) { animation-delay: 420ms; }
+
+@keyframes auth-field-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px) scale(0.985);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.auth-form .field {
+  transform: translateZ(0);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease;
+}
+
+.auth-form .field:focus {
+  transform: translateY(-2px) scale(1.005);
+}
+
 /* Tiny acid equalizer beside the eyebrow — the page "tunes in" */
 .eq-bars {
   display: inline-flex;
@@ -1122,7 +1372,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   border-radius: 999px;
   background: var(--color-acid);
   transform-origin: bottom;
-  box-shadow: 0 0 10px rgba(198, 241, 53, 0.55);
+  box-shadow: 0 0 10px rgb(var(--accent-rgb, 198 241 53) / 0.55);
   animation: eq 0.9s ease-in-out infinite;
 }
 
@@ -1225,7 +1475,7 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
     0 1px 0 0 rgba(255, 255, 255, 0.16) inset,
     0 -1px 0 0 rgba(80, 0, 10, 0.22) inset,
     0 18px 48px -14px rgba(40, 0, 8, 0.6),
-    0 0 52px -18px rgba(198, 241, 53, 0.2);
+    0 0 52px -18px rgb(var(--accent-rgb, 198 241 53) / 0.2);
 }
 
 .field:hover:not(:focus):not(:disabled) {
@@ -1302,10 +1552,10 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   transform-origin: left center;
   transform: scaleX(var(--progress, 0));
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(198, 241, 53, 0.45), var(--color-acid) 35%, #e9ffa1);
+  background: linear-gradient(90deg, rgb(var(--accent-rgb, 198 241 53) / 0.45), var(--color-acid) 35%, #e9ffa1);
   box-shadow:
-    0 0 14px rgba(198, 241, 53, 0.65),
-    0 1px 6px rgba(198, 241, 53, 0.4);
+    0 0 14px rgb(var(--accent-rgb, 198 241 53) / 0.65),
+    0 1px 6px rgb(var(--accent-rgb, 198 241 53) / 0.4);
 }
 
 /* Logo condenses with the bar */
@@ -1335,6 +1585,9 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   .play-bar,
   .auth-in,
   .auth-error,
+  .auth-stage::before,
+  .auth-stage::after,
+  .auth-form > *,
   .eq-bars span,
   .btn-primary.is-busy::after {
     animation: none !important;

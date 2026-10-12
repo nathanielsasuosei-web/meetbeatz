@@ -6,22 +6,21 @@ import { beats, licenses, soundKits } from "@/db/schema";
 import { BeatGrid } from "@/components/beat-card";
 import { DownloadIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
-import { listActiveServices, listBeats, listLicenseTypes } from "@/lib/catalog";
-import { DELIVERABLE_LABELS, deliverableList, formatDate, money, num } from "@/lib/format";
+import { listBeats } from "@/lib/catalog";
+import { formatDate } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { formatBytes } from "@/lib/upload-rules";
+import { HeroWave } from "@/components/hero-wave";
 
 export const dynamic = "force-dynamic";
 
 const MARQUEE = ["MTN Mobile Money", "Telecel Cash", "AirtelTigo Money", "Visa & Mastercard", "Instant email delivery", "Licensed & legal", "Recording · Mixing · Mastering"];
 
 export default async function HomePage() {
-  const [settings, featured, latest, services, licenseTypes, [beatCount], [licenseCount], publicKits] = await Promise.all([
+  const [settings, featured, latest, [beatCount], [licenseCount], publicKits] = await Promise.all([
     getSettings(),
     listBeats({ featured: true, limit: 8 }),
     listBeats({ limit: 8 }),
-    listActiveServices(),
-    listLicenseTypes(),
     db.select({ value: count() }).from(beats).where(eq(beats.isPublished, true)),
     db.select({ value: count() }).from(licenses),
     db.select().from(soundKits).where(eq(soundKits.isPublished, true)).orderBy(desc(soundKits.createdAt)).limit(4),
@@ -42,8 +41,9 @@ export default async function HomePage() {
             <span />
             <span />
           </div>
+          <HeroWave />
         </div>
-        <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
+        <div className="hero-copy relative z-10 mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 md:pb-28 md:pt-28">
           <div className="glass inline-flex rounded-full px-4 py-1.5">
             <p className="eyebrow !tracking-[0.18em]">Beat store · Recording studio · {settings.location}</p>
           </div>
@@ -54,14 +54,10 @@ export default async function HomePage() {
               width={128}
               height={128}
               priority
-              className="h-16 w-16 rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-8px_rgba(0,0,0,0.5),0_0_40px_-10px_rgba(198,241,53,0.3)] sm:h-24 sm:w-24 md:h-32 md:w-32"
+              className="hero-logo h-16 w-16 rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_12px_40px_-8px_rgba(0,0,0,0.5)] sm:h-24 sm:w-24 md:h-32 md:w-32"
             />
             <span className="sr-only">{settings.siteName}</span>
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream/80">
-            Original Afrobeats, Asakaa drill, Highlife and more — produced by {settings.siteName}. Pay with any mobile money network and your
-            files plus license certificate land in your inbox in seconds.
-          </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
               Browse beats
@@ -73,7 +69,7 @@ export default async function HomePage() {
               Book studio time
             </Link>
           </div>
-          <dl className="glass mt-14 grid max-w-2xl grid-cols-3 gap-6 rounded-2xl p-6">
+          <dl className="hero-stats glass mt-14 grid max-w-2xl grid-cols-3 gap-6 rounded-2xl p-6">
             <div>
               <dt className="text-xs uppercase tracking-wider text-muted">Beats in store</dt>
               <dd className="display mt-1 text-3xl md:text-4xl">{beatCount.value}</dd>
@@ -148,181 +144,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* How it works */}
-      <section id="how" className="glass-section">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-          <p className="eyebrow">How it works</p>
-          <h2 className="display mt-2 max-w-2xl text-4xl md:text-5xl">From preview to your inbox in three taps.</h2>
-          <Reveal className="mt-12 grid gap-6 md:grid-cols-3">
-            {[
-              {
-                n: "01",
-                title: "Pick a beat & license",
-                text: "Preview every beat in full, then choose Basic, Premium, Unlimited or Exclusive rights depending on your release plans.",
-              },
-              {
-                n: "02",
-                title: "Pay with Mobile Money",
-                text: `MTN MoMo, Telecel Cash, AirtelTigo Money or card. A transparent ${num(settings.feePercent)}% service fee is shown before you pay — no hidden charges.`,
-              },
-              {
-                n: "03",
-                title: "Check your email",
-                text: "Your download links, license key and a signed license certificate are emailed to you instantly. Keep it as proof of purchase.",
-              },
-            ].map((step) => (
-              <div key={step.n} className="card p-7">
-                <p className="display text-5xl text-acid drop-shadow-[0_0_20px_rgba(198,241,53,0.35)]">{step.n}</p>
-                <h3 className="mt-5 text-xl font-bold">{step.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted">{step.text}</p>
-              </div>
-            ))}
-          </Reveal>
-        </div>
-      </section>
-
-      {/* Meet the producer */}
-      <section id="producer" className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-        <div className="grid items-center gap-12 lg:grid-cols-[0.85fr_1.15fr]">
-          <div className="relative aspect-4/5 overflow-hidden rounded-3xl border border-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_20px_60px_-20px_rgba(0,0,0,0.6)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/meetbeatz-producer.jpeg" alt={`${settings.siteName} in the studio`} className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-linear-to-t from-ink/80 via-transparent to-white/5" />
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent" />
-            <div className="glass absolute bottom-6 left-6 right-6 rounded-2xl p-4 sm:right-auto">
-              <p className="eyebrow">The man behind the boards</p>
-              <p className="display mt-1 text-3xl">{settings.siteName}</p>
-            </div>
-          </div>
-          <div>
-            <p className="eyebrow">Meet the producer</p>
-            <h2 className="display mt-2 text-4xl md:text-5xl">Built on feel. Mixed with intent.</h2>
-            <p className="mt-5 text-base leading-relaxed text-muted">
-              {settings.siteName} is a producer and mixing engineer out of {settings.location} — cooking up original Afrobeats, Asakaa drill, Highlife
-              and everything in between. Every beat is tracked, mixed and mastered in-house, so what you preview is exactly what lands in your inbox.
-            </p>
-            <p className="mt-4 text-base leading-relaxed text-muted">
-              No ghost-production middlemen, no resold loops — when you buy a beat or book a session here, you work directly with the source.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
-                Hear the beats
-              </Link>
-              <Link href="/studio" className="btn-ghost px-7! py-3.5! text-base">
-                Book studio time
-              </Link>
-              <Link href="/about" className="btn-ghost px-7! py-3.5! text-base">
-                Read the full story
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Studio */}
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div className="relative aspect-4/3 overflow-hidden rounded-3xl border border-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_20px_60px_-20px_rgba(0,0,0,0.6)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/meetbeatz-studio.jpeg" alt={`${settings.siteName} recording studio`} className="h-full w-full object-cover object-[center_35%]" />
-            <div className="absolute inset-0 bg-linear-to-t from-ink/80 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent" />
-            <div className="glass absolute bottom-6 left-6 right-6 rounded-2xl p-4 sm:right-auto">
-              <p className="eyebrow">The studio</p>
-              <p className="display mt-1 text-3xl">{settings.location}</p>
-            </div>
-          </div>
-          <div>
-            <p className="eyebrow">Studio bookings</p>
-            <h2 className="display mt-2 text-4xl md:text-5xl">Record. Mix. Master.</h2>
-            <p className="mt-5 text-base leading-relaxed text-muted">
-              Book time in the {settings.siteName} studio online. Choose a service, pick an open slot, pay the deposit with Mobile Money and
-              your session is locked instantly — confirmation goes straight to your email.
-            </p>
-            <ul className="glass mt-8 divide-y divide-white/10 overflow-hidden rounded-2xl">
-              {services.map((s) => (
-                <li key={s.id} className="flex items-center justify-between gap-4 px-5 py-4">
-                  <div>
-                    <p className="font-bold">{s.name}</p>
-                    <p className="text-sm text-muted">{s.description}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="font-black text-acid">{money(s.pricePerHour, settings.currency)}</p>
-                    <p className="text-[11px] uppercase tracking-wider text-muted">per hour</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <Link href="/studio" className="btn-primary mt-8 px-7! py-3.5! text-base">
-              Check availability
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Licenses */}
-      <section id="licenses" className="glass-section">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-          <p className="eyebrow">Licensing</p>
-          <h2 className="display mt-2 text-4xl md:text-5xl">Pick the rights you need.</h2>
-          <p className="mt-4 max-w-2xl text-sm text-muted">
-            Prices shown are starting prices — each beat has its own pricing. Every purchase comes with a license certificate you can show to
-            distributors, labels and streaming platforms.
-          </p>
-          <Reveal className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {licenseTypes.map((lt) => (
-              <div key={lt.id} className={`${lt.isExclusive ? "glass-acid" : "card"} flex flex-col rounded-2xl p-6`}>
-                <p className="text-lg font-bold">{lt.name}</p>
-                <p className="mt-1 text-xs text-muted">{lt.tagline}</p>
-                <p className="mt-4 text-sm text-muted">from</p>
-                <p className="display text-3xl text-acid drop-shadow-[0_0_16px_rgba(198,241,53,0.3)]">{money(lt.defaultPrice, settings.currency)}</p>
-                <ul className="mt-5 space-y-1.5 text-sm text-cream/80">
-                  {deliverableList(lt.deliverables).map((d) => (
-                    <li key={d}>✓ {DELIVERABLE_LABELS[d] ?? d}</li>
-                  ))}
-                  {lt.isExclusive && <li>✓ Beat removed from store</li>}
-                </ul>
-                <p className="mt-4 flex-1 text-xs leading-relaxed text-muted">{lt.description}</p>
-                <Link href="/beats" className={`${lt.isExclusive ? "btn-primary" : "btn-ghost"} mt-6`}>
-                  Browse beats
-                </Link>
-              </div>
-            ))}
-          </Reveal>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link href="/licensing" className="btn-ghost">
-              Compare every license →
-            </Link>
-            <Link href="/contact" className="text-sm font-semibold text-muted hover:text-acid">
-              Ask a licensing question
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-        <div className="glass-strong relative overflow-hidden rounded-3xl px-8 py-14 text-center md:px-16">
-          <div className="liquid-orbs absolute inset-0 opacity-70">
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="hero-grid absolute inset-0" />
-          <div className="relative">
-            <p className="eyebrow">Ready when you are</p>
-            <h2 className="display mx-auto mt-3 max-w-3xl text-4xl md:text-6xl">Your next hit starts with the right beat.</h2>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/beats" className="btn-primary px-7! py-3.5! text-base">
-                Shop beats
-              </Link>
-              <Link href="/studio" className="btn-ghost px-7! py-3.5! text-base">
-                Book the studio
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
