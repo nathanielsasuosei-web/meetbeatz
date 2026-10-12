@@ -6,8 +6,8 @@ import { db } from "@/db";
 import { beats, licenses } from "@/db/schema";
 import { DownloadIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
-import { listActiveServices } from "@/lib/catalog";
-import { money } from "@/lib/format";
+import { listActiveServices, listLicenseTypes } from "@/lib/catalog";
+import { DELIVERABLE_LABELS, deliverableList, money } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 
 export const metadata: Metadata = {
@@ -38,9 +38,10 @@ const VALUES = [
 ];
 
 export default async function AboutPage() {
-  const [settings, services, [beatCount], [licenseCount]] = await Promise.all([
+  const [settings, services, licenseTypes, [beatCount], [licenseCount]] = await Promise.all([
     getSettings(),
     listActiveServices(),
+    listLicenseTypes(),
     db.select({ value: count() }).from(beats).where(eq(beats.isPublished, true)),
     db.select({ value: count() }).from(licenses),
   ]);
@@ -255,6 +256,40 @@ export default async function AboutPage() {
               <p className="display mt-1 text-xl sm:text-2xl">The {settings.siteName} room</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Licensing at a glance */}
+      <section className="glass-section">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20">
+          <p className="eyebrow">Licensing</p>
+          <h2 className="display mt-2 text-3xl sm:text-4xl md:text-5xl">Pick the rights you need.</h2>
+          <p className="mt-4 max-w-2xl text-sm text-muted">
+            Prices shown are starting prices — each beat has its own pricing. Every purchase includes a license certificate for distributors, labels and streaming platforms.
+          </p>
+          <Reveal className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4" target=".card" stagger={80}>
+            {licenseTypes.map((lt) => (
+              <article key={lt.id} className={`${lt.isExclusive ? "glass-acid" : "card"} flex flex-col rounded-2xl p-5`}>
+                <p className="text-lg font-bold">{lt.name}</p>
+                <p className="mt-1 text-xs text-muted">{lt.tagline}</p>
+                <p className="mt-4 text-sm text-muted">from</p>
+                <p className="display text-3xl text-acid">{money(lt.defaultPrice, settings.currency)}</p>
+                <ul className="mt-4 space-y-1 text-xs text-cream/80">
+                  {deliverableList(lt.deliverables).map((d) => (
+                    <li key={d}>✓ {DELIVERABLE_LABELS[d] ?? d}</li>
+                  ))}
+                  {lt.isExclusive && <li>✓ Beat removed from store</li>}
+                </ul>
+                <p className="mt-4 flex-1 text-xs leading-relaxed text-muted">{lt.description}</p>
+                <Link href="/beats" className={`${lt.isExclusive ? "btn-primary" : "btn-ghost"} mt-5`}>
+                  Browse beats
+                </Link>
+              </article>
+            ))}
+          </Reveal>
+          <Link href="/licensing" className="btn-ghost mt-8">
+            Compare every license →
+          </Link>
         </div>
       </section>
 
