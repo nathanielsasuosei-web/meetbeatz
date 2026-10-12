@@ -82,7 +82,7 @@ export function CheckoutForm({
   buttonLabel: string;
   disabled?: boolean;
   disabledReason?: string;
-  account?: { name: string; email: string } | null;
+  account?: { name: string } | null;
   paymentMethod?: PaymentMethod;
   onSuccess?: () => void;
   requireAgreement?: boolean;
@@ -92,9 +92,8 @@ export function CheckoutForm({
 }) {
   const [name, setName] = useState(account?.name ?? "");
   // Deliberately not pre-filled from the account: whichever address is typed
-  // here is where the files and receipt are sent, and buyers kept finding an
-  // address already in the box that they could not change. Signed-in artists
-  // get a one-tap button below to reuse their account email instead.
+  // here is where the files and receipt are sent, and buyers can enter any
+  // address they can access.
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [network, setNetwork] = useState<string>("mtn");
@@ -187,11 +186,6 @@ export function CheckoutForm({
             ? "Your files, license and receipt go to this address — type any email you can open. The purchase still shows in Your account either way."
             : "Your files, license and receipt are delivered to this address. Use your account email to see purchases in Your account."}
         </p>
-        {account && account.email !== email.trim().toLowerCase() && (
-          <button type="button" onClick={() => { setEmail(account.email); setEmailError(null); }} className="mt-2 text-xs font-semibold text-acid hover:underline">
-            Use my account email ({account.email})
-          </button>
-        )}
         {emailError && (
           <p id="co-email-error" role="alert" className="mt-1.5 text-xs font-semibold text-danger">
             {emailError}
