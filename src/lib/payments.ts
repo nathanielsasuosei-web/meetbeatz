@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
   admins,
@@ -9,6 +9,7 @@ import {
   licenses,
   orderItems,
   orders,
+  promoRedemptions,
   services,
   type Beat,
   type BeatLicense,
@@ -262,48 +263,79 @@ export async function createBeatCartOrder(input: {
   const totals = computePromoTotals(subtotal, num(settings.feePercent), appliedPromo?.percent ?? 0);
   const reference = makeReference("MB");
 
-  const [order] = await db
-    .insert(orders)
-    .values({
-      reference,
-      kind: "beat",
-      customerId: input.customerId ?? null,
-      customerName: customer.name,
-      customerEmail: customer.email,
-      customerPhone: customer.phone,
-      network: customer.network,
-      subtotal: totals.subtotal.toFixed(2),
-      discount: totals.discount.toFixed(2),
-      promoCode: appliedPromo?.code ?? "",
-      feePercent: num(settings.feePercent).toFixed(2),
-      fee: totals.fee.toFixed(2),
-      total: totals.total.toFixed(2),
-      currency: settings.currency,
-      status: "pending",
-      paymentProvider: getPaymentMode(),
-      splitSubaccount: settings.paystackSubaccount.trim() || null,
-    })
-    .returning();
+  const [order] = await db.transaction(async (tx) => {
+    // Keep legacy orders from bypassing the new one-time redemption table.
+    if (appliedPromo) {
+      const [legacyOrder] = await tx
+        .select({ id: orders.id })
+        .from(orders)
+        .where(and(eq(orders.promoCode, appliedPromo.code), inArray(orders.status, ["pending", "paid"])))
+        .limit(1);
+      if (legacyOrder) throw new CheckoutError("That promo code has already been used.", 409);
+    }
 
-  await db.insert(orderItems).values(
-    selected.map(({ beat, lt, bl }) => ({
-      orderId: order.id,
-      beatId: beat.id,
-      licenseTypeId: lt.id,
-      beatTitle: beat.title,
-      licenseName: lt.name,
-      price: num(bl.price).toFixed(2),
-    })),
-  );
+    const [created] = await tx
+      .insert(orders)
+      .values({
+        reference,
+        kind: "beat",
+        customerId: input.customerId ?? null,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+        network: customer.network,
+        subtotal: totals.subtotal.toFixed(2),
+        discount: totals.discount.toFixed(2),
+        promoCode: appliedPromo?.code ?? "",
+        feePercent: num(settings.feePercent).toFixed(2),
+        fee: totals.fee.toFixed(2),
+        total: totals.total.toFixed(2),
+        currency: settings.currency,
+        status: "pending",
+        paymentProvider: getPaymentMode(),
+        splitSubaccount: settings.paystackSubaccount.trim() || null,
+      })
+      .returning();
+
+    await tx.insert(orderItems).values(
+      selected.map(({ beat, lt, bl }) => ({
+        orderId: created.id,
+        beatId: beat.id,
+        licenseTypeId: lt.id,
+        beatTitle: beat.title,
+        licenseName: lt.name,
+        price: num(bl.price).toFixed(2),
+      })),
+    );
+
+    if (appliedPromo) {
+      const [claim] = await tx
+        .insert(promoRedemptions)
+        .values({ code: appliedPromo.code, orderId: created.id })
+        .onConflictDoNothing({ target: promoRedemptions.code })
+        .returning({ id: promoRedemptions.id });
+      if (!claim) throw new CheckoutError("That promo code has already been used.", 409);
+    }
+
+    return [created];
+  });
 
   const baseUrl = await getBaseUrl();
-  const url = await startPayment(order, settings, baseUrl, {
-    kind: "beat",
-    beats: selected.map(({ beat, lt }) => ({ beat: beat.title, license: lt.name })),
-    payment_method: input.paymentMethod ?? "ghana",
-    promo_code: appliedPromo?.code ?? null,
-    discount: totals.discount,
-  });
+  let url: string;
+  try {
+    url = await startPayment(order, settings, baseUrl, {
+      kind: "beat",
+      beats: selected.map(({ beat, lt }) => ({ beat: beat.title, license: lt.name })),
+      payment_method: input.paymentMethod ?? "ghana",
+      promo_code: appliedPromo?.code ?? null,
+      discount: totals.discount,
+    });
+  } catch (error) {
+    // If the gateway cannot initialize, release the one-time claim so a
+    // failed attempt does not permanently consume the promotion.
+    await markOrderFailed(reference, { initialization_error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
   return { url, reference };
 }
 
@@ -445,6 +477,39 @@ export async function finalizeOrder(
 
   const now = new Date();
   await db.transaction(async (tx) => {
+    if (order.kind === "beat" && order.promoCode) {
+      const [existingClaim] = await tx
+        .select({ id: promoRedemptions.id, orderId: promoRedemptions.orderId })
+        .from(promoRedemptions)
+        .where(eq(promoRedemptions.code, order.promoCode))
+        .limit(1);
+      if (existingClaim && existingClaim.orderId !== order.id) {
+        throw new CheckoutError("That promo code has already been used.", 409);
+      }
+      if (!existingClaim) {
+        const legacyPaid = await tx
+          .select({ id: orders.id })
+          .from(orders)
+          .where(and(eq(orders.promoCode, order.promoCode), eq(orders.status, "paid")))
+          .limit(1);
+        if (legacyPaid.some((row) => row.id !== order.id)) {
+          throw new CheckoutError("That promo code has already been used.", 409);
+        }
+        const [claim] = await tx
+          .insert(promoRedemptions)
+          .values({ code: order.promoCode, orderId: order.id })
+          .onConflictDoNothing({ target: promoRedemptions.code })
+          .returning({ id: promoRedemptions.id, orderId: promoRedemptions.orderId });
+        if (!claim || claim.orderId !== order.id) {
+          throw new CheckoutError("That promo code has already been used.", 409);
+        }
+      }
+      await tx
+        .update(promoRedemptions)
+        .set({ redeemedAt: now })
+        .where(and(eq(promoRedemptions.orderId, order.id), isNull(promoRedemptions.redeemedAt)));
+    }
+
     await tx
       .update(orders)
       .set({
@@ -519,10 +584,16 @@ export async function finalizeOrder(
 }
 
 export async function markOrderFailed(reference: string, providerData?: unknown) {
-  await db
-    .update(orders)
-    .set({ status: "failed", providerData: (providerData ?? null) as Record<string, unknown> | null })
-    .where(and(eq(orders.reference, reference), eq(orders.status, "pending")));
+  await db.transaction(async (tx) => {
+    const [failed] = await tx
+      .update(orders)
+      .set({ status: "failed", providerData: (providerData ?? null) as Record<string, unknown> | null })
+      .where(and(eq(orders.reference, reference), eq(orders.status, "pending")))
+      .returning({ id: orders.id });
+    if (failed) {
+      await tx.delete(promoRedemptions).where(and(eq(promoRedemptions.orderId, failed.id), isNull(promoRedemptions.redeemedAt)));
+    }
+  });
 }
 
 export async function sendOrderEmails(orderId: number, opts: { includeAdmin?: boolean } = {}) {

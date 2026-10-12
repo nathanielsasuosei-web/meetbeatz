@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   accentColor: "#c6f135",
   currency: "GHS",
   feePercent: "10",
-  promoCode: "MEETBEATZ5",
+  promoCode: "MB5X9R2K7Q4N",
   promoPercent: "5",
   paystackSubaccount: "SPL_u2dhKWTU3y",
   feeBearer: "account",
@@ -46,18 +46,29 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     "Please arrive 10 minutes before your session. The balance is payable at the studio before the session starts. Reschedule at least 24 hours in advance to keep your deposit.",
 };
 
+const RETIRED_PROMO_CODES = new Set(["MEETBEATZ5"]);
+
 export async function getSettings(): Promise<SiteSettings> {
   const rows = await db.select().from(settings);
   const merged: Record<string, string> = { ...DEFAULT_SETTINGS };
   for (const row of rows) merged[row.key] = row.value;
+  // Replace the code generated in the previous campaign even when an older
+  // database still has it persisted. Admin-configured newer codes are kept.
+  if (RETIRED_PROMO_CODES.has(merged.promoCode.trim().toUpperCase())) {
+    merged.promoCode = DEFAULT_SETTINGS.promoCode;
+    merged.promoPercent = "5";
+  }
   return merged as unknown as SiteSettings;
 }
 
 export function getPromoConfig(siteSettings: SiteSettings): { code: string; percent: number } | null {
   const code = siteSettings.promoCode.trim().toUpperCase();
-  const rawPercent = Number.parseFloat(siteSettings.promoPercent);
-  const percent = Number.isFinite(rawPercent) ? Math.min(100, Math.max(0, rawPercent)) : 0;
-  return code && percent > 0 ? { code, percent } : null;
+  // Promo codes are intentionally alphanumeric, mixed, and at least ten
+  // characters long so a live code is difficult to guess or mistype.
+  if (!/^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{10,64}$/.test(code)) return null;
+  // This campaign is fixed at 5%; do not trust a persisted/browser-supplied
+  // percentage to change the discount.
+  return { code, percent: 5 };
 }
 
 export async function saveSettings(partial: Partial<Record<keyof SiteSettings, string>>) {

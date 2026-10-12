@@ -231,6 +231,10 @@ export async function saveSettingsAction(formData: FormData) {
   const feePercent = parseFloat(str(formData, "feePercent", "10"));
   const accentColor = hexColor(formData, "accentColor", "#c6f135");
   const subaccount = str(formData, "paystackSubaccount").trim();
+  const promoCode = str(formData, "promoCode").toUpperCase();
+  if (promoCode && !/^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{10,64}$/.test(promoCode)) {
+    fail("/admin/settings", "Promo code must be at least 10 characters and contain both letters and numbers only.");
+  }
   // Only validate subaccount codes (ACCT_xxx) against Paystack. Split codes
   // (SPL_xxx) are pre-configured in the Paystack dashboard and don't need
   // validation here — they'll be verified when the first transaction runs.
@@ -246,8 +250,8 @@ export async function saveSettingsAction(formData: FormData) {
     accentColor,
     currency: (str(formData, "currency") || "GHS").toUpperCase().slice(0, 3),
     feePercent: (Number.isFinite(feePercent) ? Math.min(50, Math.max(0, feePercent)) : 10).toString(),
-    promoCode: str(formData, "promoCode").toUpperCase(),
-    promoPercent: (Number.isFinite(parseFloat(str(formData, "promoPercent"))) ? Math.min(100, Math.max(0, parseFloat(str(formData, "promoPercent")))) : 0).toString(),
+    promoCode,
+    promoPercent: "5",
     paystackSubaccount: subaccount,
     feeBearer: str(formData, "feeBearer") === "subaccount" ? "subaccount" : "account",
     contactEmail: str(formData, "contactEmail"),

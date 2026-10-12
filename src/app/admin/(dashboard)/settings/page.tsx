@@ -77,11 +77,12 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="label" htmlFor="promoCode">Promo code</label>
-                <input id="promoCode" name="promoCode" className="field font-mono uppercase" defaultValue={settings.promoCode} placeholder="MEETBEATZ5" />
+                <input id="promoCode" name="promoCode" className="field font-mono uppercase" defaultValue={settings.promoCode} placeholder="MB5X9R2K7Q4N" />
               </div>
               <div>
-                <label className="label" htmlFor="promoPercent">Discount %</label>
-                <input id="promoPercent" name="promoPercent" type="number" min={0} max={100} step="1" className="field" defaultValue={settings.promoPercent} />
+                <label className="label" htmlFor="promoPercent">Discount % (fixed)</label>
+                <input id="promoPercent" name="promoPercent" type="number" min={5} max={5} step="1" className="field" value="5" readOnly />
+                <p className="mt-1 text-[11px] text-muted">This campaign always gives exactly 5% off.</p>
               </div>
             </div>
           </section>

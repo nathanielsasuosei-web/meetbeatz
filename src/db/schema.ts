@@ -178,6 +178,22 @@ export const orders = pgTable("orders", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/**
+ * One-time promo claims. A row is reserved when a discounted checkout is
+ * created and kept after payment; the unique code prevents another order from
+ * claiming the same promotion. Failed payments release the reservation.
+ */
+export const promoRedemptions = pgTable("promo_redemptions", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  orderId: integer("order_id")
+    .notNull()
+    .unique()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  reservedAt: timestamp("reserved_at", { withTimezone: true }).defaultNow().notNull(),
+  redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
+});
+
 export const orderItems = pgTable("order_items", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id")
