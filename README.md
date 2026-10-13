@@ -85,6 +85,7 @@ git push -u origin main
 | `EMAIL_FROM` | Sender, e.g. `Meetbeatz <no-reply@meetbeatz.com>` |
 | `SESSION_SECRET` | Secret for admin session cookies |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial admin account (first run only) |
+| `TURN_SERVER_URLS`, `TURN_SHARED_SECRET` | Optional Coturn TURN relay and shared secret for in-site WebRTC audio calls; calls use STUN without these |
 | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Meta WhatsApp Business Cloud API credentials for producer booking alerts |
 | `WHATSAPP_ALERT_TEMPLATE`, `WHATSAPP_ALERT_LANGUAGE` | Optional approved template (recommended for proactive alerts) and its language, default `en_US` |
 | `WHATSAPP_DEFAULT_COUNTRY_CODE` | Country code used when the producer enters a local alert number, default `233` |
@@ -112,7 +113,8 @@ Environment-variable overrides are embedded into the browser bundle at build tim
 | `/beats`, `/beats/[slug]` | Store with search + genre filters; beat page with full preview, “About this beat”, license picker |
 | `/sound-kits` | Free downloadable kits |
 | `/studio` | Services, live slot availability and booking |
-| `/record` | Browser recording studio: record vocal takes over any beat, keep the good ones, send the best to the producer |
+| `/record` | Browser take recorder, always open: record vocal takes over any beat as WAV, keep the good ones, send the best with a preferred time to book a remote session |
+| `/live-recording` | The producer-gated live room (Admin → Settings → Live recording). Shows "Coming soon" to artists until it is switched on |
 | `/distribution` | Music distribution: tiers, release intake form, artwork + master upload, payment |
 | `/colour-adjuster` | Free in-browser cover-art grading tool with a 3000 × 3000 export |
 | `/licensing` | Beat licensing guide: tier cards, comparison table, the exact clauses per tier |
@@ -121,13 +123,22 @@ Environment-variable overrides are embedded into the browser bundle at build tim
 | `/privacy`, `/terms`, `/refunds` | Policy pages (readable long-form layout, TOC, FAQ) |
 | `/cart`, `/checkout` | Cart-first beat checkout with Ghana payment choices and payment confirmation gate |
 | `/account`, `/orders/[reference]`, `/license/[key]` | Customer account, order receipt, license certificate |
+| `/call` | Private audio-only WebRTC call window; artists start calls and the producer accepts |
+
+`/record` and `/live-recording` are deliberately two things: the first is always available and is
+where an artist builds and keeps takes, the second is the live room the producer opens when he is
+ready to work. Both cross-link.
 
 The header shows six pill **buttons** on screens ≥1024px — **Beats · Sound Kits · Studio ·
 Licensing · About · Cart** — with the live count on Cart, an `aria-current` marker on the active
-one, and the liquid droplet gliding between all six. Below 1024px a drawer carries the same six
-plus Artist services (distribution, record online, colour adjuster), Contact and the legal pages.
-The footer repeats the public pages, the artist services, the legal pages and the contact details
-on every page, and a branded 404 offers the main destinations. `robots.txt` and `sitemap.xml` (public pages + published beats) are generated
+one, and the liquid droplet gliding between all six. Beside them sit the account link plus the
+**Live recording** and **Call producer** actions; those two keep their icons but drop their labels
+below 1280px so the six-button row still fits at the 1024px breakpoint. Below 1024px a drawer
+carries the same six plus Artist services (distribution, record online, colour adjuster), the call
+and live-recording actions, Contact and the legal pages. The producer has the same call-window link
+in the admin navigation. The footer repeats the public pages, the artist services, the legal pages
+and the contact details on every page, and a branded 404 offers the main destinations.
+`robots.txt` and `sitemap.xml` (public pages + published beats) are generated
 by `src/app/robots.ts` and `src/app/sitemap.ts`; set `NEXT_PUBLIC_APP_URL` to the production
 domain so the sitemap lists the right host, otherwise `https://meetbeatz.com` is used.
 

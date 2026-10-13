@@ -6,10 +6,11 @@ import { SiteHeader } from "@/components/site-header";
 import { ScreenGuard } from "@/components/screen-guard";
 import { SiteFooter } from "@/components/site-footer";
 import { ChatWidget } from "@/components/chat-widget";
+import { ArtistIncomingCallAlert } from "@/components/artist-incoming-call-alert";
 import { AdSenseScript, AmpAutoAdsScript } from "@/components/adsense";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { ensureSeeded } from "@/lib/seed";
-import { getSettings } from "@/lib/settings";
+import { getSettings, isLiveRecordingOpen } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,11 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
     <div className="theme-site" style={themeStyle}>
       <CartProvider>
         <PlayerProvider>
-          <SiteHeader siteName={settings.siteName} customer={customer ? { name: customer.name } : null} />
+          <SiteHeader
+            siteName={settings.siteName}
+            customer={customer ? { name: customer.name } : null}
+            liveRecordingOpen={isLiveRecordingOpen(settings)}
+          />
           {/*
             Screen-recording protection for the storefront. The viewer's email is
             passed in so the forensic watermark names the account a leak came
@@ -51,6 +56,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         <main className="min-h-[70vh]">{children}</main>
         <SiteFooter settings={settings} />
         <PlayerBar />
+        <ArtistIncomingCallAlert customer={customer ? { name: customer.name } : null} />
         <ChatWidget customer={customer ? { name: customer.name } : null} />
         {/*
           AdSense loader. Renders nothing unless NEXT_PUBLIC_ADSENSE_PUBLISHER_ID

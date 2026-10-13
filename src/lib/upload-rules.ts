@@ -16,6 +16,8 @@ export type UploadKind =
   | "wav"
   | "stems"
   | "sound-kits"
+  // Voice notes and audio messages in the artist ↔ producer chat.
+  | "chat-audio"
   // Artist-facing slots (see CUSTOMER_UPLOAD_KINDS): release artwork, the
   // finished master submitted for distribution, and a take recorded in the
   // browser studio. Same storage, different callers.
@@ -31,15 +33,22 @@ export const UPLOAD_KINDS: UploadKind[] = [
   "wav",
   "stems",
   "sound-kits",
+  "chat-audio",
   "artwork",
   "masters",
   "takes",
 ];
 
 /**
- * The slots a signed-in artist may upload to. Everything else is admin-only:
- * without this list the public upload route would let any visitor write into
- * the beat master or stem slots.
+ * The slots a signed-in artist may upload to through `/api/uploads`. Everything
+ * else is admin-only: without this list the public upload route would let any
+ * visitor write into the beat master or stem slots.
+ *
+ * `chat-audio` is deliberately *not* here. Voice notes go through
+ * `/api/admin/uploads`, which carves out an explicit exception for that one kind
+ * so both sides of the chat can send one; routing it here as well would let a
+ * signed-in artist complete or cancel somebody else's in-flight voice note,
+ * because upload ids are sequential.
  */
 export const CUSTOMER_UPLOAD_KINDS: UploadKind[] = ["artwork", "masters", "takes"];
 
@@ -55,9 +64,11 @@ export const ALLOWED_EXT: Record<UploadKind, string[]> = {
   wav: [".wav", ".aif", ".aiff", ".flac", ".zip"],
   stems: [".zip", ".rar", ".7z"],
   "sound-kits": [".zip", ".rar", ".7z"],
+  "chat-audio": [".webm", ".ogg", ".m4a", ".mp3", ".wav", ".aac", ".flac", ".aif", ".aiff", ".mp4", ".opus"],
   artwork: [".jpg", ".jpeg", ".png", ".webp"],
   // Only formats a distributor can ingest. The browser studio always encodes
-  // WAV, so no container-dependent types (webm/ogg) are accepted here.
+  // WAV, so no container-dependent types (webm/ogg) are accepted here — a voice
+  // note is a different job and has its own slot above.
   masters: [".wav", ".flac", ".mp3", ".aif", ".aiff", ".m4a"],
   takes: [".wav", ".mp3", ".m4a", ".flac"],
 };

@@ -8,18 +8,20 @@ export const dynamic = "force-dynamic";
 /** Support inbox: artists' threads and the selected conversation. */
 export default async function AdminMessagesPage({ searchParams }: { searchParams: Promise<{ customerId?: string }> }) {
   const { customerId: rawId } = await searchParams;
-  const selectedId = Number(rawId);
-  const selected = Number.isSafeInteger(selectedId) && selectedId > 0 ? await threadCustomer(selectedId) : null;
+  const threads = await listThreads();
+  const requestedId = Number(rawId);
+  const targetId =
+    Number.isSafeInteger(requestedId) && requestedId > 0
+      ? requestedId
+      : (threads[0]?.customerId ?? 0);
+  const selected = targetId > 0 ? await threadCustomer(targetId) : null;
   if (selected) await markCustomerMessagesRead(selected.id);
-  const [threads, messages] = await Promise.all([
-    listThreads(),
-    selected ? listThreadMessages(selected.id) : Promise.resolve([]),
-  ]);
+  const messages = selected ? await listThreadMessages(selected.id) : [];
 
   return (
     <>
-      <PageHeader eyebrow="Support" title="Messages">
-        <p className="text-sm text-muted">Chat with artists who buy from you</p>
+      <PageHeader eyebrow="Artist ↔ producer" title="Messages">
+        <p className="text-sm text-muted">Private one-to-one conversations — artists cannot see each other&apos;s threads.</p>
       </PageHeader>
 
       <div className="grid gap-6 xl:grid-cols-[320px_1fr]">

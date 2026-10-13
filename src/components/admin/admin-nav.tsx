@@ -12,8 +12,10 @@ const LINKS = [
   { href: "/admin/distribution", label: "Distribution", icon: "❖" },
   { href: "/admin/orders", label: "Orders", icon: "◎" },
   { href: "/admin/bookings", label: "Bookings", icon: "◷" },
-  { href: "/admin/recording", label: "Recording", icon: "◉" },
+  { href: "/admin/recording", label: "Remote sessions", icon: "◐" },
   { href: "/admin/messages", label: "Messages", icon: "✉" },
+  { href: "/admin/call", label: "Audio call", icon: "☎" },
+  { href: "/admin/live-recording", label: "Live recording", icon: "◉" },
   { href: "/admin/notifications", label: "Notifications", icon: "◈" },
   { href: "/admin/enquiries", label: "Enquiries", icon: "▤" },
   { href: "/admin/studio", label: "Studio & hours", icon: "◍" },
@@ -81,6 +83,7 @@ export function AdminNav({
               itemRefs.current[i] = el;
             }}
             href={l.href}
+            title={l.href === "/admin/call" ? "Open the producer audio call receiver" : undefined}
             onMouseEnter={() => setHover(i)}
             onFocus={() => setHover(i)}
             onBlur={() => setHover((h) => (h === i ? null : h))}

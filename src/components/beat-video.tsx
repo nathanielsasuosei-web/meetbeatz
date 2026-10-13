@@ -17,6 +17,8 @@ export function BeatVideo({ beatId, src, poster }: { beatId: number; src: string
       // src/components/screen-guard.tsx): no download or remote-playback entry in
       // the controls, and no picture-in-picture — a detached PiP window floats
       // above everything and is the easiest way to film a preview with a phone.
+      // This is a superset of the plain `nodownload` the paid video download
+      // feature relies on, so that behaviour is unchanged.
       controlsList="nodownload noremoteplayback noplaybackrate"
       disablePictureInPicture
       onContextMenu={(event) => event.preventDefault()}

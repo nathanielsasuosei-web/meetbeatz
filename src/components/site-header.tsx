@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BagIcon, CloseIcon, MenuIcon } from "./icons";
+import { BagIcon, CloseIcon, MenuIcon, MicIcon, PhoneIcon } from "./icons";
 import { LiquidPill, useLiquidPill } from "./liquid-pill";
 import { useSpotlight } from "./spotlight";
 import { useCart } from "./cart/cart-provider";
@@ -73,7 +73,15 @@ export function Logo({ siteName }: { siteName: string }) {
   );
 }
 
-export function SiteHeader({ siteName, customer }: { siteName: string; customer: { name: string } | null }) {
+export function SiteHeader({
+  siteName,
+  customer,
+  liveRecordingOpen = false,
+}: {
+  siteName: string;
+  customer: { name: string } | null;
+  liveRecordingOpen?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const { count: cartCount } = useCart();
   const pathname = usePathname();
@@ -189,7 +197,40 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
               </span>
             </Link>
           </nav>
-          <div className="hidden items-center gap-3 lg:flex">
+          {/*
+            Cart is no longer here — it is the sixth button in the nav row above.
+            The call and live-recording actions stay beside the account links, but
+            drop their labels below `xl` so the six-button nav still fits at the
+            1024px breakpoint; the title attributes keep them identifiable when
+            only the icon shows.
+          */}
+          <div className="hidden items-center gap-2.5 lg:flex">
+            <Link
+              href="/live-recording"
+              title={liveRecordingOpen ? "Open Live Recording Studio" : "Live Recording Studio (Coming soon)"}
+              className="btn-ghost !px-3 !py-2 text-xs font-bold"
+            >
+              <MicIcon className="h-3.5 w-3.5 text-acid" />
+              <span className="hidden xl:inline">Live recording</span>
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                  liveRecordingOpen
+                    ? "bg-[#25d366]/25 text-[#39dc78]"
+                    : "border border-amber-400/40 bg-amber-400/15 text-amber-300"
+                }`}
+              >
+                {liveRecordingOpen ? "Live" : "Coming soon"}
+              </span>
+            </Link>
+            <Link
+              href="/call"
+              title="Call the Meetbeatz producer"
+              aria-label="Call the Meetbeatz producer"
+              className="btn-ghost !px-3.5 !py-2 text-xs font-bold text-acid border-acid/30 hover:border-acid/60"
+            >
+              <PhoneIcon className="h-4 w-4 text-acid" />
+              <span className="hidden xl:inline">Call producer</span>
+            </Link>
             {customer ? (
               <Link href="/account" className="btn-ghost">
                 My account
@@ -256,6 +297,33 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
                 </Link>
                 <Link href="/studio" onClick={() => setOpen(false)} className="btn-primary m-item mt-2 justify-center">
                   Book a session
+                </Link>
+                <Link
+                  href="/call"
+                  title="Call the Meetbeatz producer"
+                  aria-label="Call the Meetbeatz producer"
+                  onClick={() => setOpen(false)}
+                  className="btn-ghost m-item mt-1 justify-center border-acid/30 text-acid"
+                >
+                  <PhoneIcon className="h-4 w-4" />
+                  Call producer
+                </Link>
+                <Link
+                  href="/live-recording"
+                  onClick={() => setOpen(false)}
+                  className="btn-ghost m-item mt-1 justify-center"
+                >
+                  <MicIcon className="h-4 w-4 text-acid" />
+                  <span>Live recording</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                      liveRecordingOpen
+                        ? "bg-[#25d366]/25 text-[#39dc78]"
+                        : "border border-amber-400/40 bg-amber-400/15 text-amber-300"
+                    }`}
+                  >
+                    {liveRecordingOpen ? "Live" : "Coming soon"}
+                  </span>
                 </Link>
               </div>
 

@@ -286,9 +286,26 @@ export async function saveSettingsAction(formData: FormData) {
     whatsappAlerts: str(formData, "whatsappAlerts"),
     bookingPolicy: str(formData, "bookingPolicy"),
     screenGuard: normalizeScreenGuardMode(str(formData, "screenGuard", "block")),
+    ...(formData.has("liveRecordingOpen")
+      ? { liveRecordingOpen: str(formData, "liveRecordingOpen") === "1" ? "1" : "0" }
+      : {}),
   });
   revalidatePath("/", "layout");
   done("/admin/settings", "Settings saved.");
+}
+
+export async function toggleLiveRecordingAction(formData: FormData) {
+  await guard();
+  const next = str(formData, "liveRecordingOpen") === "1" ? "1" : "0";
+  const returnTo = str(formData, "returnTo") || "/admin/live-recording";
+  await saveSettings({ liveRecordingOpen: next });
+  revalidatePath("/", "layout");
+  done(
+    returnTo,
+    next === "1"
+      ? "Live Recording is now OPEN to artists."
+      : "Live Recording is now set to Coming Soon (producer access only).",
+  );
 }
 
 export async function createPromoCodeAction(formData: FormData) {

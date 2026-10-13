@@ -45,10 +45,10 @@ export const promoCodes = pgTable("promo_codes", {
 });
 
 // ---------------------------------------------------------------------------
-// Customers (artist accounts) & support chat
+// Customers (artist accounts) & private artist ↔ producer chat
 // ---------------------------------------------------------------------------
 
-/** Artist/customer accounts — separate from admins. Owns a purchase history and a chat thread. */
+/** Artist/customer accounts — separate from admins. Owns a purchase history and a private producer chat thread. */
 export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
   /** Always stored lowercase so sign-in and order matching are case-insensitive. */
@@ -59,7 +59,7 @@ export const customers = pgTable("customers", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-/** One support thread per customer: customer ↔ admin messages, plus system notices. */
+/** One private thread per artist: artist ↔ producer messages, plus system notices. */
 export const customerMessages = pgTable("customer_messages", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id")
@@ -70,6 +70,31 @@ export const customerMessages = pgTable("customer_messages", {
   body: text("body").notNull(),
   /** Set when the other side has seen it — drives the unread badges. */
   readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Private, signaled WebRTC audio calls between one artist and the producer. */
+export const voiceCalls = pgTable("voice_calls", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
+  /** ringing | accepted | missed | declined | cancelled | ended */
+  status: text("status").default("ringing").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Short-lived SDP/ICE messages exchanged only by the two participants. */
+export const voiceCallSignals = pgTable("voice_call_signals", {
+  id: serial("id").primaryKey(),
+  callId: integer("call_id")
+    .notNull()
+    .references(() => voiceCalls.id, { onDelete: "cascade" }),
+  senderRole: text("sender_role").notNull(), // artist | producer
+  recipientRole: text("recipient_role").notNull(), // artist | producer
+  kind: text("kind").notNull(), // offer | answer | ice-candidate
+  payload: jsonb("payload").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -513,6 +538,8 @@ export const securityEvents = pgTable(
 export type Beat = typeof beats.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type CustomerMessage = typeof customerMessages.$inferSelect;
+export type VoiceCall = typeof voiceCalls.$inferSelect;
+export type VoiceCallSignal = typeof voiceCallSignals.$inferSelect;
 export type LicenseType = typeof licenseTypes.$inferSelect;
 export type BeatLicense = typeof beatLicenses.$inferSelect;
 export type Service = typeof services.$inferSelect;

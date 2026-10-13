@@ -20,9 +20,20 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await getCustomerSession();
   if (!session) return Response.json({ error: "Sign in to use the chat." }, { status: 401 });
-  const body = (await req.json().catch(() => ({}))) as { body?: string };
+  const body = (await req.json().catch(() => ({}))) as {
+    body?: string;
+    audioPath?: string;
+    audioKind?: string;
+    audioName?: string;
+  };
   try {
-    const messages = await postCustomerMessage(session.id, String(body.body ?? ""));
+    const messages = await postCustomerMessage(
+      session.id,
+      String(body.body ?? ""),
+      body.audioPath
+        ? { path: body.audioPath, kind: body.audioKind, name: body.audioName }
+        : null,
+    );
     return Response.json({ messages });
   } catch (err) {
     return Response.json({ error: err instanceof Error ? err.message : "Could not send the message." }, { status: 400 });

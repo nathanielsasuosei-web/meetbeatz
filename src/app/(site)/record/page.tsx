@@ -56,7 +56,11 @@ const FAQ = [
   },
   {
     q: "Can the producer hear me live?",
-    a: "Sending a take books the session and starts the conversation. The live session itself runs on a call the producer sets up when he confirms the time — book the online studio slot so the time is paid for and locked, then join the link he sends in your chat.",
+    a: "Yes. Sending a take books the session and starts the conversation; when the producer confirms the time, use Call producer in the header to talk it through in the browser, or join the link he sends in your chat. Book the online studio slot so the time is paid for and locked.",
+  },
+  {
+    q: "How is this different from the Live Recording Studio?",
+    a: "The Live Recording Studio (/live-recording) is the producer-gated live room — it opens when he switches it on. This page is always open: it is for building takes at your own pace, keeping the ones that work, downloading them as WAV, and sending the best one with a preferred time so a session gets scheduled.",
   },
   {
     q: "My phone records fine, is that enough?",
@@ -118,6 +122,17 @@ export default async function RecordPage() {
         <p className="mt-3 max-w-2xl text-sm text-muted">
           Headphones on. Mic gain set so the loudest line peaks in the yellow. Everything below runs in your browser —
           nothing is uploaded until you press send.
+        </p>
+        <p className="mt-3 max-w-2xl text-xs text-muted">
+          Want the live room instead?{" "}
+          <Link href="/live-recording" className="font-semibold text-acid hover:underline">
+            Open the Live Recording Studio
+          </Link>{" "}
+          — it runs when the producer switches it on. Need to talk first?{" "}
+          <Link href="/call" className="font-semibold text-acid hover:underline">
+            Call the producer
+          </Link>
+          .
         </p>
         <div className="mt-8">
           <RemoteRecorder

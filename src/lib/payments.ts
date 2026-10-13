@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
   admins,
@@ -490,10 +490,12 @@ export async function createDistributionOrder(input: {
 // ---------------------------------------------------------------------------
 // Loading & finalizing
 // ---------------------------------------------------------------------------
+export type OrderLicense = License & { videoAvailable: boolean };
+
 export type OrderBundle = {
   order: Order;
   items: OrderItem[];
-  licenses: License[];
+  licenses: OrderLicense[];
   booking: Booking | null;
   /** Present when `order.kind === "distribution"`. */
   release: DistributionRelease | null;
@@ -518,7 +520,24 @@ async function loadBundle(order: Order): Promise<OrderBundle> {
     db.select().from(bookings).where(eq(bookings.orderId, order.id)).limit(1),
     db.select().from(distributionReleases).where(eq(distributionReleases.orderId, order.id)).limit(1),
   ]);
-  return { order, items, licenses: lics, booking: booking ?? null, release: release ?? null };
+  const beatIds = [...new Set(lics.flatMap((license) => (license.beatId === null ? [] : [license.beatId])))];
+  const videoRows = beatIds.length
+    ? await db
+        .select({ id: beats.id })
+        .from(beats)
+        .where(and(inArray(beats.id, beatIds), isNotNull(beats.videoPath)))
+    : [];
+  const videoBeatIds = new Set(videoRows.map((beat) => beat.id));
+  return {
+    order,
+    items,
+    licenses: lics.map((license) => ({
+      ...license,
+      videoAvailable: license.beatId !== null && videoBeatIds.has(license.beatId),
+    })),
+    booking: booking ?? null,
+    release: release ?? null,
+  };
 }
 
 export async function finalizeOrder(

@@ -41,6 +41,7 @@ export default async function BeatDetailPage({ params }: Props) {
           {card.videoUrl ? (
             <>
               <BeatVideo key={beat.id} beatId={beat.id} src={card.videoUrl} poster={card.cover} />
+              <p className="mt-2 text-xs text-muted">Stream the video preview here. Its download is available after a paid license.</p>
               {!beat.exclusiveSold && card.previewUrl && (
                 <div className="mt-4">
                   <PlayButton track={toTrack(card)} className="px-5 py-3 shadow-xl" label="Play audio preview" />

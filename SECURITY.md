@@ -106,8 +106,18 @@ only formats a distributor or a mixing engineer can ingest (no `webm`/`ogg`:
 `MediaRecorder` output would be stored with `video/webm`, which is why the
 browser studio encodes WAV itself).
 
+A third slot, `chat-audio`, belongs to neither API's normal rule: voice notes in
+the artist ↔ producer chat are uploaded through `/api/admin/uploads`, which
+accepts **either** session and carves out that one kind for non-admins
+(`if (!adminSession && kind !== "chat-audio")`). It is deliberately *not* in
+`CUSTOMER_UPLOAD_KINDS` — routing it through `/api/uploads` as well would let a
+signed-in artist complete or cancel somebody else's in-flight voice note, since
+upload ids are sequential.
+
 `collectGarbage()` in `src/lib/files.ts` deletes complete files older than
-`ORPHAN_TTL_DAYS` (7) that nothing references. **Every table that can own a file
+`ORPHAN_TTL_DAYS` (7) that nothing references. `chat-audio` is exempt by kind
+(voice notes are referenced only from message text, which the query does not
+parse). **Every table that can own a file
 must appear in its `NOT EXISTS` list** — a slot missing from it has its files
 silently deleted a week after upload, which for a distribution master means an
 artist's finished song disappears while the release is still in review.
@@ -126,6 +136,19 @@ a path exists is itself a leak. `/api/media/[...path]` stays limited to
 
 Paths are validated to exactly two non-empty segments with no `..`, matching the
 `kind/filename` shape the uploader writes.
+
+`/api/media/[...path]` serves `covers/` publicly and `chat-audio/` to any
+signed-in artist or the producer. Note the difference in scope: cover art is
+public by nature, and a voice note is gated on *being signed in* rather than on
+*being a party to that thread*, so one artist who learns another's chat-audio
+path could play it. The paths are random 24-byte tokens and nothing enumerates
+them, but tightening this to the thread's two participants (as
+`/api/artist-files` does for masters) is the obvious next step.
+
+In-site audio calls (`/api/calls`, `/api/calls/ice-config`) require an artist or
+producer session; signalling is between those two parties only. WebRTC media
+itself never touches the server — `TURN_SERVER_URLS` / `TURN_SHARED_SECRET` are
+optional and only help artists behind restrictive NAT.
 
 ## Sessions
 

@@ -135,6 +135,11 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
                         <DownloadIcon className="h-4 w-4" /> {DELIVERABLE_LABELS[d] ?? d.toUpperCase()}
                       </a>
                     ))}
+                    {lic.videoAvailable && !deliverableList(lic.deliverables).includes("video") && (
+                      <a href={`/api/download/${lic.downloadToken}?file=video`} className="btn-ghost">
+                        <DownloadIcon className="h-4 w-4" /> Download video preview
+                      </a>
+                    )}
                   </div>
                   <p className="border-t border-line bg-ink-2 px-5 py-3 text-xs text-muted">
                     Downloads are tied to your license — do not share these links. Credit as &quot;Prod. by {settings.siteName}&quot;.

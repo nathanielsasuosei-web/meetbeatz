@@ -41,6 +41,7 @@ const MIME: Record<string, string> = {
   ".m4a": "audio/mp4",
   ".aac": "audio/aac",
   ".ogg": "audio/ogg",
+  ".opus": "audio/ogg",
   ".aif": "audio/aiff",
   ".aiff": "audio/aiff",
   ".flac": "audio/flac",
@@ -58,7 +59,10 @@ const MIME: Record<string, string> = {
 };
 
 export function contentTypeFor(filePath: string): string {
-  return MIME[path.extname(filePath).toLowerCase()] ?? "application/octet-stream";
+  const ext = path.extname(filePath).toLowerCase();
+  if (filePath.startsWith("chat-audio/") && ext === ".webm") return "audio/webm";
+  if (filePath.startsWith("chat-audio/") && ext === ".mp4") return "audio/mp4";
+  return MIME[ext] ?? "application/octet-stream";
 }
 
 /** How long an abandoned upload (a session that never received its last part) is kept. */
@@ -341,6 +345,7 @@ async function collectGarbage(): Promise<void> {
     await db.execute(sql`
       DELETE FROM stored_files f
       WHERE f.is_complete = true
+        AND f.kind <> 'chat-audio'
         AND f.created_at < now() - make_interval(days => ${ORPHAN_TTL_DAYS})
         AND NOT EXISTS (
           SELECT 1 FROM beats b

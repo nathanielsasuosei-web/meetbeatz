@@ -1,6 +1,6 @@
-import { desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { bookings, licenses, orderItems, orders, type Booking, type License, type Order, type OrderItem } from "@/db/schema";
+import { beats, bookings, licenses, orderItems, orders, type Booking, type License, type Order, type OrderItem } from "@/db/schema";
 import type { CustomerSession } from "./customer-auth";
 
 /**
@@ -9,10 +9,12 @@ import type { CustomerSession } from "./customer-auth";
  * email, so purchases made before the account existed still show up.
  */
 
+export type AccountLicense = License & { videoAvailable: boolean };
+
 export type AccountOrder = {
   order: Order;
   items: OrderItem[];
-  licenses: License[];
+  licenses: AccountLicense[];
 };
 
 export type AccountData = {
@@ -38,12 +40,25 @@ export async function loadAccountData(customer: CustomerSession): Promise<Accoun
       .where(or(sql`lower(${bookings.customerEmail}) = ${email}`, inArray(bookings.orderId, orderIds.length ? orderIds : [-1])))
       .orderBy(desc(bookings.createdAt), desc(bookings.id)),
   ]);
+  const licensedBeatIds = [...new Set(licenseRows.flatMap((license) => (license.beatId === null ? [] : [license.beatId])))];
+  const videoRows = licensedBeatIds.length
+    ? await db
+        .select({ id: beats.id })
+        .from(beats)
+        .where(and(inArray(beats.id, licensedBeatIds), isNotNull(beats.videoPath)))
+    : [];
+  const videoBeatIds = new Set(videoRows.map((beat) => beat.id));
 
   return {
     orders: orderRows.map((order) => ({
       order,
       items: itemRows.filter((i) => i.orderId === order.id),
-      licenses: licenseRows.filter((l) => l.orderId === order.id),
+      licenses: licenseRows
+        .filter((license) => license.orderId === order.id)
+        .map((license) => ({
+          ...license,
+          videoAvailable: license.beatId !== null && videoBeatIds.has(license.beatId),
+        })),
     })),
     bookings: bookingRows,
   };
