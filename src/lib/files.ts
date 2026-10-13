@@ -129,6 +129,18 @@ async function getUploadById(id: number): Promise<StoredFileRow | null> {
   return row ?? null;
 }
 
+/**
+ * Which slot an in-progress upload session belongs to, or null when it is gone.
+ *
+ * The admin and artist upload routes share these functions but must not share
+ * sessions: without this check a signed-in artist could write parts into an
+ * admin's half-finished beat master by guessing its numeric id.
+ */
+export async function getUploadKind(id: number): Promise<UploadKind | null> {
+  const row = await getUploadById(id);
+  return row ? ((isUploadKind(row.kind) ? row.kind : null) as UploadKind | null) : null;
+}
+
 // ---------------------------------------------------------------------------
 // Writing (admin uploads)
 // ---------------------------------------------------------------------------
@@ -314,7 +326,14 @@ export async function putStoredFile(kind: UploadKind, fileName: string, data: Bu
   return relative;
 }
 
-/** Storage hygiene, run opportunistically when an upload starts. Never fatal. */
+/**
+ * Storage hygiene, run opportunistically when an upload starts. Never fatal.
+ *
+ * Every table that can own a file must appear in the `NOT EXISTS` list below —
+ * a slot missing from it has its files silently deleted a week after upload,
+ * which for a distribution master means an artist's finished song disappears
+ * while the release is still in review.
+ */
 async function collectGarbage(): Promise<void> {
   try {
     await db.delete(storedFiles).where(
@@ -340,6 +359,15 @@ async function collectGarbage(): Promise<void> {
         AND NOT EXISTS (
           SELECT 1 FROM sound_kits k
           WHERE k.file_path = f.path
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM distribution_releases d
+          WHERE d.artwork_path = f.path
+             OR d.audio_path = f.path
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM remote_sessions r
+          WHERE r.take_path = f.path
         )
     `);
   } catch (err) {

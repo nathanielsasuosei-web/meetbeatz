@@ -8,17 +8,21 @@ export default async function SimulatePage({ params }: { params: Promise<{ refer
   const { reference } = await params;
   const bundle = await loadOrderByReference(reference);
   if (!bundle) notFound();
-  const { order, items, booking } = bundle;
+  const { order, items, booking, release } = bundle;
   if (order.status !== "pending" || getPaymentMode() !== "simulation") {
     redirect(`/orders/${encodeURIComponent(reference)}`);
   }
 
+  // Shown on the simulated payment prompt, so it has to say what is being paid
+  // for — "Studio booking" on a release submission would look like a bug.
   const description =
     order.kind === "beat"
       ? items.map((i) => `${i.beatTitle} — ${i.licenseName}`).join(", ")
-      : booking
-        ? `${booking.serviceName} · ${formatDate(booking.bookingDate)} · ${formatTime12(booking.startTime)} (deposit)`
-        : "Studio booking";
+      : order.kind === "distribution" && release
+        ? `${release.planName} distribution · ${release.releaseTitle} (${release.artistName})`
+        : booking
+          ? `${booking.serviceName} · ${formatDate(booking.bookingDate)} · ${formatTime12(booking.startTime)} (deposit)`
+          : "Studio booking";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">

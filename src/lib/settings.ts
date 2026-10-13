@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { settings } from "@/db/schema";
 import { sql } from "drizzle-orm";
+import { normalizeScreenGuardMode, type ScreenGuardMode } from "./screen-guard";
 
 export type SiteSettings = {
   siteName: string;
@@ -25,6 +26,12 @@ export type SiteSettings = {
   /** Producer's WhatsApp number that receives booking alerts (Cloud API recipient). */
   whatsappAlerts: string;
   bookingPolicy: string;
+  /**
+   * Screen-capture guard mode for the storefront: `off`, `watermark` (trace and
+   * warn) or `block` (also hide the artwork when focus is lost). See
+   * src/lib/screen-guard.ts for what each layer can and cannot stop.
+   */
+  screenGuard: ScreenGuardMode;
   /** "1" when the producer has opened Live Recording to artists; "0" while "Coming soon". */
   liveRecordingOpen: string;
 };
@@ -47,6 +54,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   instagram: "@meetbeatz",
   notifyEmail: "",
   whatsappAlerts: "",
+  screenGuard: "block",
   bookingPolicy:
     "Please arrive 10 minutes before your session. The balance is payable at the studio before the session starts. Reschedule at least 24 hours in advance to keep your deposit.",
   liveRecordingOpen: "0",
@@ -64,7 +72,10 @@ export async function getSettings(): Promise<SiteSettings> {
     merged.promoCode = DEFAULT_SETTINGS.promoCode;
     merged.promoPercent = "5";
   }
-  return merged as unknown as SiteSettings;
+  const asStrings = merged as unknown as SiteSettings;
+  // The value is free text in the database, so it is normalised on the way out —
+  // a typo there must not silently switch content protection off.
+  return { ...asStrings, screenGuard: normalizeScreenGuardMode(asStrings.screenGuard) };
 }
 
 export function getPromoConfig(siteSettings: SiteSettings): { code: string; percent: number; expiresAt: string | null } | null {

@@ -9,8 +9,10 @@ const LINKS = [
   { href: "/admin", label: "Dashboard", icon: "▦" },
   { href: "/admin/beats", label: "Beats", icon: "♫" },
   { href: "/admin/sound-kits", label: "Sound Kits", icon: "♬" },
+  { href: "/admin/distribution", label: "Distribution", icon: "❖" },
   { href: "/admin/orders", label: "Orders", icon: "◎" },
   { href: "/admin/bookings", label: "Bookings", icon: "◷" },
+  { href: "/admin/recording", label: "Remote sessions", icon: "◐" },
   { href: "/admin/messages", label: "Messages", icon: "✉" },
   { href: "/admin/call", label: "Audio call", icon: "☎" },
   { href: "/admin/live-recording", label: "Live recording", icon: "◉" },
@@ -18,10 +20,26 @@ const LINKS = [
   { href: "/admin/enquiries", label: "Enquiries", icon: "▤" },
   { href: "/admin/studio", label: "Studio & hours", icon: "◍" },
   { href: "/admin/licenses", label: "Licenses", icon: "✎" },
+  { href: "/admin/security", label: "Protection", icon: "⊘" },
   { href: "/admin/settings", label: "Settings", icon: "⚙" },
 ];
 
-export function AdminNav({ openEnquiries = 0, unreadNotifications = 0 }: { openEnquiries?: number; unreadNotifications?: number }) {
+export function AdminNav({
+  openEnquiries = 0,
+  unreadNotifications = 0,
+  securityEvents = 0,
+  openReleases = 0,
+  openSessions = 0,
+}: {
+  openEnquiries?: number;
+  unreadNotifications?: number;
+  /** High-severity capture attempts in the last week — the "⊘ Protection" badge. */
+  securityEvents?: number;
+  /** Release submissions not yet live — the "❖ Distribution" badge. */
+  openReleases?: number;
+  /** Remote session requests not yet completed — the "◉ Recording" badge. */
+  openSessions?: number;
+}) {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement | null>(null);
   const itemRefs = useRef<Array<HTMLElement | null>>([]);
@@ -46,7 +64,18 @@ export function AdminNav({ openEnquiries = 0, unreadNotifications = 0 }: { openE
         // Dark text only while the solid acid pill covers it; otherwise cream
         // (or muted when neither active nor hovered) so it stays readable.
         const tone = active && lit ? "text-ink" : active || lit ? "text-cream" : "text-muted";
-        const badge = l.href === "/admin/enquiries" ? openEnquiries : l.href === "/admin/notifications" ? unreadNotifications : 0;
+        const badge =
+          l.href === "/admin/enquiries"
+            ? openEnquiries
+            : l.href === "/admin/notifications"
+              ? unreadNotifications
+              : l.href === "/admin/security"
+                ? securityEvents
+                : l.href === "/admin/distribution"
+                  ? openReleases
+                  : l.href === "/admin/recording"
+                    ? openSessions
+                    : 0;
         return (
           <Link
             key={l.href}

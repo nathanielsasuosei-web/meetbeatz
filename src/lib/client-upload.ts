@@ -42,10 +42,16 @@ function isTooLarge(err: unknown): boolean {
   return /\b413\b|too large|payload too large|content too large/i.test(message);
 }
 
-function putChunk(sessionId: number, index: number, blob: Blob, onProgress: (loaded: number) => void): Promise<void> {
+function putChunk(
+  endpoint: string,
+  sessionId: number,
+  index: number,
+  blob: Blob,
+  onProgress: (loaded: number) => void,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("PUT", `/api/admin/uploads/${sessionId}?index=${index}`);
+    xhr.open("PUT", `${endpoint}/${sessionId}?index=${index}`);
     xhr.setRequestHeader("Content-Type", "application/octet-stream");
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(event.loaded);
@@ -64,6 +70,7 @@ function putChunk(sessionId: number, index: number, blob: Blob, onProgress: (loa
 }
 
 async function putChunkWithRetry(
+  endpoint: string,
   sessionId: number,
   index: number,
   blob: Blob,
@@ -72,7 +79,7 @@ async function putChunkWithRetry(
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      await putChunk(sessionId, index, blob, onProgress);
+      await putChunk(endpoint, sessionId, index, blob, onProgress);
       return;
     } catch (error) {
       lastError = error;
@@ -83,18 +90,24 @@ async function putChunkWithRetry(
   throw lastError instanceof Error ? lastError : new Error("Upload failed.");
 }
 
-/** Upload one admin file in proxy-safe chunks and return its stored path. */
+/** Upload one file in proxy-safe chunks and return its stored path. */
 export async function uploadFileInChunks(
   file: File,
   kind: UploadKind,
   onProgress: UploadProgress,
   onStatus: UploadStatus = () => {},
+  /**
+   * Which upload API to use. The admin routes sit behind the producer session;
+   * artist-facing slots (artwork, masters, takes) go through `/api/uploads`,
+   * which accepts only those kinds — see `CUSTOMER_UPLOAD_KINDS`.
+   */
+  endpoint: string = "/api/admin/uploads",
 ): Promise<string> {
   assertUploadAllowed(kind, file.name, file.size);
   let partSize = readStoredChunkSize();
 
   for (;;) {
-    const start = await fetch("/api/admin/uploads", {
+    const start = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: file.name, kind, size: file.size, chunkSize: partSize }),
@@ -118,12 +131,12 @@ export async function uploadFileInChunks(
       for (let index = 0; sent < file.size; index++) {
         const blob = file.slice(sent, Math.min(sent + chunkSize, file.size));
         const offset = sent;
-        await putChunkWithRetry(sessionId, index, blob, (loaded) => onProgress(offset + loaded, file.size));
+        await putChunkWithRetry(endpoint, sessionId, index, blob, (loaded) => onProgress(offset + loaded, file.size));
         sent += blob.size;
         onProgress(sent, file.size);
       }
 
-      const done = await fetch(`/api/admin/uploads/${sessionId}`, { method: "POST" });
+      const done = await fetch(`${endpoint}/${sessionId}`, { method: "POST" });
       const finished = readJson(await done.text());
       if (!done.ok || !finished.path) {
         throw new Error(finished.error ?? "The file uploaded but could not be saved.");
@@ -132,7 +145,7 @@ export async function uploadFileInChunks(
       onProgress(file.size, file.size);
       return finished.path;
     } catch (error) {
-      void fetch(`/api/admin/uploads/${sessionId}`, { method: "DELETE" }).catch(() => {});
+      void fetch(`${endpoint}/${sessionId}`, { method: "DELETE" }).catch(() => {});
       const smaller = Math.max(MIN_CHUNK_SIZE, Math.floor(chunkSize / 2));
       if (!isTooLarge(error) || chunkSize <= MIN_CHUNK_SIZE) {
         if (isTooLarge(error)) {
@@ -148,4 +161,16 @@ export async function uploadFileInChunks(
       onStatus(`Uploading ${file.name} in smaller pieces (${formatBytes(smaller)})…`);
     }
   }
+}
+/**
+ * Uploads into an artist-facing slot. Requires a signed-in account: the route
+ * rejects anonymous callers so the database cannot be filled by strangers.
+ */
+export function uploadArtistFile(
+  file: File,
+  kind: UploadKind,
+  onProgress: UploadProgress,
+  onStatus: UploadStatus = () => {},
+): Promise<string> {
+  return uploadFileInChunks(file, kind, onProgress, onStatus, "/api/uploads");
 }

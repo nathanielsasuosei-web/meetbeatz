@@ -7,6 +7,9 @@ import { NotificationWatcher } from "@/components/admin/notification-watcher";
 import { requireAdmin } from "@/lib/auth";
 import { unhandledContactCount } from "@/lib/contact";
 import { countUnreadNotifications } from "@/lib/notifications";
+import { securityEventStats } from "@/lib/security-events";
+import { countPendingReleases } from "@/lib/distribution";
+import { countOpenRemoteSessions } from "@/lib/remote-sessions";
 import { ensureSeeded } from "@/lib/seed";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
 import { logoutAction } from "./actions";
@@ -21,6 +24,11 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const email = emailProvider();
   const openEnquiries = await unhandledContactCount().catch(() => 0);
   const unreadNotifications = await countUnreadNotifications().catch(() => 0);
+  // Recording attempts are a warning, not a to-do, so a failure to count them
+  // must never keep the producer out of the dashboard.
+  const captureAlerts = await securityEventStats(7).then((s) => s.high).catch(() => 0);
+  const openReleases = await countPendingReleases().catch(() => 0);
+  const openSessions = await countOpenRemoteSessions().catch(() => 0);
   const warnings: string[] = [];
   if (mode === "simulation") warnings.push("Payments are in TEST mode — add PAYSTACK_SECRET_KEY to accept real Mobile Money payments.");
   if (mode === "paystack" && !settings.paystackSubaccount) warnings.push("No payout subaccount set — 100% of payments will settle to the main Paystack account. Configure the split in Settings.");
@@ -38,7 +46,13 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </Link>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted lg:mt-1">Producer dashboard</p>
         </div>
-        <AdminNav openEnquiries={openEnquiries} unreadNotifications={unreadNotifications} />
+        <AdminNav
+          openEnquiries={openEnquiries}
+          unreadNotifications={unreadNotifications}
+          securityEvents={captureAlerts}
+          openReleases={openReleases}
+          openSessions={openSessions}
+        />
         <div className="mt-6 hidden border-t border-line pt-4 lg:block">
           <p className="truncate text-xs font-semibold">{session.name}</p>
           <p className="truncate text-[11px] text-muted">{session.email}</p>

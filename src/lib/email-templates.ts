@@ -1,4 +1,4 @@
-import type { Booking, License, Order, OrderItem } from "@/db/schema";
+import type { Booking, DistributionRelease, License, Order, OrderItem } from "@/db/schema";
 import type { SiteSettings } from "./settings";
 import {
   DELIVERABLE_LABELS,
@@ -8,6 +8,7 @@ import {
   money,
   networkLabel,
 } from "./format";
+import { RELEASE_STATUS_LABELS, releaseStatusOf, storeList } from "./release";
 
 function esc(s: string | null | undefined): string {
   return String(s ?? "")
@@ -147,24 +148,84 @@ ${booking.notes ? `<p style="margin:18px 0 0 0;color:#8b8b95;font-size:13px"><st
   });
 }
 
+/**
+ * Sent to the artist when a distribution submission is paid: what they sent,
+ * where it is going, and what happens next.
+ */
+export function distributionEmailHtml(opts: {
+  order: Order;
+  release: DistributionRelease;
+  baseUrl: string;
+  settings: SiteSettings;
+}): string {
+  const { order, release, baseUrl, settings } = opts;
+  const currency = order.currency;
+  const stores = storeList(release.stores);
+
+  const body = `
+<h1 style="margin:0 0 8px 0;font-size:26px;line-height:1.2;color:#f4f1ea">Release received 📀</h1>
+<p style="margin:0 0 22px 0;color:#c8c8d0;font-size:15px;line-height:1.6">Hi ${esc(order.customerName.split(" ")[0])}, ${esc(settings.siteName)} has "${esc(release.releaseTitle)}" and is preparing it for delivery.</p>
+<div style="border:1px solid #26262c;border-radius:14px;padding:18px;background:#0f0f12">
+  <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#c6f135;font-weight:700">${esc(release.planName)} release</div>
+  <div style="font-size:22px;font-weight:800;margin:6px 0 2px 0;color:#f4f1ea">${esc(release.releaseTitle)}</div>
+  <div style="font-size:15px;color:#f4f1ea">${esc(release.artistName)}${release.genre ? ` · ${esc(release.genre)}` : ""}${release.explicit ? " · explicit" : ""}</div>
+  <div style="font-size:13px;color:#8b8b95;margin-top:8px">${stores.map(esc).join(" · ")}</div>
+</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:18px 0 0 0;border-top:1px solid #26262c;padding-top:12px">
+${summaryRow("Release reference", `<span style="font-family:Menlo,Consolas,monospace">${esc(release.reference)}</span>`)}
+${summaryRow("Order reference", `<span style="font-family:Menlo,Consolas,monospace">${esc(order.reference)}</span>`)}
+${release.releaseDate ? summaryRow("Requested release date", formatDate(release.releaseDate)) : summaryRow("Release date", "As soon as it is ready")}
+${release.isrc ? summaryRow("ISRC", esc(release.isrc)) : summaryRow("ISRC", "To be assigned")}
+${release.upc ? summaryRow("UPC / EAN", esc(release.upc)) : summaryRow("UPC / EAN", "To be assigned")}
+${summaryRow(`Distribution (${release.planName})`, money(order.subtotal, currency))}
+${summaryRow(`Service fee (${Number(order.feePercent)}%)`, money(order.fee, currency))}
+${summaryRow("Paid", money(order.total, currency), true)}
+${summaryRow("Status", RELEASE_STATUS_LABELS[releaseStatusOf(release.status)])}
+</table>
+<p style="margin:18px 0 0 0;color:#c8c8d0;font-size:13px;line-height:1.7">
+  <strong style="color:#f4f1ea">What happens next:</strong> the artwork and audio are checked against each store's
+  specification — square artwork at 3000 × 3000, a clean master with no clipping, correct credits. If something needs
+  fixing you will get an email saying exactly what, and nothing is delivered until you approve the change. Once it is
+  accepted, delivery takes a few working days and the stores need a little longer to index it.
+</p>
+<div style="margin-top:18px">${button(`${baseUrl}/account`, "Track this release")}${button(`${baseUrl}/orders/${order.reference}`, "View receipt", false)}</div>`;
+
+  return emailLayout({
+    title: `Release received — ${release.releaseTitle}`,
+    preheader: `${release.planName} distribution for ${release.releaseTitle}, going to ${stores.slice(0, 3).join(", ")}${stores.length > 3 ? " and more" : ""}`,
+    body,
+    settings,
+    baseUrl,
+  });
+}
+
 export function adminNewOrderHtml(opts: {
   order: Order;
   items: OrderItem[];
   booking: Booking | null;
+  /** Present when `order.kind === "distribution"`. */
+  release?: DistributionRelease | null;
   baseUrl: string;
   settings: SiteSettings;
 }): string {
-  const { order, items, booking, baseUrl, settings } = opts;
+  const { order, items, booking, release, baseUrl, settings } = opts;
   const currency = order.currency;
   const lines =
     order.kind === "beat"
       ? items.map((i) => `<li>${esc(i.beatTitle)} — ${esc(i.licenseName)} (${money(i.price, currency)})</li>`).join("")
-      : booking
-        ? `<li>${esc(booking.serviceName)} · ${esc(formatDate(booking.bookingDate))} · ${esc(formatTime12(booking.startTime))}–${esc(formatTime12(booking.endTime))}</li>`
-        : "";
+      : order.kind === "distribution" && release
+        ? `<li>${esc(release.releaseTitle)} · ${esc(release.planName)} · ${esc(storeList(release.stores).join(", "))}</li>`
+        : booking
+          ? `<li>${esc(booking.serviceName)} · ${esc(formatDate(booking.bookingDate))} · ${esc(formatTime12(booking.startTime))}–${esc(formatTime12(booking.endTime))}</li>`
+          : "";
+
+  const heading =
+    order.kind === "beat" ? "beat sale" : order.kind === "distribution" ? "release submission" : "studio booking";
+  const adminLink =
+    order.kind === "beat" ? "orders" : order.kind === "distribution" ? "distribution" : "bookings";
 
   const body = `
-<h1 style="margin:0 0 8px 0;font-size:22px;color:#f4f1ea">New ${order.kind === "beat" ? "beat sale" : "studio booking"} 💸</h1>
+<h1 style="margin:0 0 8px 0;font-size:22px;color:#f4f1ea">New ${heading} 💸</h1>
 <p style="margin:0 0 14px 0;color:#c8c8d0;font-size:14px">${esc(order.customerName)} · ${esc(order.customerEmail)} · ${esc(order.customerPhone)} · ${esc(networkLabel(order.network))}</p>
 <ul style="color:#f4f1ea;font-size:14px;line-height:1.7;padding-left:18px">${lines}</ul>
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0 0 0;border-top:1px solid #26262c;padding-top:12px">
@@ -174,7 +235,7 @@ ${Number(order.discount) > 0 ? summaryRow(`Promo discount${order.promoCode ? ` (
 ${summaryRow(`Fee account (${Number(order.feePercent)}%)`, money(order.fee, currency))}
 ${summaryRow("Customer paid", money(order.total, currency), true)}
 </table>
-<div style="margin-top:18px">${button(`${baseUrl}/admin/${order.kind === "beat" ? "orders" : "bookings"}`, "Open admin")}</div>`;
+<div style="margin-top:18px">${button(`${baseUrl}/admin/${adminLink}`, "Open admin")}</div>`;
 
   return emailLayout({ title: `New order ${order.reference}`, body, settings, baseUrl });
 }

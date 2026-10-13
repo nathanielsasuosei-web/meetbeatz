@@ -113,6 +113,10 @@ Environment-variable overrides are embedded into the browser bundle at build tim
 | `/beats`, `/beats/[slug]` | Store with search + genre filters; beat page with full preview, “About this beat”, license picker |
 | `/sound-kits` | Free downloadable kits |
 | `/studio` | Services, live slot availability and booking |
+| `/record` | Browser take recorder, always open: record vocal takes over any beat as WAV, keep the good ones, send the best with a preferred time to book a remote session |
+| `/live-recording` | The producer-gated live room (Admin → Settings → Live recording). Shows "Coming soon" to artists until it is switched on |
+| `/distribution` | Music distribution: tiers, release intake form, artwork + master upload, payment |
+| `/colour-adjuster` | Free in-browser cover-art grading tool with a 3000 × 3000 export |
 | `/licensing` | Beat licensing guide: tier cards, comparison table, the exact clauses per tier |
 | `/about` | The studio and the producer, session rates, how the studio works |
 | `/contact` | Direct lines, opening hours, FAQ and the enquiry form |
@@ -121,11 +125,20 @@ Environment-variable overrides are embedded into the browser bundle at build tim
 | `/account`, `/orders/[reference]`, `/license/[key]` | Customer account, order receipt, license certificate |
 | `/call` | Private audio-only WebRTC call window; artists start calls and the producer accepts |
 
-The header shows **Beats · Sound Kits · Studio · Licensing · About** and, for signed-in artists, an
-**Audio call** action that opens `/call` in a new window. The producer has the same call-window link
-in the admin navigation. The mobile drawer includes the artist call action too. The footer repeats
-the public pages, the legal pages and the contact details on every page, and a branded 404 offers
-the main destinations. `robots.txt` and `sitemap.xml` (public pages + published beats) are generated
+`/record` and `/live-recording` are deliberately two things: the first is always available and is
+where an artist builds and keeps takes, the second is the live room the producer opens when he is
+ready to work. Both cross-link.
+
+The header shows six pill **buttons** on screens ≥1024px — **Beats · Sound Kits · Studio ·
+Licensing · About · Cart** — with the live count on Cart, an `aria-current` marker on the active
+one, and the liquid droplet gliding between all six. Beside them sit the account link plus the
+**Live recording** and **Call producer** actions; those two keep their icons but drop their labels
+below 1280px so the six-button row still fits at the 1024px breakpoint. Below 1024px a drawer
+carries the same six plus Artist services (distribution, record online, colour adjuster), the call
+and live-recording actions, Contact and the legal pages. The producer has the same call-window link
+in the admin navigation. The footer repeats the public pages, the artist services, the legal pages
+and the contact details on every page, and a branded 404 offers the main destinations.
+`robots.txt` and `sitemap.xml` (public pages + published beats) are generated
 by `src/app/robots.ts` and `src/app/sitemap.ts`; set `NEXT_PUBLIC_APP_URL` to the production
 domain so the sitemap lists the right host, otherwise `https://meetbeatz.com` is used.
 
@@ -161,15 +174,25 @@ text is untouched, so an admin's own copy is never overwritten.
 - **Cart-first checkout**: add one or more beat licenses to a cart, choose Mobile Money Ghana (Paystack) or see the Global Payment Worldwide option, then customer name, email and network → payment → verification → licenses issued → email with download links + printable license certificate. The cart is cleared only after the order is paid.
 - **Downloads**: token-protected links tied to the license (MP3 / WAV / stems as included).
 - **Studio bookings**: services, opening hours, live slot availability with conflict prevention, deposit payment, email confirmation, balance due at studio.
-- **Admin dashboard**: revenue split overview, beat upload with real progress (cover, tagged preview, MP3, WAV, stems), license/price management, orders (resend email), bookings (confirm / complete / cancel), live booking notifications (website inbox + WhatsApp), support messages, website enquiries, services & hours, license types, settings, payout subaccount creator, test email, password change.
+- **Admin dashboard**: revenue split overview, beat upload with real progress (cover, tagged preview, MP3, WAV, stems), license/price management, orders (resend email), bookings (confirm / complete / cancel), **distribution** (tier editor + release review with the artwork and master inline), **recording** (remote session requests with the take attached and a download), **protection** (capture-attempt log and 7-day stats), live booking notifications (website inbox + WhatsApp), support messages, website enquiries, services & hours, license types, settings, payout subaccount creator, test email, password change.
 - **Trust pages**: privacy policy, terms & conditions, refund policy, a full beat licensing guide, an about page and a contact page with a stored enquiry inbox — all mobile-first and linked from the header drawer and footer.
+- **Music distribution**: the artist picks a tier, fills in the release, uploads the master and the artwork and pays through the ordinary order pipeline. The submission is reviewed in **Admin → Distribution** (artwork and master playable inline), moves through `submitted → in_review → approved → live`, and the note written there is what the artist sees on `/account`. ISRC/UPC are validated if supplied, otherwise left for the studio to assign.
+- **Online recording with the producer**: `/record` is a real browser studio — `getUserMedia` through a high-pass and a gain node into an `AudioWorklet` that captures PCM, so the take is a mono 16-bit WAV at the interface's own sample rate. The backing track (a store preview or the artist's own file) is routed to the headphones but never into the recorder, so the take is dry. Takes stay in the tab until one is sent, which files a request in **Admin → Recording** with the audio attached.
+- **Colour adjuster**: `/colour-adjuster` grades cover artwork on a canvas — exposure, contrast, saturation, temperature, hue, fade, vignette, grain, sepia, black & white, softness — with a drag-to-compare split, seven presets and a square export at 3000/1400/800px or the original size. The preview and the export run through the same `renderGraded()` so what you see is what downloads, and nothing is uploaded at any point.
+- **Content protection**: `Permissions-Policy: display-capture=()` plus a client guard that detects capture devices and recorder software, intercepts Print Screen and the save/dev shortcuts, veils the page when the tab is hidden, watermarks it with the viewer's email, and pauses playback on a high-severity event. Attempts are logged to **Admin → Protection** (7-day stats, split into blocked vs. traced), and the level is set in **Admin → Settings → Content protection**. See [SECURITY.md](SECURITY.md) for what this can and cannot stop — hardware capture and OS-level recorders are out of reach of any web page.
 
 ## Where uploaded files live
 
-Beat files (cover art, previews, masters, stems) are stored **in PostgreSQL**, in
-`stored_files` + `stored_file_chunks`, and streamed back through protected API routes
-(`/api/media/...`, `/api/beats/[id]/preview`, `/api/download/[token]`) with HTTP `Range`
-support so buyers can pause/resume downloads and the player can seek.
+Beat files (cover art, previews, masters, stems) and artist uploads (release artwork, submitted
+masters, recorded takes) are stored **in PostgreSQL**, in `stored_files` + `stored_file_chunks`,
+and streamed back through protected API routes (`/api/media/...`, `/api/beats/[id]/preview`,
+`/api/download/[token]`, `/api/artist-files/...`) with HTTP `Range` support so buyers can
+pause/resume downloads and the player can seek.
+
+Two upload APIs share that storage: `/api/admin/uploads` behind the producer session, and
+`/api/uploads` behind an artist session and restricted to the `artwork`, `masters` and `takes`
+slots. Unreleased masters and takes are only streamed to an admin or to the artist whose release
+or session row references that exact path — see [SECURITY.md](SECURITY.md#serving-artist-files).
 
 This is deliberate: on a serverless host (Vercel) the deployment bundle is read-only, so the
 old `mkdir('./uploads')` step failed with

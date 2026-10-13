@@ -3,6 +3,7 @@ import { SubaccountCreator } from "@/components/admin/subaccount-creator";
 import { UploadMemory } from "@/components/admin/upload-memory";
 import { AdsTxtEditor } from "@/components/admin/ads-txt-editor";
 import { isPaystackConfigured } from "@/lib/paystack";
+import { SCREEN_GUARD_LABELS, SCREEN_GUARD_MODES } from "@/lib/screen-guard";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
 import { getAdsTxt } from "@/lib/ads-txt";
 import { configuredAdSensePublisherId, configuredAdSenseSlotId } from "@/lib/adsense-config";
@@ -183,6 +184,33 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 <textarea name="bookingPolicy" className="field min-h-24" defaultValue={settings.bookingPolicy} />
               </div>
             </div>
+          </section>
+
+          <section className="card p-5">
+            <h2 className="font-bold">Content protection</h2>
+            <p className="mt-1 text-xs text-muted">
+              Stops visitors recording, screenshotting or re-recording the previews. Every page carries a watermark naming
+              the signed-in artist, in-browser screen sharing is refused outright, and each attempt is written to{" "}
+              <strong className="text-cream">Admin → Protection</strong>.
+            </p>
+            <div className="mt-4">
+              <label className="label" htmlFor="screenGuard">Screen-recording protection</label>
+              <select id="screenGuard" name="screenGuard" className="field" defaultValue={settings.screenGuard}>
+                {SCREEN_GUARD_MODES.map((value) => (
+                  <option key={value} value={value}>
+                    {SCREEN_GUARD_LABELS[value].name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-[11px] leading-relaxed text-muted">{SCREEN_GUARD_LABELS[settings.screenGuard].hint}</p>
+            </div>
+            <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-200">
+              Honest limits: a recorder built into the operating system (a phone screen recorder, OBS, QuickTime) runs
+              outside the browser and cannot be switched off by any website — Safari exposes it and is detected, Chrome
+              and Firefox do not. What protection does buy you is no in-browser sharing, no right-click or Print Screen,
+              artwork hidden the moment the tab loses focus, and a watermark that traces any leak that does escape back to
+              the account. Truly blocking playback needs DRM (Widevine/FairPlay) — see SECURITY.md.
+            </p>
           </section>
 
           <section className="card p-5">

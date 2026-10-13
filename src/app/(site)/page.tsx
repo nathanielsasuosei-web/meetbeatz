@@ -4,7 +4,7 @@ import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, licenses, soundKits } from "@/db/schema";
 import { BeatGrid } from "@/components/beat-card";
-import { DownloadIcon } from "@/components/icons";
+import { DistributeIcon, DownloadIcon, MicIcon, PaletteIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { listBeats } from "@/lib/catalog";
 import { formatDate } from "@/lib/format";
@@ -144,6 +144,54 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Artist services: the three things that happen after the beat is bought. */}
+      <section className="glass-section">
+        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+          <div className="mb-8 max-w-2xl">
+            <p className="eyebrow">Beyond the store</p>
+            <h2 className="display mt-2 text-4xl md:text-5xl">Finish the record, then release it.</h2>
+            <p className="mt-3 text-sm text-muted">
+              Recording with the producer from wherever you are, artwork graded to store specification, and the release
+              itself delivered to the streaming services. Each one is a service, not a form.
+            </p>
+          </div>
+          <Reveal className="grid gap-4 md:grid-cols-3" target=".card" stagger={90}>
+            <article className="card flex flex-col p-6">
+              <MicIcon className="h-7 w-7 text-acid" />
+              <h3 className="mt-4 text-xl font-bold">Record online with the producer</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">
+                A vocal booth in your browser: record takes over any beat with headphone monitoring and a live level meter,
+                keep the good ones, and send the best to the studio to book the live session.
+              </p>
+              <Link href="/record" className="btn-ghost mt-5">
+                Open the booth →
+              </Link>
+            </article>
+            <article className="card flex flex-col p-6">
+              <DistributeIcon className="h-7 w-7 text-acid" />
+              <h3 className="mt-4 text-xl font-bold">Music distribution</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">
+                One flat fee per release, your royalties stay yours. The artwork and master are checked against every
+                store&apos;s specification before anything goes out, and ISRC and UPC codes are assigned for you.
+              </p>
+              <Link href="/distribution" className="btn-ghost mt-5">
+                Submit a release →
+              </Link>
+            </article>
+            <article className="card flex flex-col p-6">
+              <PaletteIcon className="h-7 w-7 text-acid" />
+              <h3 className="mt-4 text-xl font-bold">Colour adjuster</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">
+                Grade your cover art in the browser — exposure, contrast, temperature, grain, vignette — and export a
+                3000 × 3000 square the stores accept. Nothing is uploaded; the file never leaves your device.
+              </p>
+              <Link href="/colour-adjuster" className="btn-ghost mt-5">
+                Grade artwork →
+              </Link>
+            </article>
+          </Reveal>
+        </div>
+      </section>
     </>
   );
 }

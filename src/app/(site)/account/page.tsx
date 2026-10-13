@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logoutAction } from "./actions";
@@ -7,7 +8,20 @@ import { MessageProducerButton } from "@/components/account/message-producer-but
 import { DownloadIcon, PhoneIcon } from "@/components/icons";
 import { loadAccountData } from "@/lib/account";
 import { getCustomerSession } from "@/lib/customer-auth";
-import { DELIVERABLE_LABELS, deliverableList, formatDate, money, statusLabel } from "@/lib/format";
+import { listReleasesForCustomer } from "@/lib/distribution";
+import { listRemoteSessionsForCustomer } from "@/lib/remote-sessions";
+import {
+  RELEASE_STATUS_HINTS,
+  RELEASE_STATUS_LABELS,
+  RELEASE_STATUS_TONES,
+  SESSION_GOAL_LABELS,
+  SESSION_STATUS_LABELS,
+  SESSION_STATUS_TONES,
+  releaseStatusOf,
+  sessionStatusOf,
+  storeList,
+} from "@/lib/release";
+import { DELIVERABLE_LABELS, deliverableList, formatDate, formatTime12, money, statusLabel } from "@/lib/format";
 import { Reveal } from "@/components/reveal";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +37,14 @@ export default async function AccountPage() {
   const session = await getCustomerSession();
   if (!session) redirect("/account/login");
   const { orders, bookings } = await loadAccountData(session);
+  const [releases, remoteSessions] = await Promise.all([
+    listReleasesForCustomer(session),
+    listRemoteSessionsForCustomer(session),
+  ]);
   const beatOrders = orders.filter((o) => o.order.kind === "beat");
   const bookingOrders = orders.filter((o) => o.order.kind === "booking");
+  /** Distribution receipts live on the order, so the release card links to one. */
+  const orderReference = new Map(orders.map(({ order }) => [order.id, order.reference]));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -191,6 +211,143 @@ export default async function AccountPage() {
                 </div>
               </div>
             ))}
+          </Reveal>
+        )}
+      </section>
+
+      <section className="mt-12">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow">Distribution</p>
+            <h2 className="mt-2 text-2xl font-bold">Your releases</h2>
+          </div>
+          <Link href="/distribution" className="text-sm font-bold text-acid hover:underline">
+            Submit a release →
+          </Link>
+        </div>
+        {releases.length === 0 ? (
+          <div className="card mt-5 p-10 text-center text-sm text-muted">
+            No releases yet. Submit a finished song with its artwork and it goes out to Spotify, Apple Music, Boomplay and
+            the rest — one flat fee, and you keep your royalties.
+          </div>
+        ) : (
+          <Reveal className="mt-5 space-y-4">
+            {releases.map((release) => {
+              const status = releaseStatusOf(release.status);
+              const reference = release.orderId ? orderReference.get(release.orderId) : undefined;
+              return (
+                <div key={release.id} className="card p-5">
+                  <div className="flex flex-wrap gap-4">
+                    {release.artworkPath && (
+                      <Image
+                        src={`/api/artist-files/${release.artworkPath}`}
+                        alt={`Artwork for ${release.releaseTitle}`}
+                        width={96}
+                        height={96}
+                        unoptimized
+                        data-sg-protect=""
+                        className="h-24 w-24 shrink-0 rounded-xl border border-white/10 object-cover"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-bold">{release.releaseTitle}</h3>
+                        <span className={RELEASE_STATUS_TONES[status]}>{RELEASE_STATUS_LABELS[status]}</span>
+                        <span className="badge">{release.planName}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted">
+                        {release.artistName}
+                        {release.genre ? ` · ${release.genre}` : ""} · <span className="font-mono">{release.reference}</span> ·{" "}
+                        {formatDate(release.createdAt)}
+                      </p>
+                      <p className="mt-1.5 text-xs text-muted">{storeList(release.stores).join(" · ")}</p>
+                      <p className="mt-2 text-sm text-cream/85">{RELEASE_STATUS_HINTS[status]}</p>
+                      {release.producerNote && (
+                        <p className="mt-2 rounded-xl border border-acid/25 bg-acid/[0.06] px-3 py-2 text-sm text-cream/90">
+                          <span className="font-bold text-acid">From the studio:</span> {release.producerNote}
+                        </p>
+                      )}
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        {release.audioPath && (
+                          // eslint-disable-next-line jsx-a11y/media-has-caption -- the artist's own unreleased master
+                          <audio controls preload="none" className="h-9 w-full max-w-xs" src={`/api/artist-files/${release.audioPath}`}>
+                            Your browser cannot play this file.
+                          </audio>
+                        )}
+                        {reference && (
+                          <Link href={`/orders/${reference}`} className="text-xs font-semibold text-muted hover:text-cream">
+                            View receipt →
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </Reveal>
+        )}
+      </section>
+
+      <section className="mt-12">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="eyebrow">Online recording</p>
+            <h2 className="mt-2 text-2xl font-bold">Your remote sessions</h2>
+          </div>
+          <Link href="/record" className="text-sm font-bold text-acid hover:underline">
+            Record a take →
+          </Link>
+        </div>
+        {remoteSessions.length === 0 ? (
+          <div className="card mt-5 p-10 text-center text-sm text-muted">
+            No remote sessions yet. Record a vocal in your browser, send the best take, and the producer will schedule the
+            live session.
+          </div>
+        ) : (
+          <Reveal className="mt-5 space-y-3">
+            {remoteSessions.map((item) => {
+              const status = sessionStatusOf(item.status);
+              return (
+                <div key={item.id} className="card p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-bold">{SESSION_GOAL_LABELS[item.goal] ?? item.goal}</h3>
+                        <span className={SESSION_STATUS_TONES[status]}>{SESSION_STATUS_LABELS[status]}</span>
+                        <span className="font-mono text-xs text-muted">{item.reference}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted">
+                        {item.preferredDate
+                          ? `${formatDate(item.preferredDate)}${item.preferredTime ? ` · ${formatTime12(item.preferredTime)}` : ""}`
+                          : "No time suggested"}
+                        {item.beatTitle ? ` · over “${item.beatTitle}”` : ""} · requested {formatDate(item.createdAt)}
+                      </p>
+                      {item.producerNote && (
+                        <p className="mt-2 rounded-xl border border-acid/25 bg-acid/[0.06] px-3 py-2 text-sm text-cream/90">
+                          <span className="font-bold text-acid">From the studio:</span> {item.producerNote}
+                        </p>
+                      )}
+                      {item.takePath && (
+                        <div className="mt-3">
+                          <p className="text-xs text-muted">
+                            {item.takeName || "Your take"}
+                            {item.takeSeconds ? ` · ${Math.round(item.takeSeconds)}s` : ""}
+                          </p>
+                          {/* eslint-disable-next-line jsx-a11y/media-has-caption -- the artist's own vocal take */}
+                          <audio controls preload="none" className="mt-1 h-9 w-full max-w-xs" src={`/api/artist-files/${item.takePath}`}>
+                            Your browser cannot play this file.
+                          </audio>
+                        </div>
+                      )}
+                    </div>
+                    <Link href="/studio?service=online-session" className="btn-ghost shrink-0 !px-3.5 !py-2 text-xs">
+                      Book the studio time
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
           </Reveal>
         )}
       </section>

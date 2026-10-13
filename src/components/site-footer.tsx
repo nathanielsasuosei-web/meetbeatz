@@ -13,6 +13,18 @@ const EXPLORE = [
   { href: "/about", label: "About the studio" },
 ];
 
+/**
+ * The artist services that sit alongside the store. Kept out of the header nav —
+ * that row is Beats, Sound Kits, Studio, Licensing, About and Cart, which is all
+ * that fits — and given their own footer heading so they are still one click
+ * away from every page.
+ */
+const SERVICES = [
+  { href: "/distribution", label: "Music distribution" },
+  { href: "/record", label: "Record online with the producer" },
+  { href: "/colour-adjuster", label: "Colour adjuster" },
+];
+
 const SUPPORT = [
   { href: "/contact", label: "Contact us" },
   { href: "/account", label: "My account" },
@@ -63,7 +75,17 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
           </div>
 
           <div>
-            <p className="eyebrow">Help &amp; legal</p>
+            <p className="eyebrow">Artist services</p>
+            <ul className="mt-4 space-y-2 text-sm text-cream/80">
+              {SERVICES.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href} className="transition hover:text-acid">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="eyebrow mt-6">Help &amp; legal</p>
             <ul className="mt-4 space-y-2 text-sm text-cream/80">
               {SUPPORT.map((item) => (
                 <li key={item.href}>

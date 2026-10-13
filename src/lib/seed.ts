@@ -1,7 +1,7 @@
 import fs from "fs";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { admins, beatLicenses, beats, licenseTypes, services, studioHours } from "@/db/schema";
+import { admins, beatLicenses, beats, distributionPlans, licenseTypes, services, studioHours } from "@/db/schema";
 import { hashPassword } from "./auth";
 import { synthBeat } from "./audio-synth";
 import { UPLOAD_ROOT, importFilesFromDisk, putStoredFile, storedFileExists } from "./files";
@@ -89,6 +89,61 @@ const SERVICES = [
     minHours: 1,
     maxHours: 4,
     depositPercent: 50,
+    sortOrder: 3,
+  },
+];
+
+/**
+ * The remote session, booked through the same pipeline as a studio slot. It is
+ * seeded separately from SERVICES above (see seedDistributionAndOnline) so a
+ * database that already has services still gets it.
+ */
+const ONLINE_SESSION_SERVICE = {
+  name: "Online session with the producer",
+  slug: "online-session",
+  description:
+    "Record from anywhere: the producer sends an instrumental, you sing or rap along in the browser studio, and he directs the takes live over a call. Includes comping, a tuned and timed vocal, and a reference mix.",
+  pricePerHour: "120.00",
+  minHours: 1,
+  maxHours: 6,
+  depositPercent: 50,
+  sortOrder: 4,
+};
+
+/**
+ * Distribution tiers. Flat fee, artist keeps the royalties — the percentages are
+ * what the studio takes, so 0 means 100% goes to the artist. Editable in
+ * Admin → Distribution without a deploy.
+ */
+const DISTRIBUTION_PLANS = [
+  {
+    name: "Single",
+    slug: "single",
+    tagline: "One song, everywhere",
+    tracks: 1,
+    price: "250.00",
+    turnaroundDays: 5,
+    royaltyPercent: 0,
+    sortOrder: 1,
+  },
+  {
+    name: "EP",
+    slug: "ep",
+    tagline: "Up to 6 tracks",
+    tracks: 6,
+    price: "900.00",
+    turnaroundDays: 7,
+    royaltyPercent: 0,
+    sortOrder: 2,
+  },
+  {
+    name: "Album",
+    slug: "album",
+    tagline: "Up to 18 tracks",
+    tracks: 18,
+    price: "1800.00",
+    turnaroundDays: 10,
+    royaltyPercent: 0,
     sortOrder: 3,
   },
 ];
@@ -241,8 +296,25 @@ async function runSeed() {
     }
   }
 
+  await seedDistributionAndOnline();
   await upgradeDemoDescriptions();
   await importDiskUploads();
+}
+
+/**
+ * Adds the rows later features need to databases that were seeded before those
+ * features existed. Each one is keyed on its slug and skipped when present, so
+ * this is safe to run on every start and never overwrites a price the producer
+ * has since changed.
+ */
+async function seedDistributionAndOnline() {
+  const [existingOnline] = await db.select({ id: services.id }).from(services).where(eq(services.slug, ONLINE_SESSION_SERVICE.slug)).limit(1);
+  if (!existingOnline) await db.insert(services).values(ONLINE_SESSION_SERVICE);
+
+  for (const plan of DISTRIBUTION_PLANS) {
+    const [existing] = await db.select({ id: distributionPlans.id }).from(distributionPlans).where(eq(distributionPlans.slug, plan.slug)).limit(1);
+    if (!existing) await db.insert(distributionPlans).values(plan);
+  }
 }
 
 /**

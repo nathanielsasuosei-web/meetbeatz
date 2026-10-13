@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { orderItems, orders } from "@/db/schema";
+import { distributionReleases, orderItems, orders } from "@/db/schema";
 import { Flash, PageHeader, StatusBadge } from "@/components/admin/flash";
 import { formatDateTime, money, networkLabel } from "@/lib/format";
 import { resendOrderEmail } from "../actions";
 
 export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; status?: string }> }) {
   const { msg, err, status } = await searchParams;
-  const [rows, items] = await Promise.all([
+  const [rows, items, releases] = await Promise.all([
     db
       .select()
       .from(orders)
@@ -16,9 +16,14 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       .orderBy(desc(orders.createdAt))
       .limit(200),
     db.select().from(orderItems).orderBy(asc(orderItems.id)),
+    db.select().from(distributionReleases).orderBy(asc(distributionReleases.id)),
   ]);
   const itemMap = new Map<number, typeof items>();
   for (const it of items) itemMap.set(it.orderId, [...(itemMap.get(it.orderId) ?? []), it]);
+  // A distribution order has no order_items rows, so without this the "what"
+  // column would be blank for every release sold.
+  const releaseByOrder = new Map<number, (typeof releases)[number]>();
+  for (const release of releases) if (release.orderId) releaseByOrder.set(release.orderId, release);
   const paid = rows.filter((o) => o.status === "paid");
   const sumOf = (key: "subtotal" | "fee" | "total") => paid.reduce((acc, o) => acc + Number(o[key]), 0);
   const currency = rows[0]?.currency ?? "GHS";
@@ -98,6 +103,11 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
                 <td className="text-xs">
                   {o.kind === "booking" ? (
                     <span>Studio deposit</span>
+                  ) : o.kind === "distribution" ? (
+                    <span>
+                      {releaseByOrder.get(o.id)?.releaseTitle ?? "Distribution release"}{" "}
+                      <span className="text-muted">— {releaseByOrder.get(o.id)?.planName ?? ""}</span>
+                    </span>
                   ) : (
                     (itemMap.get(o.id) ?? []).map((it) => (
                       <p key={it.id}>
