@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CloseIcon, MenuIcon, PhoneIcon } from "./icons";
+import { CloseIcon, MenuIcon, MicIcon, PhoneIcon } from "./icons";
 import { LiquidPill, useLiquidPill } from "./liquid-pill";
 import { useSpotlight } from "./spotlight";
 import { useCart } from "./cart/cart-provider";
@@ -52,7 +52,15 @@ export function Logo({ siteName }: { siteName: string }) {
   );
 }
 
-export function SiteHeader({ siteName, customer }: { siteName: string; customer: { name: string } | null }) {
+export function SiteHeader({
+  siteName,
+  customer,
+  liveRecordingOpen = false,
+}: {
+  siteName: string;
+  customer: { name: string } | null;
+  liveRecordingOpen?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const { count: cartCount } = useCart();
   const pathname = usePathname();
@@ -138,24 +146,37 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
               );
             })}
           </nav>
-          <div className="hidden items-center gap-3 lg:flex">
+          <div className="hidden items-center gap-2.5 lg:flex">
             <Link href="/cart" className="relative text-xs font-semibold text-muted transition hover:text-cream">
               Cart
               {cartCount > 0 && <span className="ml-1.5 rounded-full bg-acid px-1.5 py-0.5 text-[10px] font-black text-ink">{cartCount}</span>}
             </Link>
-            {customer && (
-              <Link
-                href="/call"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open a private Meetbeatz audio call in a new window"
-                aria-label="Open a private audio call with the producer"
-                className="btn-ghost !px-3 !py-2 text-xs"
+            <Link
+              href="/live-recording"
+              title={liveRecordingOpen ? "Open Live Recording Studio" : "Live Recording Studio (Coming soon)"}
+              className="btn-ghost !px-3 !py-2 text-xs font-bold"
+            >
+              <MicIcon className="h-3.5 w-3.5 text-acid" />
+              <span>Live recording</span>
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                  liveRecordingOpen
+                    ? "bg-[#25d366]/25 text-[#39dc78]"
+                    : "border border-amber-400/40 bg-amber-400/15 text-amber-300"
+                }`}
               >
-                <PhoneIcon className="h-4 w-4" />
-                <span className="hidden xl:inline">Audio call</span>
-              </Link>
-            )}
+                {liveRecordingOpen ? "Live" : "Coming soon"}
+              </span>
+            </Link>
+            <Link
+              href="/call"
+              title="Call the Meetbeatz producer"
+              aria-label="Call the Meetbeatz producer"
+              className="btn-ghost !px-3.5 !py-2 text-xs font-bold text-acid border-acid/30 hover:border-acid/60"
+            >
+              <PhoneIcon className="h-4 w-4 text-acid" />
+              <span>Call producer</span>
+            </Link>
             {customer ? (
               <Link href="/account" className="btn-ghost">
                 My account
@@ -218,20 +239,33 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
                 <Link href="/studio" onClick={() => setOpen(false)} className="btn-primary m-item mt-2 justify-center">
                   Book a session
                 </Link>
-                {customer && (
-                  <Link
-                    href="/call"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Open a private Meetbeatz audio call in a new window"
-                    aria-label="Open a private audio call with the producer"
-                    onClick={() => setOpen(false)}
-                    className="btn-ghost m-item mt-1 justify-center"
+                <Link
+                  href="/call"
+                  title="Call the Meetbeatz producer"
+                  aria-label="Call the Meetbeatz producer"
+                  onClick={() => setOpen(false)}
+                  className="btn-ghost m-item mt-1 justify-center border-acid/30 text-acid"
+                >
+                  <PhoneIcon className="h-4 w-4" />
+                  Call producer
+                </Link>
+                <Link
+                  href="/live-recording"
+                  onClick={() => setOpen(false)}
+                  className="btn-ghost m-item mt-1 justify-center"
+                >
+                  <MicIcon className="h-4 w-4 text-acid" />
+                  <span>Live recording</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                      liveRecordingOpen
+                        ? "bg-[#25d366]/25 text-[#39dc78]"
+                        : "border border-amber-400/40 bg-amber-400/15 text-amber-300"
+                    }`}
                   >
-                    <PhoneIcon className="h-4 w-4" />
-                    Audio call
-                  </Link>
-                )}
+                    {liveRecordingOpen ? "Live" : "Coming soon"}
+                  </span>
+                </Link>
               </div>
 
               {/* Legal + contact links, so nothing is only reachable by scrolling the footer */}

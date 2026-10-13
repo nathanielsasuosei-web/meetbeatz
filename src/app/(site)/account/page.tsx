@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { logoutAction } from "./actions";
 import { EmailChangeForm } from "@/components/account/email-form";
 import { MessageProducerButton } from "@/components/account/message-producer-button";
-import { DownloadIcon } from "@/components/icons";
+import { DownloadIcon, PhoneIcon } from "@/components/icons";
 import { loadAccountData } from "@/lib/account";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { DELIVERABLE_LABELS, deliverableList, formatDate, money, statusLabel } from "@/lib/format";
@@ -198,13 +198,21 @@ export default async function AccountPage() {
       <section className="mt-12">
         <div className="card flex flex-wrap items-center justify-between gap-4 p-6">
           <div>
-            <p className="eyebrow">Private artist chat</p>
+            <p className="eyebrow">Private artist chat &amp; live audio</p>
             <h2 className="mt-2 text-xl font-bold">Talk directly with the producer</h2>
             <p className="mt-1 max-w-xl text-sm text-muted">
-              Start a private, WhatsApp-style conversation with Meetbeatz. Only you and the producer can see your messages.
+              Start a private, WhatsApp-style conversation or place a live audio call with Meetbeatz. Only you and the producer can see your messages.
             </p>
           </div>
-          <MessageProducerButton />
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/call" className="call-accept-animated !px-5 !py-3 !text-sm">
+              <span className="call-btn-icon">
+                <PhoneIcon className="h-4 w-4 animate-phone-ring" />
+              </span>
+              <span>Call the producer</span>
+            </Link>
+            <MessageProducerButton />
+          </div>
         </div>
       </section>
 

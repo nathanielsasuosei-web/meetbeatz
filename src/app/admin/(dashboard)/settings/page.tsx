@@ -236,6 +236,27 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             </p>
           </section>
 
+          <section className="card p-5">
+            <h2 className="font-bold">Live Recording Studio Access</h2>
+            <p className="mt-1 text-xs text-muted">
+              Control whether artists see <strong>Coming soon</strong> or can enter the online Live Recording Studio. As the producer, you always have full access at <a href="/admin/live-recording" className="text-acid hover:underline">/admin/live-recording</a>.
+            </p>
+            <div className="mt-4">
+              <label className="label" htmlFor="liveRecordingOpen">
+                Artist access status
+              </label>
+              <select
+                id="liveRecordingOpen"
+                name="liveRecordingOpen"
+                className="field"
+                defaultValue={settings.liveRecordingOpen === "1" ? "1" : "0"}
+              >
+                <option value="0">Coming soon — Locked for artists (Producer access only)</option>
+                <option value="1">Open — Live Recording Studio open to artists</option>
+              </select>
+            </div>
+          </section>
+
           <button type="submit" className="btn-primary !px-8 !py-3">
             Save settings
           </button>

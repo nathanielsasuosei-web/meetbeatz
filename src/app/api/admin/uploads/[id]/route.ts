@@ -1,4 +1,5 @@
 import { getAdminSession } from "@/lib/auth";
+import { getCustomerSession } from "@/lib/customer-auth";
 import { abortUpload, completeUpload, storageMissingMessage, writeChunk } from "@/lib/files";
 import { UploadError } from "@/lib/upload-error";
 
@@ -13,10 +14,14 @@ function parseId(raw: string): number | null {
   return Number.isFinite(id) && id > 0 ? id : null;
 }
 
+async function isAuthorized(): Promise<boolean> {
+  const [admin, customer] = await Promise.all([getAdminSession(), getCustomerSession()]);
+  return Boolean(admin || customer);
+}
+
 /** Stores one part of an upload. `?index=` is the 0-based part number. */
 export async function PUT(req: Request, { params }: Params) {
-  const session = await getAdminSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAuthorized())) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: rawId } = await params;
   const id = parseId(rawId);
@@ -38,8 +43,7 @@ export async function PUT(req: Request, { params }: Params) {
 
 /** Finishes an upload and returns the storage path to attach to the beat. */
 export async function POST(_req: Request, { params }: Params) {
-  const session = await getAdminSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAuthorized())) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: rawId } = await params;
   const id = parseId(rawId);
@@ -59,8 +63,7 @@ export async function POST(_req: Request, { params }: Params) {
 
 /** Cancels an upload that never completed (the form was abandoned or a part failed). */
 export async function DELETE(_req: Request, { params }: Params) {
-  const session = await getAdminSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAuthorized())) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: rawId } = await params;
   const id = parseId(rawId);
