@@ -5,6 +5,7 @@ import { PlayerBar } from "@/components/player/player-bar";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ChatWidget } from "@/components/chat-widget";
+import { ArtistIncomingCallAlert } from "@/components/artist-incoming-call-alert";
 import { AdSenseScript, AmpAutoAdsScript } from "@/components/adsense";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { ensureSeeded } from "@/lib/seed";
@@ -38,6 +39,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         <main className="min-h-[70vh]">{children}</main>
         <SiteFooter settings={settings} />
         <PlayerBar />
+        <ArtistIncomingCallAlert customer={customer ? { name: customer.name } : null} />
         <ChatWidget customer={customer ? { name: customer.name } : null} />
         {/*
           AdSense loader. Renders nothing unless NEXT_PUBLIC_ADSENSE_PUBLISHER_ID

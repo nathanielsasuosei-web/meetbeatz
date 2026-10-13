@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lt, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { customers, voiceCallSignals, voiceCalls, type VoiceCall } from "@/db/schema";
 import { getAdminSession, hashPassword } from "@/lib/auth";
@@ -14,6 +14,12 @@ type CallRole = "artist" | "producer";
 type Actor =
   | { role: "artist"; id: number; customerId: number }
   | { role: "producer"; id: number; customerId: null };
+
+export type CallableArtist = {
+  id: number;
+  name: string;
+  email: string;
+};
 
 async function ensureGuestArtistId(): Promise<number> {
   const [existing] = await db
@@ -40,6 +46,30 @@ async function ensureGuestArtistId(): Promise<number> {
     .where(eq(customers.email, GUEST_ARTIST_EMAIL))
     .limit(1);
   return retry.id;
+}
+
+async function listCallableArtists(): Promise<CallableArtist[]> {
+  const rows = await db
+    .select({
+      id: customers.id,
+      name: customers.name,
+      email: customers.email,
+    })
+    .from(customers)
+    .where(ne(customers.email, GUEST_ARTIST_EMAIL))
+    .orderBy(asc(customers.name), desc(customers.id))
+    .limit(100);
+  return rows;
+}
+
+async function getCallerRole(callId: number): Promise<CallRole> {
+  const [ringSignal] = await db
+    .select({ senderRole: voiceCallSignals.senderRole })
+    .from(voiceCallSignals)
+    .where(and(eq(voiceCallSignals.callId, callId), eq(voiceCallSignals.kind, "ring")))
+    .orderBy(asc(voiceCallSignals.id))
+    .limit(1);
+  return ringSignal?.senderRole === "producer" ? "producer" : "artist";
 }
 
 async function getActor(requestedRole?: string | null): Promise<Actor | null> {
@@ -114,11 +144,13 @@ export async function GET(req: Request) {
     call = missed ?? (await getCallForActor(expiredCallId, actor));
   }
 
-  if (!call) return Response.json({ call: null, signals: [] });
+  const artists = actor.role === "producer" ? await listCallableArtists() : undefined;
+
+  if (!call) return Response.json({ call: null, signals: [], artists });
 
   const after = Number(url.searchParams.get("after") ?? 0);
   const cursor = Number.isSafeInteger(after) && after >= 0 ? after : 0;
-  const [signals, [artist]] = await Promise.all([
+  const [signals, [artist], callerRole] = await Promise.all([
     db
       .select()
       .from(voiceCallSignals)
@@ -126,27 +158,28 @@ export async function GET(req: Request) {
         and(
           eq(voiceCallSignals.callId, call.id),
           eq(voiceCallSignals.recipientRole, actor.role as CallRole),
+          inArray(voiceCallSignals.kind, [...SIGNAL_KINDS]),
           gt(voiceCallSignals.id, cursor),
         ),
       )
       .orderBy(asc(voiceCallSignals.id))
       .limit(100),
-    actor.role === "producer"
-      ? db.select({ name: customers.name }).from(customers).where(eq(customers.id, call.customerId)).limit(1)
-      : Promise.resolve([] as { name: string }[]),
+    db.select({ name: customers.name }).from(customers).where(eq(customers.id, call.customerId)).limit(1),
+    getCallerRole(call.id),
   ]);
 
   return Response.json({
-    call,
+    call: { ...call, callerRole },
     customerName: artist?.name ?? null,
     signals,
+    artists,
   });
 }
 
 export async function POST(req: Request) {
   const url = new URL(req.url);
   const body = (await req.json().catch(() => null)) as
-    | { action?: string; callId?: number; kind?: string; payload?: unknown; role?: string }
+    | { action?: string; callId?: number; customerId?: number; kind?: string; payload?: unknown; role?: string }
     | null;
   if (!body || typeof body !== "object") return Response.json({ error: "Invalid request." }, { status: 400 });
 
@@ -158,12 +191,35 @@ export async function POST(req: Request) {
   if (!actor) return Response.json({ error: "Sign in as an artist or producer to use audio calls." }, { status: 401 });
 
   if (body.action === "start") {
-    if (actor.role !== "artist" || actor.customerId === null) {
-      return Response.json({ error: "Only an artist can start a call to the producer." }, { status: 403 });
+    let targetCustomerId: number;
+    let targetCustomerName: string | null = null;
+    const callerRole: CallRole = actor.role;
+
+    if (actor.role === "artist") {
+      if (actor.customerId === null) {
+        return Response.json({ error: "Could not identify the artist account." }, { status: 403 });
+      }
+      targetCustomerId = actor.customerId;
+    } else {
+      // Producer calling a registered artist who has an account
+      const requestedCustomerId = parseCallId(body.customerId);
+      if (!requestedCustomerId) {
+        return Response.json({ error: "Select a registered artist with an account to call." }, { status: 400 });
+      }
+      const [targetCustomer] = await db
+        .select({ id: customers.id, name: customers.name, email: customers.email })
+        .from(customers)
+        .where(and(eq(customers.id, requestedCustomerId), ne(customers.email, GUEST_ARTIST_EMAIL)))
+        .limit(1);
+      if (!targetCustomer) {
+        return Response.json({ error: "Only artists with a registered account can be called directly." }, { status: 404 });
+      }
+      targetCustomerId = targetCustomer.id;
+      targetCustomerName = targetCustomer.name;
     }
+
     const result = await db.transaction(async (tx) => {
-      // Only one producer call can ring or be active at a time. Serialize starts
-      // so two artists cannot both grab the producer simultaneously.
+      // Only one studio call can ring or be active at a time.
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('meetbeatz-audio-call'))`);
       await tx
         .update(voiceCalls)
@@ -176,13 +232,41 @@ export async function POST(req: Request) {
         .orderBy(desc(voiceCalls.createdAt), desc(voiceCalls.id))
         .limit(1);
       if (active) return { call: active, started: false };
-      const [created] = await tx.insert(voiceCalls).values({ customerId: actor.customerId, status: "ringing" }).returning();
+      const [created] = await tx
+        .insert(voiceCalls)
+        .values({ customerId: targetCustomerId, status: "ringing" })
+        .returning();
+      await tx.insert(voiceCallSignals).values({
+        callId: created.id,
+        senderRole: callerRole,
+        recipientRole: callerRole === "artist" ? "producer" : "artist",
+        kind: "ring",
+        payload: { callerRole },
+      });
       return { call: created, started: true };
     });
-    if (!result.started && result.call.customerId !== actor.customerId) {
-      return Response.json({ error: "The producer is already on another call. Please try again shortly." }, { status: 409 });
+
+    if (!result.started && result.call.customerId !== targetCustomerId) {
+      return Response.json(
+        {
+          error:
+            actor.role === "producer"
+              ? "Another audio call is already active. Hang up or finish that call first."
+              : "The producer is already on another call. Please try again shortly.",
+        },
+        { status: 409 },
+      );
     }
-    return Response.json({ call: result.call, existing: !result.started }, { status: result.started ? 201 : 200 });
+
+    const activeCallerRole = result.started ? callerRole : await getCallerRole(result.call.id);
+    return Response.json(
+      {
+        call: { ...result.call, callerRole: activeCallerRole },
+        customerName: targetCustomerName,
+        existing: !result.started,
+      },
+      { status: result.started ? 201 : 200 },
+    );
   }
 
   const callId = parseCallId(body.callId);
@@ -190,8 +274,21 @@ export async function POST(req: Request) {
   const call = await getCallForActor(callId, actor);
   if (!call) return Response.json({ error: "Call not found." }, { status: 404 });
 
+  const callerRole = await getCallerRole(callId);
+  const calleeRole: CallRole = callerRole === "artist" ? "producer" : "artist";
+
   if (body.action === "accept" || body.action === "decline") {
-    if (actor.role !== "producer") return Response.json({ error: "Only the producer can answer an incoming call." }, { status: 403 });
+    if (actor.role !== calleeRole) {
+      return Response.json(
+        {
+          error:
+            calleeRole === "producer"
+              ? "Only the producer can answer an incoming artist call."
+              : "Only the artist being called can answer this call.",
+        },
+        { status: 403 },
+      );
+    }
     if (call.status !== "ringing") return Response.json({ error: "This call is no longer ringing." }, { status: 409 });
     const nextStatus = body.action === "accept" ? "accepted" : "declined";
     const [updated] = await db
@@ -200,13 +297,17 @@ export async function POST(req: Request) {
       .where(and(eq(voiceCalls.id, callId), eq(voiceCalls.status, "ringing")))
       .returning();
     if (!updated) return Response.json({ error: "This call has already been answered." }, { status: 409 });
-    if (nextStatus === "declined") await db.delete(voiceCallSignals).where(eq(voiceCallSignals.callId, callId));
-    return Response.json({ call: updated });
+    if (nextStatus === "declined") {
+      await db
+        .delete(voiceCallSignals)
+        .where(and(eq(voiceCallSignals.callId, callId), inArray(voiceCallSignals.kind, [...SIGNAL_KINDS])));
+    }
+    return Response.json({ call: { ...updated, callerRole } });
   }
 
   if (body.action === "cancel" || body.action === "end") {
-    if (body.action === "cancel" && actor.role !== "artist") {
-      return Response.json({ error: "Only the artist can cancel an unanswered call." }, { status: 403 });
+    if (body.action === "cancel" && actor.role !== callerRole) {
+      return Response.json({ error: "Only the caller can cancel an unanswered call." }, { status: 403 });
     }
     if (actor.role === "artist" && call.customerId !== actor.customerId) {
       return Response.json({ error: "You cannot end another artist's call." }, { status: 403 });
@@ -221,8 +322,10 @@ export async function POST(req: Request) {
       .where(and(eq(voiceCalls.id, callId), inArray(voiceCalls.status, [...ACTIVE_STATUSES])))
       .returning();
     if (!updated) return Response.json({ error: "This call has already ended." }, { status: 409 });
-    await db.delete(voiceCallSignals).where(eq(voiceCallSignals.callId, callId));
-    return Response.json({ call: updated });
+    await db
+      .delete(voiceCallSignals)
+      .where(and(eq(voiceCallSignals.callId, callId), inArray(voiceCallSignals.kind, [...SIGNAL_KINDS])));
+    return Response.json({ call: { ...updated, callerRole } });
   }
 
   if (body.action === "signal") {

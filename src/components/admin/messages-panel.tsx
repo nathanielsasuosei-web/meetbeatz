@@ -313,10 +313,21 @@ export function MessagesPanel({
           <p className="truncate text-xs text-white/70">{customer.email} · only you and this artist can see this thread</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/admin/call" className="btn-ghost !px-3 !py-1.5 text-xs">
-            <PhoneIcon className="h-3.5 w-3.5" />
-            Audio call
-          </Link>
+          {customer.email !== "artist-caller@meetbeatz.local" ? (
+            <Link
+              href={`/admin/call?customerId=${customerId}&autoStart=1`}
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#25d366] px-3 py-1.5 text-xs font-extrabold text-[#062b1b] shadow transition hover:bg-[#39dc78]"
+              title={`Call ${customer.name} directly`}
+            >
+              <PhoneIcon className="h-3.5 w-3.5" />
+              Call {customer.name.split(" ")[0]}
+            </Link>
+          ) : (
+            <Link href="/admin/call" className="btn-ghost !px-3 !py-1.5 text-xs">
+              <PhoneIcon className="h-3.5 w-3.5" />
+              Audio call
+            </Link>
+          )}
           <Link href="/admin/orders" className="btn-ghost !px-3 !py-1.5 text-xs">
             Their orders →
           </Link>

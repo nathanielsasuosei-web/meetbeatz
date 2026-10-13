@@ -8,16 +8,22 @@ export const metadata: Metadata = { title: "Producer Audio Call" };
 export default async function AdminCallPage({
   searchParams,
 }: {
-  searchParams: Promise<{ autoAccept?: string }>;
+  searchParams: Promise<{ autoAccept?: string; customerId?: string; autoStart?: string }>;
 }) {
-  const [session, { autoAccept }] = await Promise.all([requireAdmin(), searchParams]);
+  const [session, { autoAccept, customerId, autoStart }] = await Promise.all([
+    requireAdmin(),
+    searchParams,
+  ]);
   const autoAcceptId = autoAccept ? parseInt(autoAccept, 10) : null;
+  const parsedCustomerId = customerId ? parseInt(customerId, 10) : null;
 
   return (
     <VoiceCall
       role="producer"
       name={session.name}
       autoAcceptCallId={Number.isFinite(autoAcceptId) ? autoAcceptId : null}
+      initialCustomerId={Number.isFinite(parsedCustomerId) ? parsedCustomerId : null}
+      autoStart={autoStart === "1"}
     />
   );
 }

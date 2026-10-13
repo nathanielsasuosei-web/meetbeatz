@@ -9,6 +9,7 @@ type RingingCall = {
   id: number;
   customerId: number;
   status: string;
+  callerRole?: "artist" | "producer";
 };
 
 /**
@@ -37,7 +38,7 @@ export function IncomingCallAlert() {
         call?: RingingCall | null;
         customerName?: string | null;
       };
-      if (data.call && data.call.status === "ringing") {
+      if (data.call && data.call.status === "ringing" && (data.call.callerRole ?? "artist") === "artist") {
         setRingingCall(data.call);
         setCallerName(data.customerName || "Artist");
       } else {

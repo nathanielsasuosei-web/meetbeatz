@@ -13,8 +13,15 @@ type VoiceCallRecord = {
   id: number;
   customerId: number;
   status: CallStatus;
+  callerRole?: CallRole;
   createdAt: string;
   updatedAt: string;
+};
+
+type CallableArtist = {
+  id: number;
+  name: string;
+  email: string;
 };
 
 type CallSignal = {
@@ -31,12 +38,14 @@ type CallsResponse = {
   call: VoiceCallRecord | null;
   customerName?: string | null;
   signals?: CallSignal[];
+  artists?: CallableArtist[];
   error?: string;
 };
 
 type CallAction = {
   action: "start" | "accept" | "decline" | "cancel" | "end" | "signal";
   callId?: number;
+  customerId?: number;
   kind?: SignalKind;
   payload?: RTCSessionDescriptionInit | RTCIceCandidateInit;
   role?: CallRole;
@@ -66,14 +75,22 @@ export function VoiceCall({
   role,
   name,
   autoAcceptCallId,
+  initialCustomerId,
+  autoStart,
+  hasAccount,
 }: {
   role: CallRole;
   name: string;
   autoAcceptCallId?: number | null;
+  initialCustomerId?: number | null;
+  autoStart?: boolean;
+  hasAccount?: boolean;
 }) {
   const [call, setCall] = useState<VoiceCallRecord | null>(null);
   const [phase, setPhase] = useState<CallPhase>("idle");
   const [remoteName, setRemoteName] = useState<string | null>(null);
+  const [artists, setArtists] = useState<CallableArtist[]>([]);
+  const [selectedArtistId, setSelectedArtistId] = useState<number | null>(initialCustomerId ?? null);
   const [muted, setMuted] = useState(false);
   const [audioNeedsGesture, setAudioNeedsGesture] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -91,6 +108,7 @@ export function VoiceCall({
   const queuedCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const offerStartedCallRef = useRef<number | null>(null);
   const autoAcceptedRef = useRef<number | null>(null);
+  const autoStartedRef = useRef(false);
   const pollingRef = useRef(false);
 
   const updateCall = useCallback((next: VoiceCallRecord | null) => {
@@ -293,7 +311,7 @@ export function VoiceCall({
     pollingRef.current = true;
     try {
       const current = callRef.current;
-      const shouldFollowCurrent = !!current && (role === "artist" || ACTIVE_STATUSES.includes(current.status));
+      const shouldFollowCurrent = !!current && (current.callerRole === role || ACTIVE_STATUSES.includes(current.status));
       const query = new URLSearchParams();
       query.set("role", role);
       if (shouldFollowCurrent && current) query.set("callId", String(current.id));
@@ -301,6 +319,16 @@ export function VoiceCall({
       const response = await fetch(`/api/calls?${query.toString()}`, { cache: "no-store" });
       const data = (await response.json().catch(() => ({}))) as CallsResponse;
       if (!response.ok) throw new Error(data.error ?? "Could not check the call.");
+
+      if (Array.isArray(data.artists)) {
+        const fetchedArtists = data.artists;
+        setArtists(fetchedArtists);
+        setSelectedArtistId((prev) => {
+          if (prev && fetchedArtists.some((a) => a.id === prev)) return prev;
+          if (initialCustomerId && fetchedArtists.some((a) => a.id === initialCustomerId)) return initialCustomerId;
+          return fetchedArtists[0]?.id ?? null;
+        });
+      }
 
       if (!data.call) {
         if (!callRef.current) updatePhase("idle");
@@ -317,8 +345,9 @@ export function VoiceCall({
       updateCall(data.call);
       setRemoteName(data.customerName ?? null);
 
+      const callerRole: CallRole = data.call.callerRole ?? "artist";
       if (data.call.status === "ringing") {
-        updatePhase(role === "producer" ? "incoming" : "calling");
+        updatePhase(callerRole !== role ? "incoming" : "calling");
       } else if (data.call.status === "accepted") {
         if (phaseRef.current !== "connected" && phaseRef.current !== "error") updatePhase("connecting");
         if (role === "artist") void createArtistOffer(data.call.id);
@@ -348,7 +377,7 @@ export function VoiceCall({
     } finally {
       pollingRef.current = false;
     }
-  }, [cleanupPeer, createArtistOffer, handleSignal, isCallAccepted, role, updateCall, updatePhase]);
+  }, [cleanupPeer, createArtistOffer, handleSignal, initialCustomerId, isCallAccepted, role, updateCall, updatePhase]);
 
   useEffect(() => {
     void poll();
@@ -356,16 +385,16 @@ export function VoiceCall({
     return () => window.clearInterval(timer);
   }, [poll]);
 
-  // Play incoming ringing alert sound for the producer, and outgoing ringback tone for the artist
+  // Play incoming ringing alert sound for the callee, and outgoing ringback tone for the caller
   useEffect(() => {
-    if (role === "producer" && phase === "incoming" && call?.status === "ringing") {
+    if (phase === "incoming" && call?.status === "ringing") {
       return startIncomingRingtone();
     }
-    if (role === "artist" && phase === "calling" && call?.status === "ringing") {
+    if (phase === "calling" && call?.status === "ringing") {
       return startOutgoingRingback();
     }
     return undefined;
-  }, [role, phase, call?.status]);
+  }, [phase, call?.status]);
 
   // Live timer while call is active
   useEffect(() => {
@@ -414,39 +443,64 @@ export function VoiceCall({
     [cleanupPeer, postAction, updateCall, updatePhase],
   );
 
-  // Auto-accept when redirected from the global incoming call alert
+  // Auto-accept when redirected from the global incoming call alert (works for both producer and artist)
   useEffect(() => {
-    if (role !== "producer" || !autoAcceptCallId) return;
-    if (call?.id === autoAcceptCallId && call.status === "ringing" && autoAcceptedRef.current !== autoAcceptCallId) {
+    if (!autoAcceptCallId) return;
+    const callerRole = call?.callerRole ?? "artist";
+    if (call?.id === autoAcceptCallId && call.status === "ringing" && callerRole !== role && autoAcceptedRef.current !== autoAcceptCallId) {
       autoAcceptedRef.current = autoAcceptCallId;
       void answerCall("accept", autoAcceptCallId);
     }
   }, [answerCall, autoAcceptCallId, call, role]);
 
-  async function startCall() {
-    setBusy(true);
-    setError(null);
-    lastSignalIdRef.current = 0;
-    cleanupPeer();
-    try {
-      const result = await postAction({ action: "start" });
-      if (!result.call) throw new Error("Could not start the call.");
-      updateCall(result.call);
-      setRemoteName("Meetbeatz Producer");
-      updatePhase(result.call.status === "accepted" ? "connecting" : "calling");
-    } catch (callError) {
-      setError(messageForError(callError));
-      updatePhase("error");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const startCall = useCallback(
+    async (targetCustomerId?: number) => {
+      setBusy(true);
+      setError(null);
+      lastSignalIdRef.current = 0;
+      cleanupPeer();
+      try {
+        if (role === "producer") {
+          const customerId = targetCustomerId ?? selectedArtistId;
+          if (!customerId) {
+            throw new Error("Select a registered artist with an account to call.");
+          }
+          const result = await postAction({ action: "start", customerId });
+          if (!result.call) throw new Error("Could not start the call.");
+          updateCall(result.call);
+          const picked = artists.find((a) => a.id === customerId);
+          setRemoteName(result.customerName ?? picked?.name ?? "Artist");
+          updatePhase(result.call.status === "accepted" ? "connecting" : "calling");
+        } else {
+          const result = await postAction({ action: "start" });
+          if (!result.call) throw new Error("Could not start the call.");
+          updateCall(result.call);
+          setRemoteName("Meetbeatz Producer");
+          updatePhase(result.call.status === "accepted" ? "connecting" : "calling");
+        }
+      } catch (callError) {
+        setError(messageForError(callError));
+        updatePhase("error");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [artists, cleanupPeer, postAction, role, selectedArtistId, updateCall, updatePhase],
+  );
+
+  // Auto-start call when producer navigates from Messages with ?customerId=X&autoStart=1
+  useEffect(() => {
+    if (role !== "producer" || !autoStart || !initialCustomerId || autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    void startCall(initialCustomerId);
+  }, [autoStart, initialCustomerId, role, startCall]);
 
   async function endCall() {
     if (!call) return;
     setBusy(true);
     setError(null);
-    const action = call.status === "ringing" ? (role === "artist" ? "cancel" : "decline") : "end";
+    const callerRole = call.callerRole ?? "artist";
+    const action = call.status === "ringing" ? (callerRole === role ? "cancel" : "decline") : "end";
     try {
       const result = await postAction({ action, callId: call.id });
       if (result.call) updateCall(result.call);
@@ -475,7 +529,12 @@ export function VoiceCall({
     updatePhase("idle");
   }
 
-  const participant = role === "artist" ? "Meetbeatz Producer" : remoteName ?? "Artist";
+  const selectedArtist = artists.find((a) => a.id === selectedArtistId) ?? null;
+  const participant =
+    role === "artist"
+      ? "Meetbeatz Producer"
+      : remoteName ?? selectedArtist?.name ?? "Artist";
+
   const initials =
     role === "artist"
       ? "MB"
@@ -485,24 +544,39 @@ export function VoiceCall({
           .map((part) => part[0]?.toUpperCase() ?? "")
           .join("") || "A";
 
+  const callCallerRole: CallRole = call?.callerRole ?? "artist";
+  const isIncomingRinging = call?.status === "ringing" && callCallerRole !== role;
+  const isOutgoingRinging = call?.status === "ringing" && callCallerRole === role;
+
   // ---------------------------------------------------------------------------
-  // PRODUCER VIEW: Keeps the producer waiting copy + incoming ringing alerts +
-  // animated Accept and Decline buttons.
+  // PRODUCER VIEW: Producer waiting & incoming call receiver + ability for
+  // producer to directly call any registered artist who has an account.
   // ---------------------------------------------------------------------------
   if (role === "producer") {
     const producerStatusCopy: Record<CallPhase, string> = {
-      idle: "Waiting for an artist to call.",
-      calling: "Calling…",
+      idle: "Waiting for an artist to call — or select an artist account below to call them.",
+      calling: `Ringing ${participant}…`,
       incoming: `Incoming audio call from ${participant} — ringing now!`,
       connecting: "Connecting audio…",
       connected: `Call connected · ${formatDuration(elapsedSeconds)}`,
-      ended: call?.status === "missed" ? "No answer — call missed" : call?.status === "declined" ? "Call declined" : "Call ended",
+      ended:
+        call?.status === "missed"
+          ? "No answer — call missed"
+          : call?.status === "declined"
+            ? "Call declined"
+            : "Call ended",
       error: "Call needs attention",
     };
 
     return (
       <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-        <section className={`card overflow-hidden p-0 transition-all duration-300 ${phase === "incoming" ? "ring-2 ring-[#25d366]/80 shadow-[0_0_60px_-10px_rgba(37,211,102,0.45)]" : ""}`}>
+        <section
+          className={`card overflow-hidden p-0 transition-all duration-300 ${
+            phase === "incoming"
+              ? "ring-2 ring-[#25d366]/80 shadow-[0_0_60px_-10px_rgba(37,211,102,0.45)]"
+              : ""
+          }`}
+        >
           <header className="border-b border-line p-6 sm:p-8">
             <p className="eyebrow">Private · artist ↔ producer</p>
             <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
@@ -510,11 +584,11 @@ export function VoiceCall({
               <span className="badge">Producer</span>
             </div>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
-              Signed in as <span className="text-cream/80">{name}</span>. Leave this window open to receive private audio calls from artists. Your browser will ask for microphone access when the call is answered.
+              Signed in as <span className="text-cream/80">{name}</span>. Leave this window open to receive private audio calls from artists, or call any registered artist with an account below. Your browser will ask for microphone access when the call is answered.
             </p>
           </header>
 
-          {phase === "incoming" && call?.status === "ringing" && (
+          {isIncomingRinging && (
             <div
               role="alert"
               aria-live="assertive"
@@ -543,7 +617,13 @@ export function VoiceCall({
             />
             <div
               className={`call-avatar grid h-24 w-24 place-items-center rounded-full text-2xl font-black ${
-                phase === "connected" ? "is-connected" : phase === "incoming" ? "is-ringing" : ""
+                phase === "connected"
+                  ? "is-connected"
+                  : phase === "incoming"
+                    ? "is-ringing"
+                    : phase === "calling"
+                      ? "is-calling"
+                      : ""
               }`}
               aria-hidden="true"
             >
@@ -562,7 +642,7 @@ export function VoiceCall({
             )}
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
-              {call?.status === "ringing" && (
+              {isIncomingRinging && (
                 <>
                   <button
                     type="button"
@@ -588,6 +668,21 @@ export function VoiceCall({
                   </button>
                 </>
               )}
+
+              {isOutgoingRinging && (
+                <button
+                  type="button"
+                  className="call-decline-animated"
+                  onClick={() => void endCall()}
+                  disabled={busy}
+                >
+                  <span className="call-btn-icon">
+                    <PhoneIcon className="h-5 w-5 rotate-[135deg]" />
+                  </span>
+                  <span>Cancel call</span>
+                </button>
+              )}
+
               {call?.status === "accepted" && (
                 <>
                   <button type="button" className="btn-ghost" onClick={toggleMute} disabled={busy} aria-pressed={muted}>
@@ -601,12 +696,65 @@ export function VoiceCall({
                   </button>
                 </>
               )}
+
               {call && !ACTIVE_STATUSES.includes(call.status) && (
                 <button type="button" className="btn-ghost" onClick={returnToWaiting}>
                   Wait for another call
                 </button>
               )}
             </div>
+
+            {(!call || !ACTIVE_STATUSES.includes(call.status)) && (
+              <div className="mt-8 w-full max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-left">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="eyebrow">Call an Artist · Registered Accounts</p>
+                  <span className="badge-acid">{artists.length} {artists.length === 1 ? "account" : "accounts"}</span>
+                </div>
+                {artists.length === 0 ? (
+                  <p className="mt-3 text-xs leading-relaxed text-muted">
+                    No artists have registered an account yet. Once an artist creates an account on the site, they will appear here so you can call them directly.
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <label htmlFor="producer-artist-select" className="label">
+                        Choose artist account to call
+                      </label>
+                      <select
+                        id="producer-artist-select"
+                        value={selectedArtistId ?? ""}
+                        onChange={(e) => setSelectedArtistId(Number(e.target.value) || null)}
+                        className="field"
+                      >
+                        {artists.map((artistItem) => (
+                          <option key={artistItem.id} value={artistItem.id}>
+                            {artistItem.name} ({artistItem.email})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                      <p className="text-xs text-muted">
+                        Rings {selectedArtist?.name ?? "the selected artist"} directly in their browser when they are signed in.
+                      </p>
+                      <button
+                        type="button"
+                        className="call-accept-animated !px-5 !py-2.5 !text-xs"
+                        disabled={busy || !selectedArtistId}
+                        onClick={() => void startCall(selectedArtistId ?? undefined)}
+                      >
+                        <span className="call-btn-icon !h-7 !w-7">
+                          <PhoneIcon className="h-4 w-4 animate-phone-ring" />
+                        </span>
+                        <span>
+                          {busy ? "Calling…" : `Call ${selectedArtist?.name.split(" ")[0] ?? "Artist"}`}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <p className="mt-7 max-w-lg text-xs leading-relaxed text-muted">
               Calls use your browser&apos;s microphone over a secure peer-to-peer audio connection. No video is requested. Keep this window open until the call ends.
@@ -618,18 +766,20 @@ export function VoiceCall({
   }
 
   // ---------------------------------------------------------------------------
-  // ARTIST VIEW: Replaced with the direct Studio Call experience where the
-  // artist has an animated button to call the producer.
+  // ARTIST VIEW: Direct Studio Call experience where the artist can call the
+  // producer AND receive incoming calls from the producer when signed in.
   // ---------------------------------------------------------------------------
   const artistStatusCopy: Record<CallPhase, string> = {
     idle: "Studio line ready — tap below to call the producer",
     calling: "Ringing Meetbeatz Producer…",
-    incoming: "Ringing Meetbeatz Producer…",
-    connecting: "Producer answered — connecting studio audio…",
+    incoming: "Incoming studio call from Meetbeatz Producer — ringing now!",
+    connecting: "Call answered — connecting studio audio…",
     connected: `Live with Meetbeatz Producer · ${formatDuration(elapsedSeconds)}`,
     ended:
       call?.status === "declined"
-        ? "Producer is in a session — call declined"
+        ? callCallerRole === "producer"
+          ? "Call declined"
+          : "Producer is in a session — call declined"
         : call?.status === "missed"
           ? "No answer — call missed"
           : "Call ended",
@@ -638,20 +788,46 @@ export function VoiceCall({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-      <section className="card overflow-hidden p-0">
+      <section
+        className={`card overflow-hidden p-0 transition-all duration-300 ${
+          phase === "incoming"
+            ? "ring-2 ring-[#25d366]/80 shadow-[0_0_60px_-10px_rgba(37,211,102,0.45)]"
+            : ""
+        }`}
+      >
         <header className="border-b border-line bg-gradient-to-br from-acid/10 via-transparent to-deep-red/10 p-6 sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="eyebrow flex items-center gap-2">
               <span className="inline-block h-2 w-2 rounded-full bg-acid shadow-[0_0_8px_var(--color-acid)]" />
               Direct Studio Line · Artist ↔ Producer
             </p>
-            <span className="badge-acid">Artist · Live Voice</span>
+            <span className="badge-acid">{hasAccount ? "Artist Account · 2-Way Call" : "Artist · Live Voice"}</span>
           </div>
           <h1 className="display mt-3 text-4xl sm:text-5xl">Call Meetbeatz Producer</h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
             Speaking as <span className="font-semibold text-cream">{name}</span>. Connect directly with Meetbeatz over live studio voice to discuss custom beats, exclusive rights, mixing, or studio sessions.
+            {hasAccount ? " Since you are signed in to your artist account, the producer can also call you directly." : ""}
           </p>
         </header>
+
+        {isIncomingRinging && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="incoming-call-banner flex items-center justify-between gap-3 border-b border-[#25d366]/40 bg-[#25d366]/15 px-6 py-3.5 text-sm font-bold text-cream"
+          >
+            <div className="flex items-center gap-3">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-[#25d366] text-ink shadow-lg">
+                <PhoneIcon className="h-4 w-4 animate-phone-ring" />
+              </span>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#25d366]">Incoming producer call</p>
+                <p className="text-sm font-bold text-cream">Meetbeatz Producer is calling you right now</p>
+              </div>
+            </div>
+            <Equalizer className="text-[#25d366]" />
+          </div>
+        )}
 
         <div className="flex min-h-[23rem] flex-col items-center justify-center px-6 py-9 text-center sm:px-10">
           <audio
@@ -664,7 +840,13 @@ export function VoiceCall({
 
           <div
             className={`call-avatar grid h-28 w-28 place-items-center rounded-full text-3xl font-black ${
-              phase === "connected" ? "is-connected" : phase === "calling" ? "is-calling" : ""
+              phase === "connected"
+                ? "is-connected"
+                : phase === "incoming"
+                  ? "is-ringing"
+                  : phase === "calling"
+                    ? "is-calling"
+                    : ""
             }`}
             aria-hidden="true"
           >
@@ -674,8 +856,10 @@ export function VoiceCall({
           <h2 className="mt-6 text-2xl font-bold tracking-tight text-cream">Meetbeatz Producer</h2>
 
           <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5">
-            {(phase === "calling" || phase === "connected") && <Equalizer className="text-acid" />}
-            <p className="text-sm font-medium text-cream/90" aria-live="polite">
+            {(phase === "calling" || phase === "incoming" || phase === "connected") && (
+              <Equalizer className={phase === "incoming" ? "text-[#25d366]" : "text-acid"} />
+            )}
+            <p className={`text-sm font-medium ${phase === "incoming" ? "font-bold text-[#25d366]" : "text-cream/90"}`} aria-live="polite">
               {artistStatusCopy[phase]}
             </p>
           </div>
@@ -709,7 +893,34 @@ export function VoiceCall({
               </button>
             )}
 
-            {call?.status === "ringing" && (
+            {isIncomingRinging && (
+              <>
+                <button
+                  type="button"
+                  className="call-accept-animated"
+                  onClick={() => void answerCall("accept")}
+                  disabled={busy}
+                >
+                  <span className="call-btn-icon">
+                    <PhoneIcon className="h-5 w-5 animate-phone-ring" />
+                  </span>
+                  <span>{busy ? "Connecting…" : "Accept call"}</span>
+                </button>
+                <button
+                  type="button"
+                  className="call-decline-animated"
+                  onClick={() => void answerCall("decline")}
+                  disabled={busy}
+                >
+                  <span className="call-btn-icon">
+                    <PhoneIcon className="h-5 w-5 rotate-[135deg]" />
+                  </span>
+                  <span>Decline</span>
+                </button>
+              </>
+            )}
+
+            {isOutgoingRinging && (
               <button
                 type="button"
                 className="call-decline-animated"
@@ -745,8 +956,8 @@ export function VoiceCall({
 
           <div className="mt-8 grid max-w-lg grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-center text-[11px] text-muted">
             <div>
-              <p className="font-bold text-cream">1-on-1 Audio</p>
-              <p>Private studio line</p>
+              <p className="font-bold text-cream">2-Way Audio</p>
+              <p>Artist ↔ Producer</p>
             </div>
             <div className="border-x border-white/10 px-2">
               <p className="font-bold text-cream">No Video</p>
@@ -754,7 +965,7 @@ export function VoiceCall({
             </div>
             <div>
               <p className="font-bold text-cream">Live Ringing</p>
-              <p>Alerts producer</p>
+              <p>Instant call alerts</p>
             </div>
           </div>
         </div>
