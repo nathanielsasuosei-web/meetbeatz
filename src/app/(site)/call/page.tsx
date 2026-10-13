@@ -5,27 +5,44 @@ import { getAdminSession } from "@/lib/auth";
 import { getCustomerSession } from "@/lib/customer-auth";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Private audio call" };
+export const metadata: Metadata = { title: "Call Meetbeatz Producer" };
 
-export default async function AudioCallPage() {
-  const [artist, producer] = await Promise.all([getCustomerSession(), getAdminSession()]);
+export default async function AudioCallPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ role?: string; autoAccept?: string }>;
+}) {
+  const [{ role: requestedRole, autoAccept }, artist, producer] = await Promise.all([
+    searchParams,
+    getCustomerSession(),
+    getAdminSession(),
+  ]);
 
-  if (producer) return <VoiceCall role="producer" name={producer.name} />;
-  if (artist) return <VoiceCall role="artist" name={artist.name} />;
+  const autoAcceptId = autoAccept ? parseInt(autoAccept, 10) : null;
+
+  if (requestedRole === "producer" && producer) {
+    return (
+      <VoiceCall
+        role="producer"
+        name={producer.name}
+        autoAcceptCallId={Number.isFinite(autoAcceptId) ? autoAcceptId : null}
+      />
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-14 sm:px-6">
-      <div className="card p-8 text-center">
-        <p className="eyebrow">Private artist ↔ producer call</p>
-        <h1 className="display mt-3 text-4xl">Sign in to call.</h1>
-        <p className="mt-4 text-sm leading-relaxed text-muted">
-          Audio calls are only available between a signed-in artist and the Meetbeatz producer.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link href="/account/login" className="btn-primary">Artist sign in</Link>
-          <Link href="/admin/login" className="btn-ghost">Producer sign in</Link>
+    <div>
+      <VoiceCall role="artist" name={artist?.name ?? "Artist"} />
+      {producer && (
+        <div className="mx-auto -mt-6 mb-10 max-w-2xl px-4 text-center sm:px-6">
+          <Link
+            href="/admin/call"
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-muted transition hover:border-acid/40 hover:text-cream"
+          >
+            Looking for the Producer receiver screen? Open Producer Audio Call →
+          </Link>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,24 +1,63 @@
 import { and, asc, desc, eq, gt, inArray, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { customers, voiceCallSignals, voiceCalls, type VoiceCall } from "@/db/schema";
-import { getAdminSession } from "@/lib/auth";
+import { getAdminSession, hashPassword } from "@/lib/auth";
 import { getCustomerSession } from "@/lib/customer-auth";
 
 export const dynamic = "force-dynamic";
 
 const ACTIVE_STATUSES = ["ringing", "accepted"] as const;
 const SIGNAL_KINDS = ["offer", "answer", "ice-candidate"] as const;
+const GUEST_ARTIST_EMAIL = "artist-caller@meetbeatz.local";
 
 type CallRole = "artist" | "producer";
 type Actor =
   | { role: "artist"; id: number; customerId: number }
   | { role: "producer"; id: number; customerId: null };
 
-async function getActor(): Promise<Actor | null> {
-  const producer = await getAdminSession();
-  if (producer) return { role: "producer", id: producer.id, customerId: null };
-  const artist = await getCustomerSession();
+async function ensureGuestArtistId(): Promise<number> {
+  const [existing] = await db
+    .select({ id: customers.id })
+    .from(customers)
+    .where(eq(customers.email, GUEST_ARTIST_EMAIL))
+    .limit(1);
+  if (existing) return existing.id;
+
+  const [created] = await db
+    .insert(customers)
+    .values({
+      email: GUEST_ARTIST_EMAIL,
+      name: "Artist",
+      passwordHash: hashPassword("guest-artist-call-only"),
+    })
+    .onConflictDoNothing()
+    .returning({ id: customers.id });
+  if (created) return created.id;
+
+  const [retry] = await db
+    .select({ id: customers.id })
+    .from(customers)
+    .where(eq(customers.email, GUEST_ARTIST_EMAIL))
+    .limit(1);
+  return retry.id;
+}
+
+async function getActor(requestedRole?: string | null): Promise<Actor | null> {
+  const [artist, producer] = await Promise.all([getCustomerSession(), getAdminSession()]);
+
+  if (requestedRole === "producer") {
+    if (producer) return { role: "producer", id: producer.id, customerId: null };
+    return null;
+  }
+
+  if (requestedRole === "artist") {
+    if (artist) return { role: "artist", id: artist.id, customerId: artist.id };
+    const guestId = await ensureGuestArtistId();
+    return { role: "artist", id: guestId, customerId: guestId };
+  }
+
   if (artist) return { role: "artist", id: artist.id, customerId: artist.id };
+  if (producer) return { role: "producer", id: producer.id, customerId: null };
   return null;
 }
 
@@ -34,10 +73,11 @@ function parseCallId(value: unknown): number | null {
 }
 
 export async function GET(req: Request) {
-  const actor = await getActor();
+  const url = new URL(req.url);
+  const requestedRole = url.searchParams.get("role");
+  const actor = await getActor(requestedRole);
   if (!actor) return Response.json({ error: "Sign in as an artist or producer to use audio calls." }, { status: 401 });
 
-  const url = new URL(req.url);
   const requestedId = url.searchParams.get("callId");
   let call: VoiceCall | null = null;
 
@@ -71,7 +111,7 @@ export async function GET(req: Request) {
       .set({ status: "missed", updatedAt: new Date() })
       .where(and(eq(voiceCalls.id, expiredCallId), eq(voiceCalls.status, "ringing")))
       .returning();
-    call = missed ?? await getCallForActor(expiredCallId, actor);
+    call = missed ?? (await getCallForActor(expiredCallId, actor));
   }
 
   if (!call) return Response.json({ call: null, signals: [] });
@@ -82,7 +122,13 @@ export async function GET(req: Request) {
     db
       .select()
       .from(voiceCallSignals)
-      .where(and(eq(voiceCallSignals.callId, call.id), eq(voiceCallSignals.recipientRole, actor.role), gt(voiceCallSignals.id, cursor)))
+      .where(
+        and(
+          eq(voiceCallSignals.callId, call.id),
+          eq(voiceCallSignals.recipientRole, actor.role as CallRole),
+          gt(voiceCallSignals.id, cursor),
+        ),
+      )
       .orderBy(asc(voiceCallSignals.id))
       .limit(100),
     actor.role === "producer"
@@ -98,12 +144,18 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const actor = await getActor();
-  if (!actor) return Response.json({ error: "Sign in as an artist or producer to use audio calls." }, { status: 401 });
+  const url = new URL(req.url);
   const body = (await req.json().catch(() => null)) as
-    | { action?: string; callId?: number; kind?: string; payload?: unknown }
+    | { action?: string; callId?: number; kind?: string; payload?: unknown; role?: string }
     | null;
   if (!body || typeof body !== "object") return Response.json({ error: "Invalid request." }, { status: 400 });
+
+  const requestedRole =
+    typeof body.role === "string"
+      ? body.role
+      : url.searchParams.get("role") ?? (body.action === "start" || body.action === "cancel" ? "artist" : null);
+  const actor = await getActor(requestedRole);
+  if (!actor) return Response.json({ error: "Sign in as an artist or producer to use audio calls." }, { status: 401 });
 
   if (body.action === "start") {
     if (actor.role !== "artist" || actor.customerId === null) {

@@ -8,9 +8,18 @@
  */
 import { UploadError } from "./upload-error";
 
-export type UploadKind = "covers" | "previews" | "videos" | "mp3" | "wav" | "stems" | "sound-kits";
+export type UploadKind = "covers" | "previews" | "videos" | "mp3" | "wav" | "stems" | "sound-kits" | "chat-audio";
 
-export const UPLOAD_KINDS: UploadKind[] = ["covers", "previews", "videos", "mp3", "wav", "stems", "sound-kits"];
+export const UPLOAD_KINDS: UploadKind[] = [
+  "covers",
+  "previews",
+  "videos",
+  "mp3",
+  "wav",
+  "stems",
+  "sound-kits",
+  "chat-audio",
+];
 
 export const ALLOWED_EXT: Record<UploadKind, string[]> = {
   covers: [".jpg", ".jpeg", ".png", ".webp"],
@@ -20,6 +29,7 @@ export const ALLOWED_EXT: Record<UploadKind, string[]> = {
   wav: [".wav", ".aif", ".aiff", ".flac", ".zip"],
   stems: [".zip", ".rar", ".7z"],
   "sound-kits": [".zip", ".rar", ".7z"],
+  "chat-audio": [".webm", ".ogg", ".m4a", ".mp3", ".wav", ".aac", ".flac", ".aif", ".aiff", ".mp4", ".opus"],
 };
 
 /**

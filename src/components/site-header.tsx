@@ -143,19 +143,15 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
               Cart
               {cartCount > 0 && <span className="ml-1.5 rounded-full bg-acid px-1.5 py-0.5 text-[10px] font-black text-ink">{cartCount}</span>}
             </Link>
-            {customer && (
-              <Link
-                href="/call"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open a private Meetbeatz audio call in a new window"
-                aria-label="Open a private audio call with the producer"
-                className="btn-ghost !px-3 !py-2 text-xs"
-              >
-                <PhoneIcon className="h-4 w-4" />
-                <span className="hidden xl:inline">Audio call</span>
-              </Link>
-            )}
+            <Link
+              href="/call"
+              title="Call the Meetbeatz producer"
+              aria-label="Call the Meetbeatz producer"
+              className="btn-ghost !px-3.5 !py-2 text-xs font-bold text-acid border-acid/30 hover:border-acid/60"
+            >
+              <PhoneIcon className="h-4 w-4 text-acid" />
+              <span>Call producer</span>
+            </Link>
             {customer ? (
               <Link href="/account" className="btn-ghost">
                 My account
@@ -218,20 +214,16 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
                 <Link href="/studio" onClick={() => setOpen(false)} className="btn-primary m-item mt-2 justify-center">
                   Book a session
                 </Link>
-                {customer && (
-                  <Link
-                    href="/call"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Open a private Meetbeatz audio call in a new window"
-                    aria-label="Open a private audio call with the producer"
-                    onClick={() => setOpen(false)}
-                    className="btn-ghost m-item mt-1 justify-center"
-                  >
-                    <PhoneIcon className="h-4 w-4" />
-                    Audio call
-                  </Link>
-                )}
+                <Link
+                  href="/call"
+                  title="Call the Meetbeatz producer"
+                  aria-label="Call the Meetbeatz producer"
+                  onClick={() => setOpen(false)}
+                  className="btn-ghost m-item mt-1 justify-center border-acid/30 text-acid"
+                >
+                  <PhoneIcon className="h-4 w-4" />
+                  Call producer
+                </Link>
               </div>
 
               {/* Legal + contact links, so nothing is only reachable by scrolling the footer */}

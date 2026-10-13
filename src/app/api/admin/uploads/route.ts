@@ -1,4 +1,5 @@
 import { getAdminSession } from "@/lib/auth";
+import { getCustomerSession } from "@/lib/customer-auth";
 import { createUpload, storageMissingMessage } from "@/lib/files";
 import { isUploadKind } from "@/lib/upload-rules";
 import { UploadError } from "@/lib/upload-error";
@@ -15,14 +16,17 @@ export const dynamic = "force-dynamic";
  * storage path with the rest of the beat's fields.
  */
 export async function POST(req: Request) {
-  const session = await getAdminSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const [adminSession, customerSession] = await Promise.all([getAdminSession(), getCustomerSession()]);
+  if (!adminSession && !customerSession) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const body = (await req.json()) as { name?: string; kind?: string; size?: number; chunkSize?: number };
     const kind = String(body.kind ?? "");
     if (!isUploadKind(kind)) {
       return Response.json({ error: `Unknown file slot "${kind}".` }, { status: 400 });
+    }
+    if (!adminSession && kind !== "chat-audio") {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
     const name = String(body.name ?? "");
     const size = Number(body.size ?? 0);
