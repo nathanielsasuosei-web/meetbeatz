@@ -72,6 +72,31 @@ export const customerMessages = pgTable("customer_messages", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/** Private, signaled WebRTC audio calls between one artist and the producer. */
+export const voiceCalls = pgTable("voice_calls", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
+  /** ringing | accepted | missed | declined | cancelled | ended */
+  status: text("status").default("ringing").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Short-lived SDP/ICE messages exchanged only by the two participants. */
+export const voiceCallSignals = pgTable("voice_call_signals", {
+  id: serial("id").primaryKey(),
+  callId: integer("call_id")
+    .notNull()
+    .references(() => voiceCalls.id, { onDelete: "cascade" }),
+  senderRole: text("sender_role").notNull(), // artist | producer
+  recipientRole: text("recipient_role").notNull(), // artist | producer
+  kind: text("kind").notNull(), // offer | answer | ice-candidate
+  payload: jsonb("payload").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ---------------------------------------------------------------------------
 // Beats & licensing
 // ---------------------------------------------------------------------------
@@ -375,6 +400,8 @@ export const contactMessages = pgTable("contact_messages", {
 export type Beat = typeof beats.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type CustomerMessage = typeof customerMessages.$inferSelect;
+export type VoiceCall = typeof voiceCalls.$inferSelect;
+export type VoiceCallSignal = typeof voiceCallSignals.$inferSelect;
 export type LicenseType = typeof licenseTypes.$inferSelect;
 export type BeatLicense = typeof beatLicenses.$inferSelect;
 export type Service = typeof services.$inferSelect;

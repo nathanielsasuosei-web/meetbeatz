@@ -169,7 +169,6 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
               <div>
                 <label className="label">WhatsApp number</label>
                 <input name="whatsapp" className="field" defaultValue={settings.whatsapp} placeholder="+233 24 000 0000" />
-                <p className="mt-1 text-xs text-muted">Add the full international number to show the navbar&apos;s WhatsApp audio-call button. It opens a chat; the artist starts the call there.</p>
               </div>
               <div>
                 <label className="label">Instagram</label>

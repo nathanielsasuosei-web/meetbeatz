@@ -52,13 +52,8 @@ export function Logo({ siteName }: { siteName: string }) {
   );
 }
 
-export function SiteHeader({ siteName, whatsapp, customer }: { siteName: string; whatsapp: string; customer: { name: string } | null }) {
+export function SiteHeader({ siteName, customer }: { siteName: string; customer: { name: string } | null }) {
   const [open, setOpen] = useState(false);
-  const whatsappNumber = whatsapp.replace(/\D/g, "");
-  const whatsappAudioCallUrl =
-    whatsappNumber.length >= 7 && whatsappNumber.length <= 15
-      ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hi! I'd like to start an audio call.")}`
-      : null;
   const { count: cartCount } = useCart();
   const pathname = usePathname();
   const navRef = useRef<HTMLElement | null>(null);
@@ -148,18 +143,18 @@ export function SiteHeader({ siteName, whatsapp, customer }: { siteName: string;
               Cart
               {cartCount > 0 && <span className="ml-1.5 rounded-full bg-acid px-1.5 py-0.5 text-[10px] font-black text-ink">{cartCount}</span>}
             </Link>
-            {whatsappAudioCallUrl && (
-              <a
-                href={whatsappAudioCallUrl}
+            {customer && (
+              <Link
+                href="/call"
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Opens WhatsApp chat; tap the call icon to start an audio call"
-                aria-label="Open WhatsApp to start an audio call with the producer"
+                title="Open a private Meetbeatz audio call in a new window"
+                aria-label="Open a private audio call with the producer"
                 className="btn-ghost !px-3 !py-2 text-xs"
               >
                 <PhoneIcon className="h-4 w-4" />
-                <span className="hidden xl:inline">WhatsApp call</span>
-              </a>
+                <span className="hidden xl:inline">Audio call</span>
+              </Link>
             )}
             {customer ? (
               <Link href="/account" className="btn-ghost">
@@ -223,19 +218,19 @@ export function SiteHeader({ siteName, whatsapp, customer }: { siteName: string;
                 <Link href="/studio" onClick={() => setOpen(false)} className="btn-primary m-item mt-2 justify-center">
                   Book a session
                 </Link>
-                {whatsappAudioCallUrl && (
-                  <a
-                    href={whatsappAudioCallUrl}
+                {customer && (
+                  <Link
+                    href="/call"
                     target="_blank"
                     rel="noopener noreferrer"
-                    title="Opens WhatsApp chat; tap the call icon to start an audio call"
-                    aria-label="Open WhatsApp to start an audio call with the producer"
+                    title="Open a private Meetbeatz audio call in a new window"
+                    aria-label="Open a private audio call with the producer"
                     onClick={() => setOpen(false)}
                     className="btn-ghost m-item mt-1 justify-center"
                   >
                     <PhoneIcon className="h-4 w-4" />
-                    Audio call on WhatsApp
-                  </a>
+                    Audio call
+                  </Link>
                 )}
               </div>
 

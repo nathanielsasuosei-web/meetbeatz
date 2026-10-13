@@ -34,7 +34,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
     <div className="theme-site" style={themeStyle}>
       <CartProvider>
         <PlayerProvider>
-          <SiteHeader siteName={settings.siteName} whatsapp={settings.whatsapp} customer={customer ? { name: customer.name } : null} />
+          <SiteHeader siteName={settings.siteName} customer={customer ? { name: customer.name } : null} />
         <main className="min-h-[70vh]">{children}</main>
         <SiteFooter settings={settings} />
         <PlayerBar />

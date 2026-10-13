@@ -1391,6 +1391,72 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   outline-offset: 3px;
 }
 
+/* ─── In-site WebRTC audio call ─── */
+
+.call-avatar {
+  border: 1px solid rgba(255, 190, 180, 0.28);
+  background:
+    radial-gradient(circle at 32% 25%, rgba(255, 255, 255, 0.22), transparent 32%),
+    linear-gradient(145deg, #781a2b, #220811 68%, #10070a);
+  color: var(--color-cream);
+  box-shadow: 0 0 0 8px rgba(200, 30, 34, 0.1), 0 16px 42px rgba(0, 0, 0, 0.45);
+  transition: box-shadow 240ms ease, transform 240ms ease;
+}
+
+.call-avatar.is-connected {
+  box-shadow: 0 0 0 8px rgba(74, 222, 128, 0.1), 0 0 36px rgba(74, 222, 128, 0.28), 0 16px 42px rgba(0, 0, 0, 0.45);
+  transform: scale(1.03);
+}
+
+.call-start-button,
+.call-end-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 9999px;
+  padding: 0.8rem 1.35rem;
+  font-size: 0.9rem;
+  font-weight: 750;
+  transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.call-start-button {
+  background: var(--color-acid);
+  color: var(--color-ink);
+  box-shadow: 0 8px 22px rgb(var(--accent-rgb, 198 241 53) / 0.25);
+}
+
+.call-start-button:hover:not(:disabled) {
+  background: #d7fa60;
+  box-shadow: 0 10px 28px rgb(var(--accent-rgb, 198 241 53) / 0.35);
+  transform: translateY(-1px);
+}
+
+.call-end-button {
+  background: #d8323e;
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(216, 50, 62, 0.22);
+}
+
+.call-end-button:hover:not(:disabled) {
+  background: #ef4350;
+  transform: translateY(-1px);
+}
+
+.call-start-button:disabled,
+.call-end-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.call-start-button:focus-visible,
+.call-end-button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
 /* ─── Plays-per-beat bars on the admin dashboard ─── */
 
 @keyframes bar-grow {
@@ -1747,7 +1813,10 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   .spot-card .card-glow,
   .wa-chat-action,
   .wa-chat-trigger,
-  .wa-chat-send {
+  .wa-chat-send,
+  .call-avatar,
+  .call-start-button,
+  .call-end-button {
     transition: none !important;
   }
   .reveal .reveal-target {
