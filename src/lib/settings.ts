@@ -25,6 +25,8 @@ export type SiteSettings = {
   /** Producer's WhatsApp number that receives booking alerts (Cloud API recipient). */
   whatsappAlerts: string;
   bookingPolicy: string;
+  /** "1" when the producer has opened Live Recording to artists; "0" while "Coming soon". */
+  liveRecordingOpen: string;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -47,6 +49,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   whatsappAlerts: "",
   bookingPolicy:
     "Please arrive 10 minutes before your session. The balance is payable at the studio before the session starts. Reschedule at least 24 hours in advance to keep your deposit.",
+  liveRecordingOpen: "0",
 };
 
 const RETIRED_PROMO_CODES = new Set(["MEETBEATZ5"]);
@@ -80,6 +83,10 @@ export function getPromoConfig(siteSettings: SiteSettings): { code: string; perc
   // This campaign is fixed at 5%; do not trust a persisted/browser-supplied
   // percentage to change the discount.
   return { code, percent: 5, expiresAt: null };
+}
+
+export function isLiveRecordingOpen(siteSettings: SiteSettings): boolean {
+  return siteSettings.liveRecordingOpen === "1";
 }
 
 export async function saveSettings(partial: Partial<Record<keyof SiteSettings, string>>) {

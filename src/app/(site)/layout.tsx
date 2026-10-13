@@ -9,7 +9,7 @@ import { ArtistIncomingCallAlert } from "@/components/artist-incoming-call-alert
 import { AdSenseScript, AmpAutoAdsScript } from "@/components/adsense";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { ensureSeeded } from "@/lib/seed";
-import { getSettings } from "@/lib/settings";
+import { getSettings, isLiveRecordingOpen } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +35,11 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
     <div className="theme-site" style={themeStyle}>
       <CartProvider>
         <PlayerProvider>
-          <SiteHeader siteName={settings.siteName} customer={customer ? { name: customer.name } : null} />
+          <SiteHeader
+            siteName={settings.siteName}
+            customer={customer ? { name: customer.name } : null}
+            liveRecordingOpen={isLiveRecordingOpen(settings)}
+          />
         <main className="min-h-[70vh]">{children}</main>
         <SiteFooter settings={settings} />
         <PlayerBar />

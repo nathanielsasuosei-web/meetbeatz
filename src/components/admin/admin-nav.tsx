@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/admin/bookings", label: "Bookings", icon: "◷" },
   { href: "/admin/messages", label: "Messages", icon: "✉" },
   { href: "/admin/call", label: "Audio call", icon: "☎" },
+  { href: "/admin/live-recording", label: "Live recording", icon: "◉" },
   { href: "/admin/notifications", label: "Notifications", icon: "◈" },
   { href: "/admin/enquiries", label: "Enquiries", icon: "▤" },
   { href: "/admin/studio", label: "Studio & hours", icon: "◍" },

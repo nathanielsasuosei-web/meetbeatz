@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Equalizer, MicIcon, PhoneIcon } from "@/components/icons";
 import { startIncomingRingtone, startOutgoingRingback } from "@/lib/call-ringtone";
@@ -96,6 +97,8 @@ export function VoiceCall({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [liveRecordingOpen, setLiveRecordingOpen] = useState(false);
+  const [togglingLiveRec, setTogglingLiveRec] = useState(false);
 
   const callRef = useRef<VoiceCallRecord | null>(null);
   const phaseRef = useRef<CallPhase>("idle");
@@ -384,6 +387,39 @@ export function VoiceCall({
     const timer = window.setInterval(() => void poll(), POLL_MS);
     return () => window.clearInterval(timer);
   }, [poll]);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/live-recording", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { open?: boolean } | null) => {
+        if (active && data && typeof data.open === "boolean") {
+          setLiveRecordingOpen(data.open);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function toggleLiveRecordingAccess(nextOpen: boolean) {
+    if (role !== "producer" || togglingLiveRec) return;
+    setTogglingLiveRec(true);
+    try {
+      const res = await fetch("/api/admin/live-recording", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ open: nextOpen }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { open?: boolean };
+      if (res.ok && typeof data.open === "boolean") {
+        setLiveRecordingOpen(data.open);
+      }
+    } finally {
+      setTogglingLiveRec(false);
+    }
+  }
 
   // Play incoming ringing alert sound for the callee, and outgoing ringback tone for the caller
   useEffect(() => {
@@ -756,6 +792,44 @@ export function VoiceCall({
               </div>
             )}
 
+            <div className="mt-5 w-full max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-left">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="eyebrow">Live Recording Studio · Producer Access</p>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                    liveRecordingOpen
+                      ? "bg-[#25d366]/25 text-[#39dc78]"
+                      : "border border-amber-400/40 bg-amber-400/15 text-amber-300"
+                  }`}
+                >
+                  {liveRecordingOpen ? "Open to artists" : "Coming soon (Locked)"}
+                </span>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-muted">
+                {liveRecordingOpen
+                  ? "Live Recording is currently open to artists. You can close it back to 'Coming soon' or enter the producer recording booth."
+                  : "Artists currently see 'Coming soon' for Live Recording. You have full producer access and can open it whenever you want."}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                <Link href="/admin/live-recording" className="btn-primary !px-4 !py-2 !text-xs">
+                  <MicIcon className="h-3.5 w-3.5" />
+                  Open Producer Booth
+                </Link>
+                <button
+                  type="button"
+                  disabled={togglingLiveRec}
+                  onClick={() => void toggleLiveRecordingAccess(!liveRecordingOpen)}
+                  className="btn-ghost !px-4 !py-2 !text-xs"
+                >
+                  {togglingLiveRec
+                    ? "Updating…"
+                    : liveRecordingOpen
+                      ? "Set to Coming Soon"
+                      : "Open Live Recording for Artists"}
+                </button>
+              </div>
+            </div>
+
             <p className="mt-7 max-w-lg text-xs leading-relaxed text-muted">
               Calls use your browser&apos;s microphone over a secure peer-to-peer audio connection. No video is requested. Keep this window open until the call ends.
             </p>
@@ -967,6 +1041,36 @@ export function VoiceCall({
               <p className="font-bold text-cream">Live Ringing</p>
               <p>Instant call alerts</p>
             </div>
+          </div>
+
+          <div className="mt-4 flex w-full max-w-lg flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-acid/15 text-acid">
+                <MicIcon className="h-4 w-4" />
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-cream">Live Recording Booth</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                      liveRecordingOpen
+                        ? "bg-[#25d366]/25 text-[#39dc78]"
+                        : "border border-amber-400/40 bg-amber-400/15 text-amber-300"
+                    }`}
+                  >
+                    {liveRecordingOpen ? "Open" : "Coming soon"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted">
+                  {liveRecordingOpen
+                    ? "Record live vocal takes over Meetbeatz beats in your browser."
+                    : "Coming soon — the producer will open the live recording room when ready."}
+                </p>
+              </div>
+            </div>
+            <Link href="/live-recording" className="btn-ghost !px-3.5 !py-1.5 !text-xs">
+              {liveRecordingOpen ? "Enter Booth →" : "Coming soon"}
+            </Link>
           </div>
         </div>
       </section>
