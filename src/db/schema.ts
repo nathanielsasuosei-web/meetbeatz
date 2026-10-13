@@ -270,7 +270,11 @@ export const notifications = pgTable(
   "notifications",
   {
     id: serial("id").primaryKey(),
-    kind: text("kind").notNull(), // booking_request | booking_confirmed
+    // Which alert this is. Not constrained in the database because the producer
+    // inbox shows every kind generically — see notifications.ts.
+    // booking_request | booking_confirmed | release_submitted | release_paid |
+    // session_requested
+    kind: text("kind").notNull(),
     title: text("title").notNull(),
     body: text("body").notNull(),
     reference: text("reference").default("").notNull(),
