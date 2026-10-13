@@ -1247,6 +1247,150 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   animation: msg-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
+/* ─── Private artist ↔ producer chat (WhatsApp-inspired) ─── */
+
+.wa-chat-panel {
+  isolation: isolate;
+  border: 1px solid rgba(150, 180, 190, 0.22);
+  background: #0b141a;
+  color: #e9edef;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.035) inset;
+}
+
+.wa-chat-header {
+  background: #075e54;
+  color: #f5f7f8;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+.wa-chat-avatar {
+  background: linear-gradient(145deg, #39dc78, #168c58);
+  color: #062b1b;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.24);
+}
+
+.wa-chat-wallpaper {
+  background-color: #0b141a;
+  background-image:
+    radial-gradient(circle at 15% 18%, rgba(68, 102, 113, 0.16) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 78% 72%, rgba(68, 102, 113, 0.12) 0 1px, transparent 1.5px),
+    linear-gradient(145deg, rgba(20, 37, 45, 0.56), rgba(11, 20, 26, 0.94));
+  background-size: 23px 23px, 31px 31px, 100% 100%;
+}
+
+.wa-chat-intro,
+.wa-chat-system {
+  border: 1px solid rgba(134, 150, 160, 0.12);
+  background: rgba(32, 44, 51, 0.96);
+  color: #c3cdd2;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+}
+
+.wa-chat-bubble {
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.16);
+  color: #e9edef;
+}
+
+.wa-chat-outgoing {
+  background: #005c4b;
+}
+
+.wa-chat-incoming {
+  background: #202c33;
+}
+
+.wa-chat-meta {
+  min-height: 0.75rem;
+  color: rgba(218, 229, 233, 0.62);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.wa-chat-read,
+.wa-chat-sent {
+  display: inline-flex;
+  align-items: center;
+}
+
+.wa-chat-read {
+  color: #53bdeb;
+}
+
+.wa-chat-sent {
+  color: rgba(218, 229, 233, 0.58);
+}
+
+.wa-chat-composer {
+  border-top: 1px solid rgba(134, 150, 160, 0.14);
+  background: #202c33;
+}
+
+.wa-chat-input {
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 1.5rem;
+  background: #2a3942;
+  color: #e9edef;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.18) inset;
+  line-height: 1.35;
+}
+
+.wa-chat-input::placeholder {
+  color: #aebac1;
+}
+
+.wa-chat-input:focus {
+  border-color: rgba(37, 211, 102, 0.55);
+  box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.12);
+}
+
+.wa-chat-send,
+.wa-chat-trigger,
+.wa-chat-action {
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: #25d366;
+  color: #062b1b;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+.wa-chat-send:hover:not(:disabled),
+.wa-chat-trigger:hover,
+.wa-chat-action:hover {
+  background: #39dc78;
+}
+
+.wa-chat-trigger,
+.wa-chat-action {
+  font-weight: 750;
+}
+
+.wa-chat-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 9999px;
+  padding: 0.8rem 1.2rem;
+  font-size: 0.875rem;
+  transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.wa-chat-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32), 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+.wa-chat-action:focus-visible,
+.wa-chat-trigger:focus-visible,
+.wa-chat-send:focus-visible,
+.wa-chat-input:focus-visible {
+  outline: 2px solid #e9edef;
+  outline-offset: 3px;
+}
+
 /* ─── Plays-per-beat bars on the admin dashboard ─── */
 
 @keyframes bar-grow {
@@ -1600,7 +1744,10 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
   .glass-header .nav-shell,
   .glass-header .nav-logo,
   .glass-header .glass-glow,
-  .spot-card .card-glow {
+  .spot-card .card-glow,
+  .wa-chat-action,
+  .wa-chat-trigger,
+  .wa-chat-send {
     transition: none !important;
   }
   .reveal .reveal-target {

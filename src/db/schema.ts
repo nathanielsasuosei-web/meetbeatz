@@ -44,10 +44,10 @@ export const promoCodes = pgTable("promo_codes", {
 });
 
 // ---------------------------------------------------------------------------
-// Customers (artist accounts) & support chat
+// Customers (artist accounts) & private artist ↔ producer chat
 // ---------------------------------------------------------------------------
 
-/** Artist/customer accounts — separate from admins. Owns a purchase history and a chat thread. */
+/** Artist/customer accounts — separate from admins. Owns a purchase history and a private producer chat thread. */
 export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
   /** Always stored lowercase so sign-in and order matching are case-insensitive. */
@@ -58,7 +58,7 @@ export const customers = pgTable("customers", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-/** One support thread per customer: customer ↔ admin messages, plus system notices. */
+/** One private thread per artist: artist ↔ producer messages, plus system notices. */
 export const customerMessages = pgTable("customer_messages", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id")

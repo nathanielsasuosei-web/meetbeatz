@@ -101,6 +101,7 @@ export const DELIVERABLE_LABELS: Record<string, string> = {
   mp3: "MP3 (320kbps)",
   wav: "WAV (24-bit)",
   stems: "Track Stems",
+  video: "Video preview",
 };
 
 export function coverUrl(coverPath: string | null | undefined): string | null {

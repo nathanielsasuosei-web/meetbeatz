@@ -86,6 +86,15 @@ export function PhoneIcon(props: P) {
   );
 }
 
+export function SendIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="m21 3-7.2 18-3.2-7.6L3 10.2 21 3Z" />
+      <path d="M10.6 13.4 21 3" />
+    </svg>
+  );
+}
+
 export function Equalizer({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex h-4 items-end gap-[3px] ${className}`} aria-hidden>

@@ -11,6 +11,7 @@ export function BeatVideo({ beatId, src, poster }: { beatId: number; src: string
       src={src}
       poster={poster ?? undefined}
       controls
+      controlsList="nodownload"
       playsInline
       preload="metadata"
       className="aspect-video w-full rounded-3xl border border-white/15 bg-black object-cover shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset,0_16px_48px_-16px_rgba(0,0,0,0.55)]"

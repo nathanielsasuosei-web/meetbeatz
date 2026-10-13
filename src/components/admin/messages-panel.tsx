@@ -2,22 +2,27 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { formatDate } from "@/lib/format";
+import { CheckIcon, SendIcon } from "@/components/icons";
 
 /**
- * The admin side of a customer's support thread: live messages and a reply
- * box. Polls the messages API while mounted so a new customer question shows
- * up without a refresh.
+ * Producer side of a private artist thread. Polls the messages API while
+ * mounted so a new question arrives without a refresh.
  */
-
 type ChatMessage = {
   id: number;
   fromRole: "customer" | "admin" | "system";
   body: string;
   createdAt: string;
+  read?: boolean;
 };
 
 const POLL_MS = 7000;
+
+function messageTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+}
 
 export function MessagesPanel({
   customerId,
@@ -38,7 +43,7 @@ export function MessagesPanel({
     try {
       const res = await fetch(`/api/admin/messages?customerId=${customerId}`, { cache: "no-store" });
       if (!res.ok) return;
-      const data = await res.json();
+      const data = (await res.json()) as { messages?: ChatMessage[] };
       if (Array.isArray(data.messages)) setMessages(data.messages);
     } catch {
       // Leave the current conversation usable if a poll fails.
@@ -67,7 +72,7 @@ export function MessagesPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ customerId, body: text }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string; messages?: ChatMessage[] };
       if (!res.ok) throw new Error(data.error ?? "Could not send the reply.");
       setMessages(data.messages ?? []);
       setDraft("");
@@ -79,60 +84,69 @@ export function MessagesPanel({
   }
 
   return (
-    <div className="card flex h-[32rem] flex-col p-0">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-4">
-        <div>
-          <p className="font-bold">{customer.name}</p>
-          <p className="text-xs text-muted">{customer.email}</p>
+    <section className="wa-chat-panel flex h-[32rem] flex-col overflow-hidden rounded-2xl">
+      <header className="wa-chat-header flex flex-wrap items-center justify-between gap-2 px-5 py-4">
+        <div className="min-w-0">
+          <p className="truncate font-bold">Private chat with {customer.name}</p>
+          <p className="truncate text-xs text-white/70">{customer.email} · only you and this artist can see this thread</p>
         </div>
         <Link href="/admin/orders" className="btn-ghost !px-3 !py-1.5 text-xs">
           Their orders →
         </Link>
-      </div>
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {messages.length === 0 && <p className="pt-8 text-center text-sm text-muted">No messages yet.</p>}
-        {messages.map((m) =>
-          m.fromRole === "system" ? (
-            <p key={m.id} className="mx-auto max-w-[85%] rounded-xl bg-white/5 px-3 py-2 text-center text-[11px] text-muted">
-              {m.body}
+      </header>
+      <div ref={scrollRef} className="wa-chat-wallpaper flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
+        {messages.length === 0 && (
+          <p className="wa-chat-intro mx-auto mt-8 max-w-[85%] rounded-xl px-4 py-3 text-center text-sm">
+            No messages yet. Send a reply to start this private conversation.
+          </p>
+        )}
+        {messages.map((message) =>
+          message.fromRole === "system" ? (
+            <p key={message.id} className="wa-chat-system mx-auto max-w-[85%] rounded-xl px-3 py-2 text-center text-[11px]">
+              {message.body}
             </p>
           ) : (
-            <div key={m.id} className={`flex ${m.fromRole === "admin" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
-                  m.fromRole === "admin" ? "rounded-br-md bg-acid text-ink" : "rounded-bl-md bg-panel-2 text-cream"
-                }`}
-              >
-                <p className={`mb-0.5 text-[10px] font-bold uppercase tracking-wider ${m.fromRole === "admin" ? "text-ink/60" : "text-acid"}`}>
-                  {m.fromRole === "admin" ? "You" : customer.name.split(" ")[0]}
+            <div key={message.id} className={`flex ${message.fromRole === "admin" ? "justify-end" : "justify-start"}`}>
+              <div className={`wa-chat-bubble max-w-[80%] rounded-2xl px-3.5 py-2 ${message.fromRole === "admin" ? "wa-chat-outgoing rounded-br-md" : "wa-chat-incoming rounded-bl-md"}`}>
+                <p className={`mb-0.5 text-[10px] font-bold uppercase tracking-wider ${message.fromRole === "admin" ? "text-[#25d366]" : "text-white/70"}`}>
+                  {message.fromRole === "admin" ? "Meetbeatz Producer" : customer.name.split(" ")[0]}
                 </p>
-                <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                <p className={`mt-1 text-[10px] ${m.fromRole === "admin" ? "text-ink/50" : "text-muted"}`}>{formatDate(m.createdAt)}</p>
+                <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.body}</p>
+                <div className="wa-chat-meta mt-1 flex items-center justify-end gap-1.5">
+                  <time dateTime={message.createdAt}>{messageTime(message.createdAt)}</time>
+                  {message.fromRole === "admin" && (
+                    <span className={message.read ? "wa-chat-read" : "wa-chat-sent"} aria-label={message.read ? "Read by the artist" : "Sent"}>
+                      <CheckIcon className="h-3 w-3" />
+                      {message.read && <CheckIcon className="-ml-2 h-3 w-3" />}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ),
         )}
       </div>
-      {error && <p className="px-4 pb-2 text-xs text-danger">{error}</p>}
-      <form onSubmit={send} className="flex items-end gap-2 border-t border-line p-3">
+      {error && <p role="alert" className="bg-[#202c33] px-4 pb-2 text-xs text-red-300">{error}</p>}
+      <form onSubmit={send} className="wa-chat-composer flex items-end gap-2 p-3">
         <textarea
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void send(e as unknown as React.FormEvent);
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              void send(event as unknown as React.FormEvent);
             }
           }}
           rows={1}
           maxLength={2000}
-          placeholder="Reply as Meetbeatz…"
-          className="field max-h-24 min-h-10 flex-1 resize-y !py-2 text-sm"
+          placeholder="Reply to the artist…"
+          aria-label="Reply to the artist"
+          className="wa-chat-input max-h-24 min-h-10 flex-1 resize-y px-4 py-2.5 text-sm outline-none"
         />
-        <button type="submit" className="btn-primary !px-4 !py-2.5 text-sm" disabled={sending || !draft.trim()}>
-          {sending ? "…" : "Send"}
+        <button type="submit" className="wa-chat-send grid h-10 w-10 shrink-0 place-items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-45" disabled={sending || !draft.trim()} aria-label={sending ? "Sending reply" : "Send reply"}>
+          <SendIcon className="h-5 w-5" />
         </button>
       </form>
-    </div>
+    </section>
   );
 }

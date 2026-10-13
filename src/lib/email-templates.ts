@@ -58,7 +58,7 @@ function summaryRow(label: string, value: string, strong = false) {
 
 export function purchaseEmailHtml(opts: {
   order: Order;
-  licenses: License[];
+  licenses: Array<License & { videoAvailable?: boolean }>;
   baseUrl: string;
   settings: SiteSettings;
 }): string {
@@ -68,6 +68,7 @@ export function purchaseEmailHtml(opts: {
   const licenseBlocks = licenses
     .map((lic) => {
       const files = deliverableList(lic.deliverables);
+      if (lic.videoAvailable && !files.includes("video")) files.push("video");
       const downloadButtons = files
         .map((f) =>
           button(`${baseUrl}/api/download/${lic.downloadToken}?file=${f}`, `Download ${DELIVERABLE_LABELS[f] ?? f.toUpperCase()}`),
