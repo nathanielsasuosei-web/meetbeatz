@@ -3,10 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logoutAction } from "./actions";
 import { EmailChangeForm } from "@/components/account/email-form";
+import { MessageProducerButton } from "@/components/account/message-producer-button";
 import { DownloadIcon } from "@/components/icons";
 import { loadAccountData } from "@/lib/account";
 import { getCustomerSession } from "@/lib/customer-auth";
-import { DELIVERABLE_LABELS, deliverableList, formatDate, formatDateTime, money, statusLabel } from "@/lib/format";
+import { DELIVERABLE_LABELS, deliverableList, formatDate, money, statusLabel } from "@/lib/format";
 import { Reveal } from "@/components/reveal";
 
 export const dynamic = "force-dynamic";
@@ -130,6 +131,16 @@ export default async function AccountPage() {
                         </a>
                       )),
                     )}
+                    {licenses.filter((license) => license.videoAvailable && !deliverableList(license.deliverables).includes("video")).map((license) => (
+                      <a
+                        key={`video-${license.id}`}
+                        href={`/api/download/${license.downloadToken}?file=video`}
+                        className="btn-ghost !px-3.5 !py-2 text-xs"
+                      >
+                        <DownloadIcon className="h-4 w-4" />
+                        Download video preview
+                      </a>
+                    ))}
                     {licenses.map((license) => (
                       <Link key={`cert-${license.id}`} href={`/license/${license.licenseKey}`} className="btn-ghost !px-3.5 !py-2 text-xs">
                         License certificate
@@ -187,14 +198,13 @@ export default async function AccountPage() {
       <section className="mt-12">
         <div className="card flex flex-wrap items-center justify-between gap-4 p-6">
           <div>
-            <h2 className="text-xl font-bold">Questions? Chat with us 💬</h2>
-            <p className="mt-1 text-sm text-muted">
-              Use the chat bubble in the corner — it goes straight to Meetbeatz and the replies land right there.
+            <p className="eyebrow">Private artist chat</p>
+            <h2 className="mt-2 text-xl font-bold">Talk directly with the producer</h2>
+            <p className="mt-1 max-w-xl text-sm text-muted">
+              Start a private, WhatsApp-style conversation with Meetbeatz. Only you and the producer can see your messages.
             </p>
           </div>
-          <Link href="/beats" className="btn-primary">
-            Keep browsing
-          </Link>
+          <MessageProducerButton />
         </div>
       </section>
 

@@ -33,7 +33,7 @@ export function MessageThreads({ initialThreads, selectedId }: { initialThreads:
     <div className="card max-h-[32rem] overflow-y-auto p-2">
       {threads.length === 0 ? (
         <p className="p-6 text-center text-sm text-muted">
-          No conversations yet. Artists can message you from the chat bubble on the site — their threads show up here.
+          No artist chats yet. Signed-in artists can message the producer from their account; each conversation is private.
         </p>
       ) : (
         <div className="space-y-1">

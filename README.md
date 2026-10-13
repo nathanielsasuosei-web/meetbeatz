@@ -85,6 +85,7 @@ git push -u origin main
 | `EMAIL_FROM` | Sender, e.g. `Meetbeatz <no-reply@meetbeatz.com>` |
 | `SESSION_SECRET` | Secret for admin session cookies |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial admin account (first run only) |
+| `TURN_SERVER_URLS`, `TURN_SHARED_SECRET` | Optional Coturn TURN relay and shared secret for in-site WebRTC audio calls; calls use STUN without these |
 | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Meta WhatsApp Business Cloud API credentials for producer booking alerts |
 | `WHATSAPP_ALERT_TEMPLATE`, `WHATSAPP_ALERT_LANGUAGE` | Optional approved template (recommended for proactive alerts) and its language, default `en_US` |
 | `WHATSAPP_DEFAULT_COUNTRY_CODE` | Country code used when the producer enters a local alert number, default `233` |
@@ -118,11 +119,13 @@ Environment-variable overrides are embedded into the browser bundle at build tim
 | `/privacy`, `/terms`, `/refunds` | Policy pages (readable long-form layout, TOC, FAQ) |
 | `/cart`, `/checkout` | Cart-first beat checkout with Ghana payment choices and payment confirmation gate |
 | `/account`, `/orders/[reference]`, `/license/[key]` | Customer account, order receipt, license certificate |
+| `/call` | Private audio-only WebRTC call window; artists start calls and the producer accepts |
 
-The header shows **Beats · Sound Kits · Studio · Licensing · About** on screens ≥1024px, and a
-drawer with the same links plus Contact and the legal pages below that. The footer repeats the
-public pages, the legal pages and the contact details on every page, and a branded 404 offers the
-main destinations. `robots.txt` and `sitemap.xml` (public pages + published beats) are generated
+The header shows **Beats · Sound Kits · Studio · Licensing · About** and, for signed-in artists, an
+**Audio call** action that opens `/call` in a new window. The producer has the same call-window link
+in the admin navigation. The mobile drawer includes the artist call action too. The footer repeats
+the public pages, the legal pages and the contact details on every page, and a branded 404 offers
+the main destinations. `robots.txt` and `sitemap.xml` (public pages + published beats) are generated
 by `src/app/robots.ts` and `src/app/sitemap.ts`; set `NEXT_PUBLIC_APP_URL` to the production
 domain so the sitemap lists the right host, otherwise `https://meetbeatz.com` is used.
 

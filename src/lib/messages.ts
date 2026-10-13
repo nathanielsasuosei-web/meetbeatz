@@ -2,7 +2,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { customerMessages, customers, type CustomerMessage } from "@/db/schema";
 
-/** Support chat: one thread per customer, with system notices in between. */
+/** Private artist ↔ producer chat: one thread per artist, with system notices in between. */
 
 export type MessageRole = "customer" | "admin" | "system";
 

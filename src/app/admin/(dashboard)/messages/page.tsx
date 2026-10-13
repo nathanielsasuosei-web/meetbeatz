@@ -18,8 +18,8 @@ export default async function AdminMessagesPage({ searchParams }: { searchParams
 
   return (
     <>
-      <PageHeader eyebrow="Support" title="Messages">
-        <p className="text-sm text-muted">Chat with artists who buy from you</p>
+      <PageHeader eyebrow="Artist ↔ producer" title="Messages">
+        <p className="text-sm text-muted">Private one-to-one conversations — artists cannot see each other&apos;s threads.</p>
       </PageHeader>
 
       <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
