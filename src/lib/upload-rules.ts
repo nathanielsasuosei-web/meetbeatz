@@ -8,9 +8,44 @@
  */
 import { UploadError } from "./upload-error";
 
-export type UploadKind = "covers" | "previews" | "videos" | "mp3" | "wav" | "stems" | "sound-kits";
+export type UploadKind =
+  | "covers"
+  | "previews"
+  | "videos"
+  | "mp3"
+  | "wav"
+  | "stems"
+  | "sound-kits"
+  // Artist-facing slots (see CUSTOMER_UPLOAD_KINDS): release artwork, the
+  // finished master submitted for distribution, and a take recorded in the
+  // browser studio. Same storage, different callers.
+  | "artwork"
+  | "masters"
+  | "takes";
 
-export const UPLOAD_KINDS: UploadKind[] = ["covers", "previews", "videos", "mp3", "wav", "stems", "sound-kits"];
+export const UPLOAD_KINDS: UploadKind[] = [
+  "covers",
+  "previews",
+  "videos",
+  "mp3",
+  "wav",
+  "stems",
+  "sound-kits",
+  "artwork",
+  "masters",
+  "takes",
+];
+
+/**
+ * The slots a signed-in artist may upload to. Everything else is admin-only:
+ * without this list the public upload route would let any visitor write into
+ * the beat master or stem slots.
+ */
+export const CUSTOMER_UPLOAD_KINDS: UploadKind[] = ["artwork", "masters", "takes"];
+
+export function isCustomerUploadKind(value: string): value is UploadKind {
+  return (CUSTOMER_UPLOAD_KINDS as string[]).includes(value);
+}
 
 export const ALLOWED_EXT: Record<UploadKind, string[]> = {
   covers: [".jpg", ".jpeg", ".png", ".webp"],
@@ -20,6 +55,11 @@ export const ALLOWED_EXT: Record<UploadKind, string[]> = {
   wav: [".wav", ".aif", ".aiff", ".flac", ".zip"],
   stems: [".zip", ".rar", ".7z"],
   "sound-kits": [".zip", ".rar", ".7z"],
+  artwork: [".jpg", ".jpeg", ".png", ".webp"],
+  // Only formats a distributor can ingest. The browser studio always encodes
+  // WAV, so no container-dependent types (webm/ogg) are accepted here.
+  masters: [".wav", ".flac", ".mp3", ".aif", ".aiff", ".m4a"],
+  takes: [".wav", ".mp3", ".m4a", ".flac"],
 };
 
 /**

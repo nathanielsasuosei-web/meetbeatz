@@ -14,6 +14,7 @@ import {
   num,
 } from "@/lib/format";
 import { loadOrderByReference } from "@/lib/payments";
+import { RELEASE_STATUS_HINTS, RELEASE_STATUS_LABELS, releaseStatusOf, storeList } from "@/lib/release";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Your order" };
@@ -22,7 +23,9 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
   const { reference } = await params;
   const bundle = await loadOrderByReference(decodeURIComponent(reference));
   if (!bundle) notFound();
-  const { order, items, licenses, booking } = bundle;
+  const { order, items, licenses, booking, release } = bundle;
+  // Where "start over" and "try again" send the buyer, per order kind.
+  const restartHref = order.kind === "beat" ? "/beats" : order.kind === "distribution" ? "/distribution" : "/studio";
   const settings = await getSettings();
   const mode = getPaymentMode();
   const emailConfigured = emailProvider() !== "none";
@@ -47,7 +50,7 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
                 I have paid — check again
               </Link>
             )}
-            <Link href={order.kind === "beat" ? "/beats" : "/studio"} className="btn-ghost">
+            <Link href={restartHref} className="btn-ghost">
               Start over
             </Link>
           </div>
@@ -62,7 +65,7 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
             No money was taken for <span className="font-mono text-cream">{order.reference}</span>. Check your balance or try a different network.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href={order.kind === "beat" ? "/beats" : "/studio"} className="btn-primary">
+            <Link href={restartHref} className="btn-primary">
               Try again
             </Link>
           </div>
@@ -75,7 +78,13 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="eyebrow">Payment successful</p>
-              <h1 className="display mt-3 text-4xl md:text-5xl">{order.kind === "beat" ? "Your beats are ready 🎧" : "Session confirmed 🎙️"}</h1>
+              <h1 className="display mt-3 text-4xl md:text-5xl">
+                {order.kind === "beat"
+                  ? "Your beats are ready 🎧"
+                  : order.kind === "distribution"
+                    ? "Release received 📀"
+                    : "Session confirmed 🎙️"}
+              </h1>
               <p className="mt-3 text-sm text-muted">
                 Order <span className="font-mono text-cream">{order.reference}</span> · Paid {formatDateTime(order.paidAt)} via {networkLabel(order.network)}
               </p>
@@ -135,6 +144,53 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
             </div>
           )}
 
+          {order.kind === "distribution" && release && (
+            <div className="card mt-8 overflow-hidden">
+              <div className="grid gap-6 p-6 md:grid-cols-2">
+                <div>
+                  <p className="eyebrow">{release.planName} release</p>
+                  <p className="mt-2 text-3xl font-black">{release.releaseTitle}</p>
+                  <p className="mt-1 text-lg text-cream/85">
+                    {release.artistName}
+                    {release.genre ? ` · ${release.genre}` : ""}
+                    {release.explicit ? " · explicit" : ""}
+                  </p>
+                  <p className="mt-3 text-sm text-muted">
+                    Delivering to {storeList(release.stores).join(", ")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    {release.releaseDate ? `Requested release date ${formatDate(release.releaseDate)}` : "Released as soon as it is ready"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    Release reference <span className="font-mono text-cream/80">{release.reference}</span>
+                    {" · "}ISRC {release.isrc || "to be assigned"} · UPC {release.upc || "to be assigned"}
+                  </p>
+                </div>
+                <dl className="space-y-2 text-sm">
+                  <div className="flex justify-between text-cream/80">
+                    <dt>Status</dt>
+                    <dd>{RELEASE_STATUS_LABELS[releaseStatusOf(release.status)]}</dd>
+                  </div>
+                  <div className="flex justify-between text-cream/80">
+                    <dt>Distribution fee</dt>
+                    <dd>{money(order.subtotal, order.currency)}</dd>
+                  </div>
+                  <div className="flex justify-between border-t border-line pt-2 font-black">
+                    <dt>Paid</dt>
+                    <dd className="text-acid">{money(order.total, order.currency)}</dd>
+                  </div>
+                </dl>
+              </div>
+              <p className="border-t border-line bg-ink-2 px-6 py-4 text-xs leading-relaxed text-muted">
+                {RELEASE_STATUS_HINTS[releaseStatusOf(release.status)]} Track the release any time on your{" "}
+                <Link href="/account" className="text-acid hover:underline">
+                  account page
+                </Link>
+                .
+              </p>
+            </div>
+          )}
+
           {order.kind === "booking" && booking && (
             <div className="card mt-8 overflow-hidden">
               <div className="grid gap-6 p-6 md:grid-cols-2">
@@ -188,6 +244,14 @@ export default async function OrderPage({ params }: { params: Promise<{ referenc
                 {order.kind === "booking" && (
                   <tr className="border-b border-line/60">
                     <td className="py-2 text-cream/80">Booking deposit</td>
+                    <td className="py-2 text-right">{money(order.subtotal, order.currency)}</td>
+                  </tr>
+                )}
+                {order.kind === "distribution" && release && (
+                  <tr className="border-b border-line/60">
+                    <td className="py-2 text-cream/80">
+                      Distribution — {release.planName} · {release.releaseTitle}
+                    </td>
                     <td className="py-2 text-right">{money(order.subtotal, order.currency)}</td>
                   </tr>
                 )}

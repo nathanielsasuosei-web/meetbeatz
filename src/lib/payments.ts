@@ -5,6 +5,7 @@ import {
   beatLicenses,
   beats,
   bookings,
+  distributionReleases,
   licenseTypes,
   licenses,
   orderItems,
@@ -13,6 +14,7 @@ import {
   type Beat,
   type BeatLicense,
   type Booking,
+  type DistributionRelease,
   type License,
   type LicenseType,
   type Order,
@@ -20,23 +22,22 @@ import {
 } from "@/db/schema";
 import { sendEmail } from "./email";
 import { EMAIL_ERROR, isValidEmail, normalizeEmailAddress } from "./email-address";
-import { adminNewOrderHtml, bookingEmailHtml, purchaseEmailHtml } from "./email-templates";
+import { adminNewOrderHtml, bookingEmailHtml, distributionEmailHtml, purchaseEmailHtml } from "./email-templates";
 import { minutesToTime, num, round2, timeToMinutes, toMinor } from "./format";
 import { makeLicenseKey, makeReference, randomToken } from "./ids";
 import { initializeTransaction, isValidSplitCode, isValidSubaccountCode, verifyTransaction, type VerifyResult } from "./paystack";
 import { resolvePromoCode } from "./promos";
 import { getPaymentMode, getSettings, type SiteSettings } from "./settings";
 import { isSlotAvailable, isValidDateString, todayString } from "./slots";
-import { notifyBooking } from "./notifications";
+import { notifyBooking, notifyRelease } from "./notifications";
+import { getPlan, planPrice, prepareRelease, type ReleaseInput } from "./distribution";
 import { getBaseUrl } from "./url";
 
-export class CheckoutError extends Error {
-  status: number;
-  constructor(message: string, status = 400) {
-    super(message);
-    this.status = status;
-  }
-}
+// Re-exported so every existing `import { CheckoutError } from "@/lib/payments"`
+// keeps working; the class itself lives in ./checkout-error to keep the modules
+// that validate a submission out of an import cycle with this one.
+export { CheckoutError } from "./checkout-error";
+import { CheckoutError } from "./checkout-error";
 
 export type CustomerInput = {
   name: string;
@@ -420,6 +421,73 @@ export async function createBookingOrder(input: {
 }
 
 // ---------------------------------------------------------------------------
+// Music distribution
+// ---------------------------------------------------------------------------
+/**
+ * Pays for a release submission.
+ *
+ * The release row is written first (status `awaiting_payment`) so the artwork
+ * and master the artist just uploaded are attached to something durable before
+ * the payment redirect happens — losing a 60 MB master because a checkout
+ * errored halfway through would be far worse than an unpaid release row, which
+ * the dashboard shows and the producer can cancel.
+ */
+export async function createDistributionOrder(input: {
+  release: ReleaseInput;
+  customer: Partial<CustomerInput>;
+  /** Signed-in artist — puts the release straight onto their account. */
+  customerId?: number | null;
+}): Promise<{ url: string; reference: string; releaseReference: string }> {
+  const customer = cleanCustomer(input.customer);
+  const settings = await getSettings();
+
+  const release = await prepareRelease(input.release, input.customerId ?? null);
+  const plan = await getPlan(release.planId ?? 0);
+  if (!plan) throw new CheckoutError("That distribution tier is no longer available.", 404);
+
+  const totals = computeTotals(planPrice(plan), num(settings.feePercent));
+  const reference = makeReference("MBD");
+
+  const [order] = await db
+    .insert(orders)
+    .values({
+      reference,
+      kind: "distribution",
+      customerId: input.customerId ?? null,
+      customerName: customer.name,
+      customerEmail: customer.email,
+      customerPhone: customer.phone,
+      network: customer.network,
+      subtotal: totals.subtotal.toFixed(2),
+      feePercent: num(settings.feePercent).toFixed(2),
+      fee: totals.fee.toFixed(2),
+      total: totals.total.toFixed(2),
+      currency: settings.currency,
+      status: "pending",
+      paymentProvider: getPaymentMode(),
+      splitSubaccount: settings.paystackSubaccount.trim() || null,
+    })
+    .returning();
+
+  await db.update(distributionReleases).set({ orderId: order.id, updatedAt: new Date() }).where(eq(distributionReleases.id, release.id));
+
+  try {
+    await notifyRelease({ ...release, orderId: order.id }, order, "submitted");
+  } catch (err) {
+    console.error("[payments] failed to notify producer of new release", err);
+  }
+
+  const baseUrl = await getBaseUrl();
+  const url = await startPayment(order, settings, baseUrl, {
+    kind: "distribution",
+    plan: plan.name,
+    release: release.releaseTitle,
+    release_reference: release.reference,
+  });
+  return { url, reference, releaseReference: release.reference };
+}
+
+// ---------------------------------------------------------------------------
 // Loading & finalizing
 // ---------------------------------------------------------------------------
 export type OrderBundle = {
@@ -427,6 +495,8 @@ export type OrderBundle = {
   items: OrderItem[];
   licenses: License[];
   booking: Booking | null;
+  /** Present when `order.kind === "distribution"`. */
+  release: DistributionRelease | null;
 };
 
 export async function loadOrderByReference(reference: string): Promise<OrderBundle | null> {
@@ -442,12 +512,13 @@ export async function loadOrderById(id: number): Promise<OrderBundle | null> {
 }
 
 async function loadBundle(order: Order): Promise<OrderBundle> {
-  const [items, lics, [booking]] = await Promise.all([
+  const [items, lics, [booking], [release]] = await Promise.all([
     db.select().from(orderItems).where(eq(orderItems.orderId, order.id)).orderBy(asc(orderItems.id)),
     db.select().from(licenses).where(eq(licenses.orderId, order.id)).orderBy(asc(licenses.id)),
     db.select().from(bookings).where(eq(bookings.orderId, order.id)).limit(1),
+    db.select().from(distributionReleases).where(eq(distributionReleases.orderId, order.id)).limit(1),
   ]);
-  return { order, items, licenses: lics, booking: booking ?? null };
+  return { order, items, licenses: lics, booking: booking ?? null, release: release ?? null };
 }
 
 export async function finalizeOrder(
@@ -502,6 +573,14 @@ export async function finalizeOrder(
             .where(eq(beats.id, item.beatId));
         }
       }
+    } else if (order.kind === "distribution") {
+      // The release only becomes real work for the studio once it is paid for.
+      // Guarded on the previous status so a repeated webhook cannot drag a
+      // release that is already in review back to "submitted".
+      await tx
+        .update(distributionReleases)
+        .set({ status: "submitted", updatedAt: now })
+        .where(and(eq(distributionReleases.orderId, order.id), eq(distributionReleases.status, "awaiting_payment")));
     } else {
       await tx
         .update(bookings)
@@ -529,6 +608,17 @@ export async function finalizeOrder(
     }
   }
 
+  if (order.kind === "distribution") {
+    const [release] = await db.select().from(distributionReleases).where(eq(distributionReleases.orderId, order.id)).limit(1);
+    if (release) {
+      try {
+        await notifyRelease(release, order, "paid");
+      } catch (err) {
+        console.error("[payments] failed to notify producer of paid release", err);
+      }
+    }
+  }
+
   const [updated] = await db.select().from(orders).where(eq(orders.id, order.id)).limit(1);
   return updated;
 }
@@ -543,7 +633,7 @@ export async function markOrderFailed(reference: string, providerData?: unknown)
 export async function sendOrderEmails(orderId: number, opts: { includeAdmin?: boolean } = {}) {
   const bundle = await loadOrderById(orderId);
   if (!bundle) throw new Error("Order not found");
-  const { order, items, booking } = bundle;
+  const { order, items, booking, release } = bundle;
   const [settings, baseUrl] = await Promise.all([getSettings(), getBaseUrl()]);
 
   let subject: string;
@@ -551,6 +641,10 @@ export async function sendOrderEmails(orderId: number, opts: { includeAdmin?: bo
   if (order.kind === "beat") {
     subject = `Your ${settings.siteName} beats & license — ${order.reference}`;
     html = purchaseEmailHtml({ order, licenses: bundle.licenses, baseUrl, settings });
+  } else if (order.kind === "distribution") {
+    if (!release) throw new Error("Release missing for distribution order");
+    subject = `Release received — ${release.releaseTitle} (${release.reference})`;
+    html = distributionEmailHtml({ order, release, baseUrl, settings });
   } else {
     if (!booking) throw new Error("Booking missing for order");
     subject = `Studio session confirmed — ${booking.serviceName} on ${booking.bookingDate}`;
@@ -569,10 +663,11 @@ export async function sendOrderEmails(orderId: number, opts: { includeAdmin?: bo
       notify = admin?.email ?? "";
     }
     if (notify) {
+      const label = order.kind === "beat" ? "beat sale" : order.kind === "distribution" ? "release submission" : "studio booking";
       await sendEmail({
         to: notify,
-        subject: `New ${order.kind === "beat" ? "beat sale" : "studio booking"} — ${order.reference}`,
-        html: adminNewOrderHtml({ order, items, booking, baseUrl, settings }),
+        subject: `New ${label} — ${order.reference}`,
+        html: adminNewOrderHtml({ order, items, booking, release, baseUrl, settings }),
         orderId: order.id,
       });
     }

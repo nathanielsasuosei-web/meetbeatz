@@ -99,3 +99,55 @@ export function Equalizer({ className = "" }: { className?: string }) {
     </span>
   );
 }
+
+export function BagIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M4.5 8h15l-1.1 11.2a1.5 1.5 0 0 1-1.5 1.3H7.1a1.5 1.5 0 0 1-1.5-1.3L4.5 8Z" />
+      <path d="M9 8V6.2a3 3 0 0 1 6 0V8" />
+    </svg>
+  );
+}
+
+export function ShieldIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3.2 5 6v5.5c0 4.2 2.9 7.6 7 9.3 4.1-1.7 7-5.1 7-9.3V6l-7-2.8Z" />
+      <path d="M9.2 12.1 11.3 14.2 15 10.4" />
+    </svg>
+  );
+}
+
+export function DistributeIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="12" r="2.4" />
+      <circle cx="4.6" cy="6.2" r="1.9" />
+      <circle cx="19.4" cy="6.2" r="1.9" />
+      <circle cx="4.6" cy="17.8" r="1.9" />
+      <circle cx="19.4" cy="17.8" r="1.9" />
+      <path d="M6.3 7.3 10 10.6M17.7 7.3 14 10.6M6.3 16.7 10 13.4M17.7 16.7 14 13.4" />
+    </svg>
+  );
+}
+
+export function PaletteIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3.4a8.6 8.6 0 0 0 0 17.2c1.3 0 2-.9 2-1.9s-.7-1.6-.7-2.4c0-.8.7-1.4 1.6-1.4h1.6a4.1 4.1 0 0 0 4.1-4.3C20.6 6.6 16.8 3.4 12 3.4Z" />
+      <circle cx="8" cy="10" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="10" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="8.6" cy="14.4" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function MicIcon(props: P) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="9" y="2.8" width="6" height="11" rx="3" />
+      <path d="M5.4 11.6a6.6 6.6 0 0 0 13.2 0M12 18.2v3M8.8 21.2h6.4" />
+    </svg>
+  );
+}

@@ -66,6 +66,18 @@ export async function postCustomerMessage(customerId: number, body: string): Pro
   return listThreadMessages(customerId);
 }
 
+/**
+ * Posts a system notice into a customer's thread — a session being confirmed, a
+ * release moving to review, anything the artist should see without it looking
+ * like the producer typed it. Silently ignores an empty body: a status change
+ * with nothing to say should not leave a blank line in the conversation.
+ */
+export async function postSystemMessage(customerId: number, body: string): Promise<void> {
+  const text = body.trim().slice(0, 2000);
+  if (!text || !Number.isFinite(customerId) || customerId <= 0) return;
+  await db.insert(customerMessages).values({ customerId, fromRole: "system", body: text });
+}
+
 export async function postAdminReply(customerId: number, body: string): Promise<ChatMessage[]> {
   const text = body.trim().slice(0, 2000);
   if (!text) throw new Error("Write a reply first.");

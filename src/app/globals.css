@@ -1624,3 +1624,188 @@ input[type="date"].field::-webkit-calendar-picker-indicator {
     display: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Screen-capture guard (src/components/screen-guard.tsx)
+
+   Four fixed layers, all above the header (z-40), player bar and chat bubble
+   (z-50). The watermark and veil are pure presentation — `pointer-events: none`
+   on the watermark keeps the store clickable underneath it, while the veil is a
+   real button so clicking anywhere on it returns focus and lifts it.
+   -------------------------------------------------------------------------- */
+.sg-watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  background-repeat: repeat;
+  background-position: 0 0;
+  opacity: 0.14;
+  /* Keeps the mark legible over both the dark ink and the cream license card. */
+  mix-blend-mode: screen;
+}
+
+.sg-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+  color: var(--color-cream);
+  /* Opaque, not just blurred: a blurred page can still be sharpened after the
+     fact, and the point of the veil is that the recording captures nothing. */
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(53, 16, 25, 0.96) 0%, rgba(5, 5, 6, 0.99) 62%),
+    rgba(5, 5, 6, 0.99);
+  backdrop-filter: blur(24px) saturate(0.4);
+  -webkit-backdrop-filter: blur(24px) saturate(0.4);
+  animation: sg-fade 180ms ease-out both;
+}
+
+.sg-veil-card {
+  display: block;
+  max-width: 28rem;
+}
+
+.sg-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 8500;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(5, 5, 6, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: sg-fade 160ms ease-out both;
+}
+
+.sg-modal-card {
+  width: min(30rem, 100%);
+  max-height: calc(100dvh - 2.5rem);
+  overflow-y: auto;
+  overscroll-contain: contain;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(200, 30, 34, 0.45);
+  background: linear-gradient(160deg, rgba(53, 16, 25, 0.98), rgba(13, 8, 10, 0.99));
+  box-shadow: 0 24px 72px -18px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  animation: sg-pop 220ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.sg-toast {
+  position: fixed;
+  left: 1rem;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6.5rem);
+  z-index: 8200;
+  display: flex;
+  max-width: min(22rem, calc(100vw - 2rem));
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 92, 92, 0.4);
+  background: rgba(13, 8, 10, 0.94);
+  box-shadow: 0 12px 36px -12px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: sg-rise 220ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+/* Above the player bar so the warning is never covered by the transport. */
+@media (min-width: 1024px) {
+  .sg-toast {
+    bottom: 6.5rem;
+  }
+}
+
+.sg-toast-close {
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.sg-toast-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--color-cream);
+}
+
+@keyframes sg-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sg-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Covers and players cannot be lifted with the mouse: no drag ghost, no
+   selection highlight, and the guard blocks the right-click menu in JS. */
+.sg-guard img,
+.sg-guard video,
+.sg-guard [data-sg-protect] {
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Printing is a capture path too (print-to-PDF keeps the artwork). With the
+   guard on, a printed page carries the notice instead of the store. */
+@media print {
+  html.sg-guard body > * {
+    display: none !important;
+  }
+  html.sg-guard body::after {
+    display: block !important;
+    padding: 3rem 1.5rem;
+    color: #111;
+    font: 600 14px/1.6 ui-sans-serif, system-ui, sans-serif;
+    text-align: center;
+    content: "Printing, screenshots and screen recording are disabled on this store. Licensed files are delivered by email to the account that bought them.";
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-veil,
+  .sg-modal,
+  .sg-modal-card,
+  .sg-toast {
+    animation: none !important;
+  }
+}

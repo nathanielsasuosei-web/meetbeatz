@@ -4,15 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CloseIcon, MenuIcon } from "./icons";
+import { BagIcon, CloseIcon, MenuIcon } from "./icons";
 import { LiquidPill, useLiquidPill } from "./liquid-pill";
 import { useSpotlight } from "./spotlight";
 import { useCart } from "./cart/cart-provider";
 
 /**
- * Desktop navigation, shown from 1024px up. Five links is what fits next to
- * the logo and the account buttons before it starts to crowd; Contact and the
- * legal pages live in the drawer below that and in the footer everywhere.
+ * Desktop navigation, shown from 1024px up: Beats, Sound Kits, Studio,
+ * Licensing, About and the Cart, each as its own button. Six is what fits next
+ * to the logo and the account buttons before it starts to crowd; Contact and
+ * the legal pages live in the drawer below that and in the footer everywhere.
  */
 const NAV = [
   { href: "/beats", label: "Beats" },
@@ -22,7 +23,27 @@ const NAV = [
   { href: "/about", label: "About" },
 ];
 
+/** The cart button sits at the end of the same row, and shares the liquid pill. */
+const CART_INDEX = NAV.length;
+
 type NavItem = (typeof NAV)[number];
+
+/** Every nav button: the pill glides behind it, so the chrome stays light. */
+const NAV_BUTTON =
+  "relative z-10 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold " +
+  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid/60 " +
+  "xl:px-4 xl:py-2 xl:text-sm";
+
+/**
+ * Artist services shown in the mobile drawer. The header row keeps the six
+ * buttons the storefront is built around, so these live one tap deeper here and
+ * in the footer everywhere.
+ */
+const MOBILE_SERVICES = [
+  { href: "/distribution", label: "Music distribution" },
+  { href: "/record", label: "Record online" },
+  { href: "/colour-adjuster", label: "Colour adjuster" },
+];
 
 /** Extra rows shown in the mobile menu under the main links. */
 const MOBILE_MORE = [
@@ -93,7 +114,9 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
   const isActive = (item: NavItem) =>
     pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !item.href.includes("#"));
 
-  const activeIndex = NAV.findIndex(isActive);
+  const pageActiveIndex = NAV.findIndex(isActive);
+  const cartActive = pathname.startsWith("/cart");
+  const activeIndex = cartActive ? CART_INDEX : pageActiveIndex;
   // On a page outside the main nav (contact, legal pages, account) the pill
   // rests on the first item instead of vanishing.
   const restIndex = activeIndex >= 0 ? activeIndex : 0;
@@ -129,20 +152,44 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
                   onFocus={() => setHover(i)}
                   onBlur={() => setHover((h) => (h === i ? null : h))}
                   style={{ animationDelay: `${100 + i * 70}ms` }}
-                  className={`nav-item relative z-10 rounded-full px-3 py-2 text-sm font-semibold xl:px-4 xl:text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid/60 ${
-                    active ? "text-cream" : "text-muted hover:text-cream"
+                  aria-current={active ? "page" : undefined}
+                  className={`nav-item ${NAV_BUTTON} ${
+                    active ? "border-acid/50 bg-acid/10 text-cream" : "border-white/10 bg-white/[0.02] text-muted hover:border-white/25 hover:text-cream"
                   }`}
                 >
                   {item.label}
                 </Link>
               );
             })}
+            {/* Cart is the sixth button in the row, not a stray link beside it,
+                so the pill glides to it like any other destination. */}
+            <Link
+              ref={(el) => {
+                itemRefs.current[CART_INDEX] = el;
+              }}
+              href="/cart"
+              onMouseEnter={() => setHover(CART_INDEX)}
+              onFocus={() => setHover(CART_INDEX)}
+              onBlur={() => setHover((h) => (h === CART_INDEX ? null : h))}
+              style={{ animationDelay: `${100 + CART_INDEX * 70}ms` }}
+              aria-current={cartActive ? "page" : undefined}
+              className={`nav-item ${NAV_BUTTON} ${
+                cartActive ? "border-acid/50 bg-acid/10 text-cream" : "border-white/10 bg-white/[0.02] text-muted hover:border-white/25 hover:text-cream"
+              }`}
+            >
+              <BagIcon className="h-4 w-4" />
+              Cart
+              <span
+                aria-label={`${cartCount} in cart`}
+                className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-black leading-none ${
+                  cartCount > 0 ? "bg-acid text-ink" : "bg-white/10 text-muted"
+                }`}
+              >
+                {cartCount}
+              </span>
+            </Link>
           </nav>
           <div className="hidden items-center gap-3 lg:flex">
-            <Link href="/cart" className="relative text-xs font-semibold text-muted transition hover:text-cream">
-              Cart
-              {cartCount > 0 && <span className="ml-1.5 rounded-full bg-acid px-1.5 py-0.5 text-[10px] font-black text-ink">{cartCount}</span>}
-            </Link>
             {customer ? (
               <Link href="/account" className="btn-ghost">
                 My account
@@ -192,8 +239,13 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
                   onClick={() => setOpen(false)}
                   className="m-item flex items-center justify-between rounded-xl px-3 py-3 text-base font-semibold text-cream transition hover:bg-white/10 hover:translate-x-1"
                 >
-                  <span>Cart</span>
-                  {cartCount > 0 && <span className="rounded-full bg-acid px-2 py-0.5 text-xs font-black text-ink">{cartCount}</span>}
+                  <span className="flex items-center gap-2">
+                    <BagIcon className="h-4 w-4 text-acid" />
+                    Cart
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-black text-ink ${cartCount > 0 ? "bg-acid" : "bg-white/10 !text-muted"}`}>
+                    {cartCount}
+                  </span>
                 </Link>
                 <Link
                   href={customer ? "/account" : "/account/login"}
@@ -205,6 +257,22 @@ export function SiteHeader({ siteName, customer }: { siteName: string; customer:
                 <Link href="/studio" onClick={() => setOpen(false)} className="btn-primary m-item mt-2 justify-center">
                   Book a session
                 </Link>
+              </div>
+
+              {/* Services are not in the six-button header row, so the drawer is
+                  where a phone user finds them. */}
+              <p className="eyebrow mt-5 px-3">Artist services</p>
+              <div className="mt-1 grid grid-cols-1 gap-1">
+                {MOBILE_SERVICES.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className="m-item rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-white/10 hover:text-cream"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
               </div>
 
               {/* Legal + contact links, so nothing is only reachable by scrolling the footer */}

@@ -1,6 +1,7 @@
 import {
   boolean,
   customType,
+  index,
   integer,
   jsonb,
   numeric,
@@ -349,6 +350,107 @@ export const soundKits = pgTable("sound_kits", {
 });
 
 // ---------------------------------------------------------------------------
+// Music distribution (the studio releases an artist's finished song to the DSPs)
+// ---------------------------------------------------------------------------
+/**
+ * The tiers on the distribution page. Seeded once (see src/lib/seed.ts) and
+ * editable in Admin → Distribution, so the producer can change prices without a
+ * deploy. A release copies the plan's name and price onto itself at checkout —
+ * editing a plan later must not rewrite what someone already paid for.
+ */
+export const distributionPlans = pgTable("distribution_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  tagline: text("tagline").default("").notNull(),
+  /** How many tracks the tier covers. */
+  tracks: integer("tracks").default(1).notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  /** Working days from approval to live on the stores. */
+  turnaroundDays: integer("turnaround_days").default(7).notNull(),
+  /** Share of streaming royalties the studio keeps, in percent. */
+  royaltyPercent: integer("royalty_percent").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+});
+
+/** One song (or EP/album) an artist has submitted for release. */
+export const distributionReleases = pgTable("distribution_releases", {
+  id: serial("id").primaryKey(),
+  reference: text("reference").notNull().unique(),
+  planId: integer("plan_id").references(() => distributionPlans.id, { onDelete: "set null" }),
+  /** Frozen at submission so a later price change cannot rewrite history. */
+  planName: text("plan_name").notNull(),
+  customerId: integer("customer_id").references(() => customers.id, { onDelete: "set null" }),
+  /** The payment order for this release, once checkout has started. */
+  orderId: integer("order_id").references(() => orders.id, { onDelete: "set null" }),
+  artistName: text("artist_name").notNull(),
+  artistEmail: text("artist_email").notNull(),
+  artistPhone: text("artist_phone").default("").notNull(),
+  releaseTitle: text("release_title").notNull(),
+  genre: text("genre").default("").notNull(),
+  /** Requested release date, YYYY-MM-DD. Empty means "as soon as possible". */
+  releaseDate: text("release_date").default("").notNull(),
+  /** Comma-separated store slugs the artist ticked. */
+  stores: text("stores").default("").notNull(),
+  explicit: boolean("explicit").default(false).notNull(),
+  /** Supplied by the artist if they already have one, otherwise assigned later. */
+  isrc: text("isrc").default("").notNull(),
+  upc: text("upc").default("").notNull(),
+  artworkPath: text("artwork_path"),
+  audioPath: text("audio_path"),
+  notes: text("notes").default("").notNull(),
+  /**
+   * awaiting_payment | submitted | in_review | changes_requested | approved |
+   * live | rejected | cancelled
+   */
+  status: text("status").default("awaiting_payment").notNull(),
+  /** The producer's reply shown to the artist on their account page. */
+  producerNote: text("producer_note").default("").notNull(),
+  liveAt: timestamp("live_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ---------------------------------------------------------------------------
+// Online recording with the producer (remote sessions)
+// ---------------------------------------------------------------------------
+/**
+ * A remote session request. The artist records takes in the browser studio
+ * (src/components/remote-recorder.tsx), sends the best one here, and the
+ * producer schedules the live session — payment for the time itself goes
+ * through the normal studio booking flow, using the `online-session` service.
+ */
+export const remoteSessions = pgTable("remote_sessions", {
+  id: serial("id").primaryKey(),
+  reference: text("reference").notNull().unique(),
+  customerId: integer("customer_id").references(() => customers.id, { onDelete: "set null" }),
+  artistName: text("artist_name").notNull(),
+  artistEmail: text("artist_email").notNull(),
+  artistPhone: text("artist_phone").default("").notNull(),
+  /** Preferred date (YYYY-MM-DD) and time (HH:MM) — a request, not a booking. */
+  preferredDate: text("preferred_date").default("").notNull(),
+  preferredTime: text("preferred_time").default("").notNull(),
+  /** The store beat they want to record over, when they picked one. */
+  beatId: integer("beat_id").references(() => beats.id, { onDelete: "set null" }),
+  beatTitle: text("beat_title").default("").notNull(),
+  /** vocals | topline | mix-feedback | full-production */
+  goal: text("goal").default("vocals").notNull(),
+  notes: text("notes").default("").notNull(),
+  /** The take recorded in the browser studio and uploaded with the request. */
+  takePath: text("take_path"),
+  takeName: text("take_name").default("").notNull(),
+  takeSeconds: integer("take_seconds").default(0).notNull(),
+  /** requested | scheduled | completed | cancelled */
+  status: text("status").default("requested").notNull(),
+  producerNote: text("producer_note").default("").notNull(),
+  /** Confirmed start of the live session, set by the producer. */
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ---------------------------------------------------------------------------
 // Website enquiries (the public contact page form)
 // ---------------------------------------------------------------------------
 /**
@@ -372,6 +474,38 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ---------------------------------------------------------------------------
+// Content protection (screen-capture guard)
+// ---------------------------------------------------------------------------
+/**
+ * Attempts to record, screenshot or rip the storefront, reported by the
+ * screen guard running in the visitor's browser (see
+ * src/components/screen-guard.tsx). A browser cannot stop an operating-system
+ * recorder, so these rows are the forensic half of the protection: who saw
+ * what, when, and which capture path they used.
+ */
+export const securityEvents = pgTable(
+  "security_events",
+  {
+    id: serial("id").primaryKey(),
+    /** capture_device | display_capture | policy_violation | print_screen | save_attempt | devtools | hidden */
+    kind: text("kind").notNull(),
+    /** What exactly tripped it, e.g. the label of the capture device that appeared. */
+    detail: text("detail").default("").notNull(),
+    /** low | medium | high — drives the badge colour in the producer dashboard. */
+    severity: text("severity").default("medium").notNull(),
+    /** Page the visitor was on, e.g. `/beats/lq3k`. */
+    path: text("path").default("").notNull(),
+    /** Random per-tab id so repeat events from one visitor can be grouped. */
+    visitorId: text("visitor_id").default("").notNull(),
+    /** Signed-in artist's email when known; empty for anonymous visitors. */
+    customerEmail: text("customer_email").default("").notNull(),
+    userAgent: text("user_agent").default("").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("security_events_created_idx").on(t.createdAt), index("security_events_visitor_idx").on(t.visitorId)],
+);
+
 export type Beat = typeof beats.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type CustomerMessage = typeof customerMessages.$inferSelect;
@@ -389,3 +523,7 @@ export type StoredFile = typeof storedFiles.$inferSelect;
 export type StoredFileChunk = typeof storedFileChunks.$inferSelect;
 export type SoundKit = typeof soundKits.$inferSelect;
 export type ContactMessage = typeof contactMessages.$inferSelect;
+export type SecurityEvent = typeof securityEvents.$inferSelect;
+export type DistributionPlan = typeof distributionPlans.$inferSelect;
+export type DistributionRelease = typeof distributionReleases.$inferSelect;
+export type RemoteSession = typeof remoteSessions.$inferSelect;

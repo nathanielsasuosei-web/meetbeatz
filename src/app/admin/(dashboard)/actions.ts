@@ -19,6 +19,10 @@ import { getBaseUrl } from "@/lib/url";
 import { saveAdsTxt } from "@/lib/ads-txt";
 import { validateAdsTxt } from "@/lib/ads-txt-format";
 import { setContactHandled } from "@/lib/contact";
+import { normalizeScreenGuardMode } from "@/lib/screen-guard";
+import { setReleaseStatus, updatePlan } from "@/lib/distribution";
+import { RELEASE_STATUSES, SESSION_STATUSES } from "@/lib/release";
+import { setRemoteSessionStatus } from "@/lib/remote-sessions";
 import { sendWhatsAppAlert } from "@/lib/whatsapp";
 
 async function guard() {
@@ -281,6 +285,7 @@ export async function saveSettingsAction(formData: FormData) {
     notifyEmail: str(formData, "notifyEmail"),
     whatsappAlerts: str(formData, "whatsappAlerts"),
     bookingPolicy: str(formData, "bookingPolicy"),
+    screenGuard: normalizeScreenGuardMode(str(formData, "screenGuard", "block")),
   });
   revalidatePath("/", "layout");
   done("/admin/settings", "Settings saved.");
@@ -396,4 +401,66 @@ export async function saveAdsTxtAction(formData: FormData) {
   await saveAdsTxt(contents);
   revalidatePath("/ads.txt");
   done("/admin/settings", "ads.txt saved and live at /ads.txt.");
+}
+
+// ---------------- Music distribution ----------------
+/**
+ * Moves a release through the review states and records the note the artist
+ * sees on their account page and in the status email.
+ */
+export async function updateReleaseStatus(formData: FormData) {
+  await guard();
+  const id = int(formData, "id", 0);
+  const status = str(formData, "status");
+  if (!(RELEASE_STATUSES as readonly string[]).includes(status)) {
+    fail("/admin/distribution", "That is not a release status.");
+  }
+  const producerNote = str(formData, "producerNote");
+  // "Changes requested" and "not accepted" without an explanation leave the
+  // artist with nowhere to go, so the note is required for those two.
+  if ((status === "changes_requested" || status === "rejected") && producerNote.length < 5) {
+    fail("/admin/distribution", "Add a note telling the artist what to change — they only see what you write here.");
+  }
+  await setReleaseStatus(id, status, producerNote);
+  revalidatePath("/account");
+  done("/admin/distribution", "Release updated.");
+}
+
+/** Edits a distribution tier. Prices only affect future submissions. */
+export async function saveDistributionPlan(formData: FormData) {
+  await guard();
+  const id = int(formData, "id", 0);
+  if (!id) fail("/admin/distribution", "Unknown tier.");
+  const name = str(formData, "name");
+  if (!name) fail("/admin/distribution", "A tier needs a name.");
+  await updatePlan(id, {
+    name,
+    tagline: str(formData, "tagline"),
+    tracks: Math.max(1, Math.min(100, int(formData, "tracks", 1))),
+    price: dec(formData, "price"),
+    turnaroundDays: Math.max(1, Math.min(120, int(formData, "turnaroundDays", 7))),
+    royaltyPercent: Math.max(0, Math.min(100, int(formData, "royaltyPercent", 0))),
+    isActive: formData.get("isActive") === "on",
+    sortOrder: int(formData, "sortOrder", 0),
+  });
+  revalidatePath("/distribution");
+  done("/admin/distribution", "Tier saved. Releases already submitted keep the price they paid.");
+}
+
+// ---------------- Online recording ----------------
+/** Confirms, completes or cancels a remote session request. */
+export async function updateRemoteSessionStatus(formData: FormData) {
+  await guard();
+  const id = int(formData, "id", 0);
+  const status = str(formData, "status");
+  if (!(SESSION_STATUSES as readonly string[]).includes(status)) {
+    fail("/admin/recording", "That is not a session status.");
+  }
+  const producerNote = str(formData, "producerNote");
+  if (status === "cancelled" && producerNote.length < 5) {
+    fail("/admin/recording", "Tell the artist why the session was cancelled.");
+  }
+  await setRemoteSessionStatus(id, status, producerNote);
+  revalidatePath("/account");
+  done("/admin/recording", "Session updated.");
 }

@@ -3,6 +3,7 @@ import { CartProvider } from "@/components/cart/cart-provider";
 import { PlayerProvider } from "@/components/player/player-context";
 import { PlayerBar } from "@/components/player/player-bar";
 import { SiteHeader } from "@/components/site-header";
+import { ScreenGuard } from "@/components/screen-guard";
 import { SiteFooter } from "@/components/site-footer";
 import { ChatWidget } from "@/components/chat-widget";
 import { AdSenseScript, AmpAutoAdsScript } from "@/components/adsense";
@@ -35,6 +36,18 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       <CartProvider>
         <PlayerProvider>
           <SiteHeader siteName={settings.siteName} customer={customer ? { name: customer.name } : null} />
+          {/*
+            Screen-recording protection for the storefront. The viewer's email is
+            passed in so the forensic watermark names the account a leak came
+            from; the producer controls the mode in Admin → Settings.
+          */}
+          <ScreenGuard
+            config={{
+              mode: settings.screenGuard,
+              siteName: settings.siteName,
+              viewer: customer?.email ?? "",
+            }}
+          />
         <main className="min-h-[70vh]">{children}</main>
         <SiteFooter settings={settings} />
         <PlayerBar />
