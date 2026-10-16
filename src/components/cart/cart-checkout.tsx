@@ -273,6 +273,7 @@ export function CartCheckout({
                   buttonLabel={`Pay ${money(totals.total, currency)}`}
                   disabled={paymentMethod === "global" || !agreed}
                   disabledReason={paymentMethod === "global" ? globalDisabledReason : !agreed ? "Review and agree to the selected license terms before paying." : undefined}
+                  showMtnApprovalHelp
                 />
               </div>
             </section>

@@ -373,6 +373,7 @@ export function DistributionForm({
             disabled={!ready}
             disabledReason={ready ? undefined : "Complete the release details and upload both files to continue."}
             account={{ name: account.name }}
+            showMtnApprovalHelp
             payload={{
               planId: plan?.id ?? 0,
               artistName,

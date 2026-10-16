@@ -96,6 +96,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
               requireAgreement
               agreementLabel="I have reviewed and agree to the selected license terms for this beat and license."
               agreementTerms={selected.terms}
+              showMtnApprovalHelp
             />
           </div>
         </section>
