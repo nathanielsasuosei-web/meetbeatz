@@ -6,63 +6,6 @@ import { NETWORKS } from "@/lib/format";
 
 export type PaymentMethod = "ghana" | "global";
 
-function MtnApprovalGuide({ paymentUrl }: { paymentUrl: string }) {
-  const [audioCompleted, setAudioCompleted] = useState(false);
-  const [paymentOpened, setPaymentOpened] = useState(false);
-
-  function continueToPayment() {
-    if (!audioCompleted) return;
-    setPaymentOpened(true);
-    window.open(paymentUrl, "_blank", "noopener,noreferrer");
-  }
-
-  return (
-    <div className="glass-strong max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6 md:p-8">
-      <p className="eyebrow">Payment request started</p>
-      <h2 id="mtn-approval-help-title" className="mt-2 text-2xl font-bold">No MTN prompt? Open My Approvals.</h2>
-      <p className="mt-3 text-sm leading-relaxed text-muted">Your payment request is ready. Listen to the full audio guide below before continuing. Once the guide finishes, Continue to secure payment will open Paystack in a new tab.</p>
-      <ol className="mt-5 grid gap-2 text-sm text-cream/85 sm:grid-cols-2">
-        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">1</span>Dial <code>*170#</code></li>
-        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">2</span>Press <strong>6</strong> for My Wallet</li>
-        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">3</span>Press <strong>3</strong> for My Approvals</li>
-        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">4</span>Press <strong>1</strong> to select My Approvals</li>
-        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">5</span>Enter your MoMo PIN</li>
-        <li><span className="mr-2 inline-flex min-w-6 justify-center rounded bg-acid px-1.5 py-0.5 font-black text-ink">6</span>Select the pending payment and choose Approve</li>
-      </ol>
-      <div className="mt-6 rounded-2xl border border-acid/25 bg-acid/[0.06] p-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-bold text-cream">Audio guide required</p>
-          <span className="rounded-full border border-acid/30 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-acid">MTN MoMo</span>
-        </div>
-        <p className="mt-2 text-xs text-muted">Listen to the complete guide before continuing. The payment button unlocks when the audio finishes.</p>
-        <audio
-          className="mt-3 h-10 w-full"
-          controls
-          preload="metadata"
-          aria-label="Required guide for approving a missing MTN Mobile Money payment prompt"
-          onEnded={() => setAudioCompleted(true)}
-        >
-          <source src="/audio/mtn-momo-approval-help.mp3" type="audio/mpeg" />
-          Your browser does not support audio. Dial star one seven zero hash, press six for My Wallet, press three for My Approvals, press one to select My Approvals, select the pending payment, and choose Approve.
-        </audio>
-        <p className={`mt-2 text-[11px] ${audioCompleted ? "text-ok" : "text-muted"}`} role="status">
-          {audioCompleted ? "Guide complete. You can continue to Paystack." : "Audio must finish before payment can continue."}
-        </p>
-      </div>
-      <p className="mt-4 text-xs text-muted">Never share your MoMo PIN with anyone.</p>
-      {paymentOpened && <p className="mt-4 rounded-xl border border-ok/30 bg-ok/10 px-4 py-3 text-xs text-ok" role="status">Paystack has opened in a new tab.</p>}
-      <button
-        type="button"
-        onClick={continueToPayment}
-        disabled={!audioCompleted}
-        className="btn-primary mt-6 w-full !py-3.5 text-base"
-      >
-        {paymentOpened ? "Open Paystack checkout again" : audioCompleted ? "Continue to secure payment" : "Listen to audio to continue"} <span aria-hidden>→</span>
-      </button>
-    </div>
-  );
-}
-
 export function CheckoutForm({
   endpoint,
   payload,
@@ -75,7 +18,6 @@ export function CheckoutForm({
   requireAgreement = false,
   agreementLabel = "I have reviewed and agree to the selected license terms.",
   agreementTerms,
-  showMtnApprovalHelp = false,
 }: {
   endpoint: string;
   payload: Record<string, unknown>;
@@ -88,7 +30,6 @@ export function CheckoutForm({
   requireAgreement?: boolean;
   agreementLabel?: string;
   agreementTerms?: string;
-  showMtnApprovalHelp?: boolean;
 }) {
   const [name, setName] = useState(account?.name ?? "");
   // Deliberately not pre-filled from the account: whichever address is typed
@@ -99,7 +40,6 @@ export function CheckoutForm({
   const [network, setNetwork] = useState<string>("mtn");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
 
@@ -142,11 +82,6 @@ export function CheckoutForm({
         return;
       }
       onSuccess?.();
-      if (showMtnApprovalHelp && network === "mtn") {
-        setLoading(false);
-        setPaymentUrl(json.url);
-        return;
-      }
       window.location.assign(json.url);
     } catch {
       setError("Network error. Please check your connection and try again.");
@@ -155,8 +90,7 @@ export function CheckoutForm({
   }
 
   return (
-    <>
-      <form onSubmit={onSubmit} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-5">
       <div>
         <label className="label" htmlFor="co-name">Full name</label>
         <input id="co-name" className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Kwame Mensah" required minLength={2} />
@@ -233,13 +167,7 @@ export function CheckoutForm({
       <button type="submit" className="btn-primary w-full !py-3.5 text-base" disabled={loading || disabled || (requireAgreement && !agreed)}>
         {loading ? "Redirecting to secure payment…" : buttonLabel}
       </button>
-        <p className="text-center text-[11px] text-muted">Secured by Paystack. We never see your PIN or card details.</p>
-      </form>
-      {paymentUrl && showMtnApprovalHelp && network === "mtn" && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/80 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="mtn-approval-help-title">
-          <MtnApprovalGuide paymentUrl={paymentUrl} />
-        </div>
-      )}
-    </>
+      <p className="text-center text-[11px] text-muted">Secured by Paystack. We never see your PIN or card details.</p>
+    </form>
   );
 }
