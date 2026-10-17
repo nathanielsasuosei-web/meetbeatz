@@ -95,10 +95,21 @@ function MtnApprovalHelp({
   );
 }
 
-/** Opens Paystack in a new tab so this help stays visible; false = popup blocked. */
+/**
+ * Opens Paystack in a new tab so this help stays visible; false = popup blocked.
+ *
+ * `window.open(url, "_blank", "noopener")` always returns null — the feature
+ * severs the very handle this check needs — so open about:blank first, drop
+ * `opener`, then navigate. That keeps the popup-block detection honest without
+ * handing the new tab a reference back to this page.
+ */
 function openPaymentWindow(url: string): boolean {
   try {
-    return Boolean(window.open(url, "_blank", "noopener,noreferrer"));
+    const tab = window.open("about:blank", "_blank");
+    if (!tab) return false;
+    tab.opener = null;
+    tab.location.replace(url);
+    return true;
   } catch {
     return false;
   }
