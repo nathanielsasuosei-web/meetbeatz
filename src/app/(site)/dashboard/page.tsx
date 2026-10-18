@@ -64,7 +64,7 @@ export default async function DashboardPage() {
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted">
-              <span className="badge">Dashboard: {customer?.provider ?? "local"}</span>
+              <span className="badge">Student account</span>
               <span className="badge-acid border border-acid/30 px-3 py-1">{customer?.email ?? session.email}</span>
             </div>
           </div>
