@@ -7,7 +7,7 @@ import { EmailChangeForm } from "@/components/account/email-form";
 import { MessageProducerButton } from "@/components/account/message-producer-button";
 import { DownloadIcon, PhoneIcon } from "@/components/icons";
 import { loadAccountData } from "@/lib/account";
-import { getCustomerSession } from "@/lib/customer-auth";
+import { getCustomerById, getCustomerSession } from "@/lib/customer-auth";
 import { listReleasesForCustomer } from "@/lib/distribution";
 import { listRemoteSessionsForCustomer } from "@/lib/remote-sessions";
 import {
@@ -36,6 +36,7 @@ const ORDER_STATUS_TONE: Record<string, string> = {
 export default async function AccountPage() {
   const session = await getCustomerSession();
   if (!session) redirect("/account/login");
+  const customer = await getCustomerById(session.id);
   const { orders, bookings } = await loadAccountData(session);
   const [releases, remoteSessions] = await Promise.all([
     listReleasesForCustomer(session),
@@ -54,6 +55,7 @@ export default async function AccountPage() {
           <h1 className="display mt-2 text-4xl md:text-5xl">Hey, {session.name.split(" ")[0]} 👋</h1>
           <p className="mt-3 text-sm text-muted">
             Signed in as <span className="text-cream">{session.email}</span>
+            {customer?.age ? <span className="ml-2 text-muted">· Age {customer.age}</span> : null}
           </p>
         </div>
         <form action={logoutAction}>

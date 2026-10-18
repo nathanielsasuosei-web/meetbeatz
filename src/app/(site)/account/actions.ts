@@ -20,8 +20,9 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   const name = String(formData.get("name") ?? "");
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const age = String(formData.get("age") ?? "");
   try {
-    const customer = await registerCustomer(name, email, password);
+    const customer = await registerCustomer(name, email, password, age);
     await createCustomerSession(customer);
   } catch (err) {
     if (err instanceof AccountError) return { error: err.message };

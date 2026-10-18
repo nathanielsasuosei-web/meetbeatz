@@ -60,6 +60,22 @@ export function CustomerRegisterForm() {
         <p className="mt-1 text-[11px] text-muted">Use the same email you bought beats with — those purchases join your account automatically.</p>
       </div>
       <div>
+        <label className="label" htmlFor="age">Age</label>
+        <input
+          id="age"
+          name="age"
+          type="number"
+          className="field"
+          autoComplete="off"
+          required
+          min={1}
+          max={120}
+          placeholder="e.g. 22"
+          inputMode="numeric"
+        />
+        <p className="mt-1 text-[11px] text-muted">Students — please add your age so the studio can tailor your experience.</p>
+      </div>
+      <div>
         <label className="label" htmlFor="password">Password</label>
         <input id="password" name="password" type="password" className="field" autoComplete="new-password" required minLength={8} placeholder="At least 8 characters" />
       </div>

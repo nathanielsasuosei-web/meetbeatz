@@ -17,7 +17,7 @@ import { EMAIL_ERROR, isValidEmail, normalizeEmailAddress } from "./email-addres
 const COOKIE_NAME = "mb_customer_session";
 const SESSION_DAYS = 30;
 
-export type CustomerSession = { id: number; email: string; name: string };
+export type CustomerSession = { id: number; email: string; name: string; age?: number | null };
 
 export class AccountError extends Error {}
 
@@ -34,7 +34,7 @@ export function normalizeEmail(email: string): string {
 }
 
 export async function createCustomerSession(customer: CustomerSession) {
-  const token = await new SignJWT({ email: customer.email, name: customer.name, role: "customer" })
+  const token = await new SignJWT({ email: customer.email, name: customer.name, age: customer.age ?? null, role: "customer" })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(String(customer.id))
     .setIssuedAt()
@@ -62,10 +62,13 @@ export async function getCustomerSession(): Promise<CustomerSession | null> {
   try {
     const { payload } = await jwtVerify(token, secretKey());
     if (!payload.sub || payload.role !== "customer") return null;
+    const rawAge = (payload as Record<string, unknown>).age;
+    const age = rawAge == null || rawAge === "" ? null : Number(rawAge);
     return {
       id: parseInt(payload.sub, 10),
       email: String(payload.email ?? "").toLowerCase(),
       name: String(payload.name ?? ""),
+      age: Number.isFinite(age) ? age : null,
     };
   } catch {
     return null;
@@ -85,23 +88,28 @@ export async function linkCustomerPurchases(customerId: number, email: string) {
     .where(sql`lower(${orders.customerEmail}) = ${normalized} AND ${orders.customerId} IS NULL`);
 }
 
-function validateCredentials(name: string, email: string, password: string) {
+function validateCredentials(name: string, email: string, password: string, ageRaw: string | number | null | undefined) {
   if (name.trim().length < 2) throw new AccountError("Please enter your name.");
   if (!isValidEmail(email)) throw new AccountError(EMAIL_ERROR);
   if (password.length < 8) throw new AccountError("Your password must be at least 8 characters.");
+  if (ageRaw == null || String(ageRaw).trim() === "") throw new AccountError("Please enter your age.");
+  const age = typeof ageRaw === "number" ? ageRaw : Number(String(ageRaw).trim());
+  if (!Number.isFinite(age) || !Number.isInteger(age)) throw new AccountError("Please enter a valid age.");
+  if (age < 1 || age > 120) throw new AccountError("Age must be between 1 and 120.");
 }
 
-export async function registerCustomer(name: string, email: string, password: string): Promise<CustomerSession> {
+export async function registerCustomer(name: string, email: string, password: string, ageRaw: string | number | null | undefined): Promise<CustomerSession> {
   const normalized = normalizeEmail(email);
-  validateCredentials(name, normalized, password);
+  validateCredentials(name, normalized, password, ageRaw);
+  const age = typeof ageRaw === "number" ? ageRaw : Number(String(ageRaw).trim());
   const [existing] = await db.select({ id: customers.id }).from(customers).where(eq(customers.email, normalized)).limit(1);
   if (existing) throw new AccountError("An account with this email already exists — sign in instead.");
   const [customer] = await db
     .insert(customers)
-    .values({ name: name.trim(), email: normalized, passwordHash: hashPassword(password) })
+    .values({ name: name.trim(), email: normalized, passwordHash: hashPassword(password), age })
     .returning();
   await linkCustomerPurchases(customer.id, normalized);
-  return { id: customer.id, email: customer.email, name: customer.name };
+  return { id: customer.id, email: customer.email, name: customer.name, age: customer.age };
 }
 
 export async function authenticateCustomer(email: string, password: string): Promise<CustomerSession | null> {
@@ -109,12 +117,12 @@ export async function authenticateCustomer(email: string, password: string): Pro
   const [customer] = await db.select().from(customers).where(eq(customers.email, normalized)).limit(1);
   if (!customer || !verifyPassword(password, customer.passwordHash)) return null;
   await linkCustomerPurchases(customer.id, customer.email);
-  return { id: customer.id, email: customer.email, name: customer.name };
+  return { id: customer.id, email: customer.email, name: customer.name, age: customer.age ?? null };
 }
 
 export async function getCustomerById(id: number): Promise<CustomerSession | null> {
   const [customer] = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
-  return customer ? { id: customer.id, email: customer.email, name: customer.name } : null;
+  return customer ? { id: customer.id, email: customer.email, name: customer.name, age: customer.age ?? null } : null;
 }
 
 /**
@@ -149,5 +157,5 @@ export async function changeCustomerEmail(
   // Orders and bookings bought with the new address but not yet attached to an
   // account now follow it, exactly as they would on sign-in.
   await linkCustomerPurchases(customerId, email);
-  return { id: customer.id, email, name: customer.name };
+  return { id: customer.id, email, name: customer.name, age: customer.age ?? null };
 }
