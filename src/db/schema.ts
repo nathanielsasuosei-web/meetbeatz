@@ -57,6 +57,14 @@ export const customers = pgTable("customers", {
   passwordHash: text("password_hash").notNull(),
   phone: text("phone").default("").notNull(),
   age: integer("age"),
+  country: text("country").default("").notNull(),
+  city: text("city").default("").notNull(),
+  /** Human-readable student identifier shown on the student page and dashboard, e.g. MBZ-2025-00042 */
+  studentId: text("student_id").unique(),
+  /** OAuth provider for social sign-in: local | google | facebook | apple */
+  provider: text("provider").default("local").notNull(),
+  providerAccountId: text("provider_account_id"),
+  avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

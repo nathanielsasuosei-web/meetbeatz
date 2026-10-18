@@ -9,9 +9,11 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Sign in — Your account" };
 
-export default async function AccountLoginPage() {
+export default async function AccountLoginPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
   const session = await getCustomerSession();
   if (session) redirect("/account");
+  const params = await searchParams;
+  const error = params?.error ? decodeURIComponent(params.error) : null;
   return (
     <div className="auth-stage mx-auto max-w-md px-4 py-16 sm:px-6">
       <p className="eyebrow auth-in">
@@ -28,6 +30,11 @@ export default async function AccountLoginPage() {
       <p className="auth-in mt-3 text-sm text-muted" style={{ animationDelay: "180ms" }}>
         Sign in to see everything you&apos;ve bought, re-download your files and chat with Meetbeatz.
       </p>
+      {error && (
+        <div className="auth-in mt-4 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert" style={{ animationDelay: "180ms" }}>
+          {error}
+        </div>
+      )}
       <SpotlightCard className="auth-in mt-8 p-6" style={{ animationDelay: "270ms" }}>
         <CustomerLoginForm />
       </SpotlightCard>
