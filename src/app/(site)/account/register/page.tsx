@@ -9,9 +9,11 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Create account" };
 
-export default async function AccountRegisterPage() {
+export default async function AccountRegisterPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
   const session = await getCustomerSession();
   if (session) redirect("/account");
+  const params = await searchParams;
+  const error = params?.error ? decodeURIComponent(params.error) : null;
   return (
     <div className="auth-stage mx-auto max-w-md px-4 py-16 sm:px-6">
       <p className="eyebrow auth-in">
@@ -26,9 +28,13 @@ export default async function AccountRegisterPage() {
         Create your account
       </h1>
       <p className="auth-in mt-3 text-sm text-muted" style={{ animationDelay: "180ms" }}>
-        Keep every beat you buy in one place — files, license certificates and studio bookings — and chat with us
-        directly.
+        Keep every beat you buy in one place — files, license certificates and studio bookings — and chat with us directly.
       </p>
+      {error && (
+        <div className="auth-in mt-4 rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert" style={{ animationDelay: "180ms" }}>
+          {error}
+        </div>
+      )}
       <SpotlightCard className="auth-in mt-8 p-6" style={{ animationDelay: "270ms" }}>
         <CustomerRegisterForm />
       </SpotlightCard>

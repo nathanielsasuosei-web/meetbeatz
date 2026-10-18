@@ -7,7 +7,7 @@ import { EmailChangeForm } from "@/components/account/email-form";
 import { MessageProducerButton } from "@/components/account/message-producer-button";
 import { DownloadIcon, PhoneIcon } from "@/components/icons";
 import { loadAccountData } from "@/lib/account";
-import { getCustomerSession } from "@/lib/customer-auth";
+import { getCustomerById, getCustomerSession } from "@/lib/customer-auth";
 import { listReleasesForCustomer } from "@/lib/distribution";
 import { listRemoteSessionsForCustomer } from "@/lib/remote-sessions";
 import {
@@ -36,6 +36,7 @@ const ORDER_STATUS_TONE: Record<string, string> = {
 export default async function AccountPage() {
   const session = await getCustomerSession();
   if (!session) redirect("/account/login");
+  const customer = await getCustomerById(session.id);
   const { orders, bookings } = await loadAccountData(session);
   const [releases, remoteSessions] = await Promise.all([
     listReleasesForCustomer(session),
@@ -50,10 +51,11 @@ export default async function AccountPage() {
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">Your account</p>
+          <p className="eyebrow">Your account · Student Dashboard</p>
           <h1 className="display mt-2 text-4xl md:text-5xl">Hey, {session.name.split(" ")[0]} 👋</h1>
           <p className="mt-3 text-sm text-muted">
             Signed in as <span className="text-cream">{session.email}</span>
+            {customer?.studentId ? <span className="ml-2 font-mono text-acid">· {customer.studentId}</span> : null}
           </p>
         </div>
         <form action={logoutAction}>
@@ -62,6 +64,54 @@ export default async function AccountPage() {
           </button>
         </form>
       </div>
+
+      <section className="mt-8">
+        <div className="card overflow-hidden p-0">
+          <div className="bg-gradient-to-br from-acid/20 via-acid/5 to-transparent px-6 py-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="eyebrow">Student ID Card</p>
+                <h2 className="mt-2 text-2xl font-bold">Your Student Profile</h2>
+                <p className="mt-1 text-sm text-muted">This ID is shown on your page and dashboard. Keep it for studio check-ins and support.</p>
+              </div>
+              <div className="rounded-2xl border border-acid/30 bg-black/20 px-5 py-3 text-center backdrop-blur">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-acid">Student ID</p>
+                <p className="mt-1 font-mono text-xl font-bold text-cream">{customer?.studentId ?? "Generating…"}</p>
+                <p className="mt-1 text-xs text-muted">Issued {customer ? new Date(customer.createdAt ?? Date.now()).toLocaleDateString() : ""}</p>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-xl border border-line bg-white/[0.04] px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Full Name</p>
+                <p className="mt-1 font-semibold text-cream">{customer?.name ?? session.name}</p>
+              </div>
+              <div className="rounded-xl border border-line bg-white/[0.04] px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Age</p>
+                <p className="mt-1 font-semibold text-cream">{customer?.age ?? "—"}</p>
+              </div>
+              <div className="rounded-xl border border-line bg-white/[0.04] px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">Country</p>
+                <p className="mt-1 font-semibold text-cream">{customer?.country || "—"}</p>
+              </div>
+              <div className="rounded-xl border border-line bg-white/[0.04] px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted">City</p>
+                <p className="mt-1 font-semibold text-cream">{customer?.city || "—"}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted">
+              <span className="badge">Dashboard: Student</span>
+              {customer?.provider && customer.provider !== "local" ? <span className="badge-acid border border-acid/30 px-3 py-1 text-xs">Signed in with {customer.provider}</span> : <span className="badge">Local account</span>}
+              {customer?.provider && customer.provider !== "local" && customer?.avatarUrl ? <img src={customer.avatarUrl} alt="" className="h-6 w-6 rounded-full border border-white/10" /> : null}
+            </div>
+          </div>
+          <div className="border-t border-line px-6 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted">Need to update your profile? Your Student ID never changes — location and age can be updated by contacting support.</p>
+              <Link href="/contact" className="text-xs font-semibold text-acid hover:underline">Contact support →</Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="mt-8">
         <div className="card p-6">
