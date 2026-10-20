@@ -106,3 +106,127 @@ export function BeatGrid({ beats, currency }: { beats: BeatCardData[]; currency:
     </div>
   );
 }
+
+/**
+ * Horizontal tracklist row — the list counterpart to {@link BeatCard}.
+ * Same data, player queue and buy link, laid out as one wide row:
+ * rank, cover with play/pause, title + meta, then price and the buy button.
+ * On phones the price/buy block moves under the title so nothing squeezes.
+ */
+export function BeatRow({
+  beat,
+  queue,
+  currency,
+  index,
+}: {
+  beat: BeatCardData;
+  queue: BeatCardData[];
+  currency: string;
+  index: number;
+}) {
+  const { toggle, isCurrent, playing } = usePlayer();
+  const active = isCurrent(beat.id);
+  const isPlaying = active && playing;
+
+  const price = (
+    <>
+      <p className="text-[10px] uppercase tracking-wider text-muted">from</p>
+      <p className="whitespace-nowrap text-base font-bold text-acid">{beat.priceFrom !== null ? money(beat.priceFrom, currency) : "—"}</p>
+    </>
+  );
+
+  return (
+    <article
+      className={`card group flex items-center gap-3 p-3 sm:gap-5 sm:p-4 ${
+        active
+          ? "border-acid/45! shadow-[0_0_0_1px_rgba(198,241,53,0.15)_inset,0_12px_40px_-12px_rgba(198,241,53,0.25),0_10px_32px_-12px_rgba(0,0,0,0.5)]"
+          : ""
+      }`}
+    >
+      {/* Rank in the list */}
+      <div className="hidden w-8 shrink-0 text-center md:block" aria-hidden>
+        <span className={`text-sm font-black tabular-nums ${active ? "text-acid" : "text-muted"}`}>
+          {String(index + 1).padStart(2, "0")}
+        </span>
+      </div>
+
+      {/* Cover thumbnail with play/pause */}
+      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-panel-2/80 sm:h-20 sm:w-20 [&_.display]:px-1 [&_.display]:text-[10px] sm:[&_.display]:text-xs">
+        <Link href={`/beats/${beat.slug}`} className="block h-full w-full" aria-label={beat.title}>
+          <CoverArt beat={beat} className="transition duration-500 group-hover:scale-105" />
+        </Link>
+        {/* Glass sheen on cover */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/12 via-transparent to-transparent opacity-60" />
+        {beat.previewUrl && (
+          <button
+            type="button"
+            onClick={() => toggle(toTrack(beat), queue.map(toTrack))}
+            className="absolute inset-0 m-auto grid h-10 w-10 place-items-center rounded-full bg-acid text-ink shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_8px_24px_-4px_rgba(198,241,53,0.55),0_4px_12px_-2px_rgba(0,0,0,0.4)] transition hover:scale-105 sm:h-11 sm:w-11"
+            aria-label={isPlaying ? `Pause preview of ${beat.title}` : `Play preview of ${beat.title}`}
+          >
+            {isPlaying ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="ml-0.5 h-4 w-4" />}
+          </button>
+        )}
+      </div>
+
+      {/* Title, meta and (on phones) price + buy */}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 className="min-w-0 max-w-full truncate text-base font-bold sm:text-lg">
+            <Link href={`/beats/${beat.slug}`} className="hover:text-acid">
+              {beat.title}
+            </Link>
+          </h3>
+          {isPlaying && (
+            <span className="shrink-0 text-acid drop-shadow-[0_0_8px_rgba(198,241,53,0.6)]">
+              <Equalizer />
+            </span>
+          )}
+          {beat.isFeatured && <span className="badge-acid shrink-0">Featured</span>}
+          {beat.isDemo && <span className="badge shrink-0">Demo</span>}
+          {beat.videoUrl && <span className="badge shrink-0">Video</span>}
+        </div>
+        <p className="mt-0.5 truncate text-xs text-muted sm:text-sm">
+          {[beat.genre, beat.bpm ? `${beat.bpm} BPM` : null, beat.musicalKey].filter(Boolean).join(" · ")}
+        </p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {beat.mood && <span className="badge">{beat.mood}</span>}
+          <span className="text-xs tabular-nums text-muted" title="Full preview plays">
+            ▶ {beat.plays.toLocaleString("en-US")} {beat.plays === 1 ? "play" : "plays"}
+          </span>
+        </div>
+        {/* Phones: price + buy sit under the title instead of a squeezed right column */}
+        <div className="mt-2.5 flex items-center justify-between gap-3 sm:hidden">
+          <div>{price}</div>
+          <Link href={`/beats/${beat.slug}`} className="btn-primary shrink-0 px-4! py-2! text-xs">
+            Buy license
+          </Link>
+        </div>
+      </div>
+
+      {/* Price + buy (sm and up) */}
+      <div className="hidden shrink-0 items-center gap-5 sm:flex">
+        <div className="text-right">{price}</div>
+        <Link href={`/beats/${beat.slug}`} className="btn-primary whitespace-nowrap px-5! py-2.5! text-sm">
+          Buy license
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+/** Single-column list of {@link BeatRow}s — used on the home page showcase. */
+export function BeatList({ beats, currency }: { beats: BeatCardData[]; currency: string }) {
+  if (beats.length === 0) {
+    return (
+      <div className="card p-10 text-center text-sm text-muted">No beats match that search yet. Check back soon — new drops every week.</div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-3 sm:gap-4">
+      {beats.map((b, i) => (
+        <BeatRow key={b.id} beat={b} queue={beats} currency={currency} index={i} />
+      ))}
+    </div>
+  );
+}
