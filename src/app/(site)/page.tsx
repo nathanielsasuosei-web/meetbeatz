@@ -3,7 +3,7 @@ import Image from "next/image";
 import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { beats, licenses, soundKits } from "@/db/schema";
-import { BeatGrid } from "@/components/beat-card";
+import { BeatList } from "@/components/beat-card";
 import { DistributeIcon, DownloadIcon, MicIcon, PaletteIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { listBeats } from "@/lib/catalog";
@@ -109,7 +109,7 @@ export default async function HomePage() {
           </Link>
         </div>
         <Reveal target=".card" stagger={90}>
-          <BeatGrid beats={showcase} currency={settings.currency} />
+          <BeatList beats={showcase} currency={settings.currency} />
         </Reveal>
       </section>
 
