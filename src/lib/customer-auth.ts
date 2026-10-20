@@ -26,8 +26,6 @@ export type CustomerSession = {
   country?: string | null;
   city?: string | null;
   studentId?: string | null;
-  provider?: string | null;
-  avatarUrl?: string | null;
   createdAt?: Date | null;
 };
 
@@ -82,8 +80,6 @@ export async function createCustomerSession(customer: CustomerSession) {
     country: customer.country ?? null,
     city: customer.city ?? null,
     studentId: customer.studentId ?? null,
-    provider: customer.provider ?? "local",
-    avatarUrl: customer.avatarUrl ?? null,
     createdAt: customer.createdAt ? customer.createdAt.toISOString() : null,
     role: "customer",
   })
@@ -126,8 +122,6 @@ export async function getCustomerSession(): Promise<CustomerSession | null> {
       country: p.country ? String(p.country) : null,
       city: p.city ? String(p.city) : null,
       studentId: p.studentId ? String(p.studentId) : null,
-      provider: p.provider ? String(p.provider) : "local",
-      avatarUrl: p.avatarUrl ? String(p.avatarUrl) : null,
       createdAt: rawCreatedAt ? new Date(rawCreatedAt) : null,
     };
   } catch {
@@ -193,7 +187,6 @@ export async function registerCustomer(
       age,
       country: country.trim(),
       city: city.trim(),
-      provider: "local",
     })
     .returning();
   // Generate student ID from DB id
@@ -217,8 +210,6 @@ export async function registerCustomer(
     country: finalCustomer.country,
     city: finalCustomer.city,
     studentId: finalCustomer.studentId,
-    provider: finalCustomer.provider,
-    avatarUrl: finalCustomer.avatarUrl ?? null,
     createdAt: finalCustomer.createdAt ?? null,
   };
 }
@@ -241,8 +232,6 @@ export async function authenticateCustomer(email: string, password: string): Pro
     country: customer.country ?? null,
     city: customer.city ?? null,
     studentId: customer.studentId ?? null,
-    provider: customer.provider ?? "local",
-    avatarUrl: customer.avatarUrl ?? null,
     createdAt: customer.createdAt ?? null,
   };
 }
@@ -262,111 +251,7 @@ export async function getCustomerById(id: number): Promise<CustomerSession | nul
     country: customer.country ?? null,
     city: customer.city ?? null,
     studentId: customer.studentId ?? null,
-    provider: customer.provider ?? "local",
-    avatarUrl: customer.avatarUrl ?? null,
     createdAt: customer.createdAt ?? null,
-  };
-}
-
-export async function findOrCreateSocialCustomer(opts: {
-  provider: "google" | "facebook" | "apple";
-  providerAccountId: string;
-  email: string;
-  name: string;
-  avatarUrl?: string | null;
-}): Promise<CustomerSession> {
-  const normalized = normalizeEmail(opts.email);
-  if (!isValidEmail(normalized)) throw new AccountError(EMAIL_ERROR);
-
-  // First try to find by provider + providerAccountId
-  const [byProvider] = await db
-    .select()
-    .from(customers)
-    .where(sql`${customers.provider} = ${opts.provider} AND ${customers.providerAccountId} = ${opts.providerAccountId}`)
-    .limit(1);
-  if (byProvider) {
-    await linkCustomerPurchases(byProvider.id, normalized);
-    if (!byProvider.studentId) {
-      const sid = await ensureStudentId(byProvider.id, byProvider.studentId);
-      byProvider.studentId = sid;
-    }
-    return {
-      id: byProvider.id,
-      email: byProvider.email,
-      name: byProvider.name,
-      age: byProvider.age ?? null,
-      country: byProvider.country ?? null,
-      city: byProvider.city ?? null,
-      studentId: byProvider.studentId ?? null,
-      provider: byProvider.provider,
-      avatarUrl: byProvider.avatarUrl ?? opts.avatarUrl ?? null,
-      createdAt: byProvider.createdAt ?? null,
-    };
-  }
-
-  // Then try by email
-  const [byEmail] = await db.select().from(customers).where(eq(customers.email, normalized)).limit(1);
-  if (byEmail) {
-    // Link provider to existing account
-    await db.update(customers).set({ provider: opts.provider, providerAccountId: opts.providerAccountId, avatarUrl: opts.avatarUrl ?? byEmail.avatarUrl }).where(eq(customers.id, byEmail.id));
-    await linkCustomerPurchases(byEmail.id, normalized);
-    if (!byEmail.studentId) {
-      const sid = await ensureStudentId(byEmail.id, byEmail.studentId);
-      byEmail.studentId = sid;
-    }
-    return {
-      id: byEmail.id,
-      email: byEmail.email,
-      name: byEmail.name,
-      age: byEmail.age ?? null,
-      country: byEmail.country ?? null,
-      city: byEmail.city ?? null,
-      studentId: byEmail.studentId ?? null,
-      provider: opts.provider,
-      avatarUrl: opts.avatarUrl ?? byEmail.avatarUrl ?? null,
-      createdAt: byEmail.createdAt ?? null,
-    };
-  }
-
-  // Create new social account - generate a random password hash placeholder
-  const placeholderPassword = hashPassword(randomBytes(16).toString("hex"));
-  const [created] = await db
-    .insert(customers)
-    .values({
-      name: opts.name.trim() || "Student",
-      email: normalized,
-      passwordHash: placeholderPassword,
-      age: null,
-      country: "",
-      city: "",
-      provider: opts.provider,
-      providerAccountId: opts.providerAccountId,
-      avatarUrl: opts.avatarUrl ?? null,
-    })
-    .returning();
-
-  const studentId = generateStudentIdFromId(created.id);
-  let finalCustomer = created;
-  try {
-    const [updated] = await db.update(customers).set({ studentId }).where(eq(customers.id, created.id)).returning();
-    if (updated) finalCustomer = updated;
-  } catch {
-    const rnd = generateRandomStudentId();
-    const [updated] = await db.update(customers).set({ studentId: rnd }).where(eq(customers.id, created.id)).returning();
-    if (updated) finalCustomer = updated;
-  }
-  await linkCustomerPurchases(finalCustomer.id, normalized);
-  return {
-    id: finalCustomer.id,
-    email: finalCustomer.email,
-    name: finalCustomer.name,
-    age: finalCustomer.age ?? null,
-    country: finalCustomer.country ?? null,
-    city: finalCustomer.city ?? null,
-    studentId: finalCustomer.studentId ?? null,
-    provider: finalCustomer.provider,
-    avatarUrl: finalCustomer.avatarUrl ?? null,
-    createdAt: finalCustomer.createdAt ?? null,
   };
 }
 
@@ -414,8 +299,6 @@ export async function changeCustomerEmail(
     country: customer.country ?? null,
     city: customer.city ?? null,
     studentId: customer.studentId ?? null,
-    provider: customer.provider ?? "local",
-    avatarUrl: customer.avatarUrl ?? null,
     createdAt: customer.createdAt ?? null,
   };
 }

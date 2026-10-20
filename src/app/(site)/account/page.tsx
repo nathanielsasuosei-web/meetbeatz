@@ -99,9 +99,7 @@ export default async function AccountPage() {
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted">
-              <span className="badge">Dashboard: Student</span>
-              {customer?.provider && customer.provider !== "local" ? <span className="badge-acid border border-acid/30 px-3 py-1 text-xs">Signed in with {customer.provider}</span> : <span className="badge">Local account</span>}
-              {customer?.provider && customer.provider !== "local" && customer?.avatarUrl ? <img src={customer.avatarUrl} alt="" className="h-6 w-6 rounded-full border border-white/10" /> : null}
+              <span className="badge">Student account</span>
             </div>
           </div>
           <div className="border-t border-line px-6 py-4">

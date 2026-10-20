@@ -61,7 +61,7 @@ export const customers = pgTable("customers", {
   city: text("city").default("").notNull(),
   /** Human-readable student identifier shown on the student page and dashboard, e.g. MBZ-2025-00042 */
   studentId: text("student_id").unique(),
-  /** OAuth provider for social sign-in: local | google | facebook | apple */
+  /** Legacy social identity metadata retained for existing customer rows. */
   provider: text("provider").default("local").notNull(),
   providerAccountId: text("provider_account_id"),
   avatarUrl: text("avatar_url"),
