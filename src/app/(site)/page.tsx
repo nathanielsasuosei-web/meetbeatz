@@ -26,14 +26,22 @@ export default async function HomePage() {
     db.select().from(soundKits).where(eq(soundKits.isPublished, true)).orderBy(desc(soundKits.createdAt)).limit(4),
   ]);
   const showcase = featured.length >= 4 ? featured : latest;
+  const heroOpacity = Math.min(0.9, Math.max(0.05, Number(settings.heroImageOpacity) / 100));
 
   return (
     <>
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/meetbeatz-producer.jpeg" alt="" className="h-full w-full object-cover object-[center_30%] opacity-50" />
+          {settings.heroImage !== "none" && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={settings.heroImage}
+              alt=""
+              className="h-full w-full object-cover object-[center_30%]"
+              style={{ opacity: heroOpacity }}
+            />
+          )}
           <div className="red-glass-wash absolute inset-0" />
           <div className="hero-grid absolute inset-0" />
           <div className="liquid-orbs absolute inset-0">

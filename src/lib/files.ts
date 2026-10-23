@@ -345,7 +345,7 @@ async function collectGarbage(): Promise<void> {
     await db.execute(sql`
       DELETE FROM stored_files f
       WHERE f.is_complete = true
-        AND f.kind <> 'chat-audio'
+        AND f.kind NOT IN ('chat-audio', 'backgrounds')
         AND f.created_at < now() - make_interval(days => ${ORPHAN_TTL_DAYS})
         AND NOT EXISTS (
           SELECT 1 FROM beats b

@@ -10,6 +10,7 @@ import { UploadError } from "./upload-error";
 
 export type UploadKind =
   | "covers"
+  | "backgrounds"
   | "previews"
   | "videos"
   | "mp3"
@@ -27,6 +28,7 @@ export type UploadKind =
 
 export const UPLOAD_KINDS: UploadKind[] = [
   "covers",
+  "backgrounds",
   "previews",
   "videos",
   "mp3",
@@ -58,6 +60,7 @@ export function isCustomerUploadKind(value: string): value is UploadKind {
 
 export const ALLOWED_EXT: Record<UploadKind, string[]> = {
   covers: [".jpg", ".jpeg", ".png", ".webp"],
+  backgrounds: [".jpg", ".jpeg", ".png", ".webp"],
   previews: [".mp3", ".wav", ".m4a", ".ogg", ".aac"],
   videos: [".mp4", ".webm", ".mov", ".m4v"],
   mp3: [".mp3", ".m4a", ".wav", ".aac"],

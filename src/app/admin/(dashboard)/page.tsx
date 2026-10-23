@@ -62,6 +62,9 @@ export default async function AdminDashboard() {
           <Link href="/admin/sound-kits" className="btn-ghost">
             Sound Kits
           </Link>
+          <Link href="/admin/settings#appearance" className="btn-ghost">
+            Website background
+          </Link>
         </div>
       </PageHeader>
 
