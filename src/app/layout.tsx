@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { buildThemeStyle } from "@/lib/background-theme";
+import { DEFAULT_SETTINGS, getSettings } from "@/lib/settings";
 import "./globals.css";
 
 // The icon routes are the files next to this layout, all cut from the same
@@ -35,10 +37,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const settings = await getSettings().catch(() => DEFAULT_SETTINGS);
+  const themeStyle = buildThemeStyle(settings);
+
   return (
     <html lang="en">
-      <body className="min-h-screen bg-ink font-sans text-cream antialiased">
+      <body
+        className="min-h-screen bg-ink font-sans text-cream antialiased"
+        data-bg-style={settings.bgStyle}
+        style={themeStyle}
+      >
         <div className="liquid-bg" aria-hidden="true">
           <span />
           <span />

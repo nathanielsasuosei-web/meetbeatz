@@ -2,6 +2,7 @@ import { Flash, PageHeader } from "@/components/admin/flash";
 import { SubaccountCreator } from "@/components/admin/subaccount-creator";
 import { UploadMemory } from "@/components/admin/upload-memory";
 import { AdsTxtEditor } from "@/components/admin/ads-txt-editor";
+import { WebsiteAppearanceEditor } from "@/components/admin/website-appearance-editor";
 import { isPaystackConfigured } from "@/lib/paystack";
 import { SCREEN_GUARD_LABELS, SCREEN_GUARD_MODES } from "@/lib/screen-guard";
 import { emailProvider, getPaymentMode, getSettings } from "@/lib/settings";
@@ -10,7 +11,7 @@ import { configuredAdSensePublisherId, configuredAdSenseSlotId } from "@/lib/ads
 import { getBaseUrl } from "@/lib/url";
 import { isWhatsAppConfigured } from "@/lib/whatsapp";
 import { listPromoCodes } from "@/lib/promos";
-import { changePasswordAction, createPromoCodeAction, generatePromoCodeAction, saveSettingsAction, sendTestEmailAction, sendTestWhatsAppAction, togglePromoCodeAction } from "../actions";
+import { changePasswordAction, createPromoCodeAction, generatePromoCodeAction, saveAppearanceAction, saveSettingsAction, sendTestEmailAction, sendTestWhatsAppAction, togglePromoCodeAction } from "../actions";
 
 function promoExpiryInput(value: string): string {
   if (!value) return "";
@@ -43,6 +44,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
 
       <div className="grid gap-8 xl:grid-cols-[1.3fr_1fr]">
         <form action={saveSettingsAction} className="space-y-6">
+          <WebsiteAppearanceEditor settings={settings} saveAppearanceAction={saveAppearanceAction} />
+
           <section className="card p-5">
             <h2 className="font-bold">Payments & split</h2>
             <p className="mt-1 text-xs text-muted">
@@ -148,16 +151,6 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
               <div className="sm:col-span-2">
                 <label className="label">Tagline</label>
                 <input name="tagline" className="field" defaultValue={settings.tagline} />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="label" htmlFor="accentColor">Store accent colour</label>
-                <div className="flex items-center gap-3">
-                  <input id="accentColor" name="accentColor" type="color" defaultValue={settings.accentColor} className="h-11 w-16 cursor-pointer rounded-xl border border-white/15 bg-ink-2 p-1" />
-                  <div>
-                    <p className="text-sm font-semibold">Glass + wave highlight</p>
-                    <p className="text-xs text-muted">Changes the neon accent across the storefront, navbar and hero.</p>
-                  </div>
-                </div>
               </div>
               <div>
                 <label className="label">Contact email</label>

@@ -1,6 +1,15 @@
 import { db } from "@/db";
 import { settings } from "@/db/schema";
 import { sql } from "drizzle-orm";
+import {
+  DEFAULT_BACKGROUND_SETTINGS,
+  normalizeBackgroundStyle,
+  normalizeHeroImage,
+  normalizeHeroOpacity,
+  normalizeHexColor,
+  normalizeIntensity,
+  type BackgroundStyle,
+} from "./background-theme";
 import { normalizeScreenGuardMode, type ScreenGuardMode } from "./screen-guard";
 
 export type SiteSettings = {
@@ -8,6 +17,20 @@ export type SiteSettings = {
   tagline: string;
   /** Main neon accent used by the storefront glass UI and hero. */
   accentColor: string;
+  /** Website backdrop rendering style (`liquid`, `aurora`, or `solid`). */
+  bgStyle: BackgroundStyle;
+  /** Primary glow colour for the full-page backdrop & glass surfaces. */
+  bgPrimaryColor: string;
+  /** Secondary ambient wash colour for depth gradients. */
+  bgSecondaryColor: string;
+  /** Base canvas colour behind the entire website. */
+  bgBaseColor: string;
+  /** Glow intensity percentage (0–150). */
+  bgIntensity: string;
+  /** Homepage hero banner photo path (`"none"`, `/images/...`, or `/api/media/backgrounds/...`). */
+  heroImage: string;
+  /** Homepage hero banner photo opacity percentage (5–90). */
+  heroImageOpacity: string;
   currency: string;
   feePercent: string;
   /** One optional site-wide promo code configured by the producer. */
@@ -40,6 +63,13 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   siteName: "Meetbeatz",
   tagline: "Premium beats & studio sessions. Pay with Mobile Money, get your files instantly.",
   accentColor: "#c6f135",
+  bgStyle: DEFAULT_BACKGROUND_SETTINGS.bgStyle,
+  bgPrimaryColor: DEFAULT_BACKGROUND_SETTINGS.bgPrimaryColor,
+  bgSecondaryColor: DEFAULT_BACKGROUND_SETTINGS.bgSecondaryColor,
+  bgBaseColor: DEFAULT_BACKGROUND_SETTINGS.bgBaseColor,
+  bgIntensity: DEFAULT_BACKGROUND_SETTINGS.bgIntensity,
+  heroImage: DEFAULT_BACKGROUND_SETTINGS.heroImage,
+  heroImageOpacity: DEFAULT_BACKGROUND_SETTINGS.heroImageOpacity,
   currency: "GHS",
   feePercent: "10",
   promoCode: "MB5X9R2K7Q4N",
@@ -75,7 +105,18 @@ export async function getSettings(): Promise<SiteSettings> {
   const asStrings = merged as unknown as SiteSettings;
   // The value is free text in the database, so it is normalised on the way out —
   // a typo there must not silently switch content protection off.
-  return { ...asStrings, screenGuard: normalizeScreenGuardMode(asStrings.screenGuard) };
+  return {
+    ...asStrings,
+    accentColor: normalizeHexColor(asStrings.accentColor, DEFAULT_SETTINGS.accentColor),
+    bgStyle: normalizeBackgroundStyle(asStrings.bgStyle),
+    bgPrimaryColor: normalizeHexColor(asStrings.bgPrimaryColor, DEFAULT_SETTINGS.bgPrimaryColor),
+    bgSecondaryColor: normalizeHexColor(asStrings.bgSecondaryColor, DEFAULT_SETTINGS.bgSecondaryColor),
+    bgBaseColor: normalizeHexColor(asStrings.bgBaseColor, DEFAULT_SETTINGS.bgBaseColor),
+    bgIntensity: String(normalizeIntensity(asStrings.bgIntensity)),
+    heroImage: normalizeHeroImage(asStrings.heroImage),
+    heroImageOpacity: String(normalizeHeroOpacity(asStrings.heroImageOpacity)),
+    screenGuard: normalizeScreenGuardMode(asStrings.screenGuard),
+  };
 }
 
 export function getPromoConfig(siteSettings: SiteSettings): { code: string; percent: number; expiresAt: string | null } | null {

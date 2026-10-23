@@ -14,6 +14,13 @@ import { emailLayout } from "@/lib/email-templates";
 import { sendOrderEmails } from "@/lib/payments";
 import { isPaystackConfigured, isValidSplitCode, subaccountIsUsable } from "@/lib/paystack";
 import { isValidPromoCode } from "@/lib/promos";
+import {
+  DEFAULT_BACKGROUND_SETTINGS,
+  normalizeBackgroundStyle,
+  normalizeHeroImage,
+  normalizeHeroOpacity,
+  normalizeIntensity,
+} from "@/lib/background-theme";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getBaseUrl } from "@/lib/url";
 import { saveAdsTxt } from "@/lib/ads-txt";
@@ -246,11 +253,33 @@ export async function saveLicenseType(formData: FormData) {
   done("/admin/licenses", id ? "License updated." : "License added.");
 }
 
+function extractAppearanceFields(formData: FormData) {
+  return {
+    accentColor: hexColor(formData, "accentColor", "#c6f135"),
+    bgStyle: normalizeBackgroundStyle(str(formData, "bgStyle", DEFAULT_BACKGROUND_SETTINGS.bgStyle)),
+    bgPrimaryColor: hexColor(formData, "bgPrimaryColor", DEFAULT_BACKGROUND_SETTINGS.bgPrimaryColor),
+    bgSecondaryColor: hexColor(formData, "bgSecondaryColor", DEFAULT_BACKGROUND_SETTINGS.bgSecondaryColor),
+    bgBaseColor: hexColor(formData, "bgBaseColor", DEFAULT_BACKGROUND_SETTINGS.bgBaseColor),
+    bgIntensity: String(normalizeIntensity(str(formData, "bgIntensity", DEFAULT_BACKGROUND_SETTINGS.bgIntensity))),
+    heroImage: normalizeHeroImage(str(formData, "heroImage", DEFAULT_BACKGROUND_SETTINGS.heroImage)),
+    heroImageOpacity: String(
+      normalizeHeroOpacity(str(formData, "heroImageOpacity", DEFAULT_BACKGROUND_SETTINGS.heroImageOpacity)),
+    ),
+  };
+}
+
 // ---------------- Settings ----------------
+export async function saveAppearanceAction(formData: FormData) {
+  await guard();
+  await saveSettings(extractAppearanceFields(formData));
+  revalidatePath("/", "layout");
+  done("/admin/settings", "Website background updated.");
+}
+
 export async function saveSettingsAction(formData: FormData) {
   await guard();
   const feePercent = parseFloat(str(formData, "feePercent", "10"));
-  const accentColor = hexColor(formData, "accentColor", "#c6f135");
+  const appearance = extractAppearanceFields(formData);
   const subaccount = str(formData, "paystackSubaccount").trim();
   const promoCode = str(formData, "promoCode").toUpperCase();
   const promoExpiresAt = promoExpiry(formData);
@@ -269,7 +298,7 @@ export async function saveSettingsAction(formData: FormData) {
   await saveSettings({
     siteName: str(formData, "siteName") || "Meetbeatz",
     tagline: str(formData, "tagline"),
-    accentColor,
+    ...appearance,
     currency: (str(formData, "currency") || "GHS").toUpperCase().slice(0, 3),
     feePercent: (Number.isFinite(feePercent) ? Math.min(50, Math.max(0, feePercent)) : 10).toString(),
     promoCode,
