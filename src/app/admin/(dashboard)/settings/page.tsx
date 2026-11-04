@@ -2,6 +2,7 @@ import { Flash, PageHeader } from "@/components/admin/flash";
 import { SubaccountCreator } from "@/components/admin/subaccount-creator";
 import { UploadMemory } from "@/components/admin/upload-memory";
 import { AdsTxtEditor } from "@/components/admin/ads-txt-editor";
+import { CollapsibleCard } from "@/components/admin/collapsible-card";
 import { WebsiteAppearanceEditor } from "@/components/admin/website-appearance-editor";
 import { isPaystackConfigured } from "@/lib/paystack";
 import { SCREEN_GUARD_LABELS, SCREEN_GUARD_MODES } from "@/lib/screen-guard";
@@ -46,14 +47,16 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
         <form action={saveSettingsAction} className="space-y-6">
           <WebsiteAppearanceEditor settings={settings} saveAppearanceAction={saveAppearanceAction} />
 
-          <section className="card p-5">
-            <h2 className="font-bold">Payments & split</h2>
-            <p className="mt-1 text-xs text-muted">
+          <CollapsibleCard
+            title="Payments & split"
+            hint="Service fee, currency, fee bearer and the Paystack split / subaccount code."
+          >
+            <p className="mb-4 text-xs text-muted">
               Customers pay the beat price + service fee. With a payout subaccount configured, Paystack sends the <strong className="text-cream">beat price</strong> to
               the subaccount (Meetbeatz&apos;s bank or MoMo) and keeps the <strong className="text-cream">fee</strong> in the main Paystack account — two separate
               settlements automatically.
             </p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <label className="label">Service fee %</label>
                 <input name="feePercent" type="number" min={0} max={50} step="0.5" className="field" defaultValue={settings.feePercent} />
@@ -88,7 +91,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                 Email: {email === "none" ? "not configured" : email.toUpperCase()}
               </div>
             </div>
-          </section>
+          </CollapsibleCard>
 
           <section className="card p-5">
             <h2 className="font-bold">Promo Code</h2>
@@ -298,10 +301,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             <SubaccountCreator enabled={paystack} />
           </section>
 
-          <section className="card p-5">
-            <h2 className="font-bold">Environment variables</h2>
-            <p className="mt-1 text-xs text-muted">Set these on your hosting platform, then restart the app.</p>
-            <dl className="mt-3 space-y-2 font-mono text-[11px] text-cream/80">
+          <CollapsibleCard title="Environment variables" hint="Set these on your hosting platform, then restart the app.">
+            <dl className="space-y-2 font-mono text-[11px] text-cream/80">
               {[
                 ["PAYSTACK_SECRET_KEY", "sk_live_… from Paystack → Settings → API Keys"],
                 ["NEXT_PUBLIC_APP_URL", `${baseUrl} (used in emails & Paystack callback)`],
@@ -326,7 +327,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
             <p className="mt-3 text-[11px] text-muted">
               Paystack webhook URL: <span className="font-mono text-cream/80">{baseUrl}/api/paystack/webhook</span>
             </p>
-          </section>
+          </CollapsibleCard>
 
           <UploadMemory />
 
